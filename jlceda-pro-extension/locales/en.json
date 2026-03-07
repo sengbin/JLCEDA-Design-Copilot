@@ -1,0 +1,5 @@
+{
+	"About": "About",
+	"EDA Design Copilot v": "EDA Design Copilot v${1}",
+	"EDA Design Copilot About Content": "EDA Design Copilot v${1}\nAI Assistant for Schematic and PCB Design\nProvides chat-based Q&A, image paste support, and model configuration to improve EDA workflow efficiency.\nAuthor: Lion"
+}

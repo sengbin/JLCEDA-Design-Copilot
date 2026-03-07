@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hans">
+
+<head>
+	<title>与 AI 设计助理聊天</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="stylesheet" href="/iframe/overlayscrollbars.css" />
+	<link rel="stylesheet" href="/iframe/chat.css" />
+	<link rel="stylesheet" href="/iframe/common.css" />
+</head>
+
+<body>
+	<div class="chat-page">
+		<div class="chat-sesson-toolbar" aria-label="对话切换栏">
+			<details class="chat-sesson-dropdown">
+				<summary class="chat-sesson-dropdown-trigger" role="button" aria-haspopup="listbox">
+					<span class="chat-sesson-dropdown-leading-icon" aria-hidden="true">
+						<svg viewBox="0 0 20 20" focusable="false">
+							<use xlink:href="#icon-chat-speech-bubble"></use>
+						</svg>
+					</span>
+					<span class="chat-sesson-dropdown-current">新对话</span>
+					<span class="chat-sesson-dropdown-chevron" aria-hidden="true">
+						<svg viewBox="0 0 14 7" focusable="false">
+							<use xlink:href="#icon-chevron-down"></use>
+						</svg>
+					</span>
+				</summary>
+				<ul class="chat-sesson-dropdown-menu" role="listbox" aria-label="对话历史列表"></ul>
+			</details>
+			<div class="chat-sesson-toolbar-actions" aria-label="对话操作按钮">
+				<button class="chat-sesson-add-button" type="button" title="新建对话" aria-label="新建对话">
+					<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+						<use xlink:href="#icon-comment-add"></use>
+					</svg>
+				</button>
+				<button class="chat-sesson-delete-button" type="button" title="删除对话" aria-label="删除对话">
+					<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+						<use xlink:href="#icon-delete-chat-history"></use>
+					</svg>
+				</button>
+			</div>
+		</div>
+		<div class="chat-history" aria-label="聊天历史记录"></div>
+		<div class="chat-input-box">
+			<div class="chat-attachment-row">
+				<button class="image-upload-button" type="button" title="添加图片" aria-label="添加图片">
+					<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+						<use xlink:href="#icon-image-upload"></use>
+					</svg>
+				</button>
+				<input class="image-upload-input" type="file" accept="image/*" multiple hidden />
+				<div class="image-attachment-list" aria-label="已添加图片" aria-live="polite"></div>
+			</div>
+			<div class="chat-textarea-scroll">
+				<div class="chat-textarea" contenteditable="plaintext-only" role="textbox" aria-multiline="true"
+					data-placeholder="询问 AI 设计助理"></div>
+			</div>
+			<div class="chat-input-bottom">
+				<div class="model-select-panel">
+					<div class="model-select-control">
+						<select class="model-select" aria-label="选择平台"></select>
+						<button class="model-select-trigger" type="button" aria-haspopup="listbox"
+							aria-expanded="false"></button>
+						<div class="model-select-menu" role="listbox"></div>
+						<svg viewBox="0 0 14 7" aria-hidden="true" focusable="false">
+							<use xlink:href="#icon-chevron-down"></use>
+						</svg>
+					</div>
+				</div>
+				<div class="send-area">
+					<button class="send-button" type="button" title="发送消息" aria-label="发送消息">
+						<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+							<use class="send-icon-triangle" xlink:href="#icon-send-triangle"></use>
+							<use class="send-icon-square" xlink:href="#icon-send-square"></use>
+							<use class="send-icon-circle" xlink:href="#icon-send-circle"></use>
+						</svg>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script src="/dist/iframe/chat.js"></script>
+</body>
+
+</html>

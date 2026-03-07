@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <symbol id="icon-image-upload" viewBox="0 0 20 20">
+        <path d="M3 5.5C3 4.67 3.67 4 4.5 4h11c.83 0 1.5.67 1.5 1.5v9c0 .83-.67 1.5-1.5 1.5h-11C3.67 16 3 15.33 3 14.5v-9z" fill="none" stroke="currentColor" stroke-width="1.3" />
+        <circle cx="7" cy="8" r="1.2" fill="currentColor" />
+        <path d="M4.5 14l3.6-3.5 2.2 2.2 2.5-2.6L15.5 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+
+    <symbol id="icon-chevron-down" viewBox="0 0 20 20">
+        <g transform="translate(0 5) scale(1.4285714)">
+            <path d="M2 1 L7 6 L12 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        </g>
+    </symbol>
+
+    <symbol id="icon-send-triangle" viewBox="0 0 20 20">
+        <g transform="scale(0.7142857)">
+            <g transform="translate(14 14) scale(0.9) translate(-14 -14)">
+                <path d="M3.78963301 2.77233335 24.8609339 12.8499121c.6227938.2978578.8862063 1.0441934.5883484 1.6669871a1.2499944 1.2499944 0 0 1-.5883484.5883484L3.78963301 25.1828263c-.62279372.2978579-1.36912929.0344453-1.66698715-.5883484a1.25 1.25 0 0 1-.078287-.8682161l2.65873144-9.748682L2.04435886 4.22889788c-.18164466-.66603043.21102759-1.35320687.87705802-1.53485153A1.25 1.25 0 0 1 3.78963301 2.77233335ZM3.63522914 4.36121177 6.058 13.249 17 13.25c.3796958 0 .693491.2821539.7431534.6482294L17.75 14c0 .3796958-.2821539.693491-.6482294.7431534L17 14.75l-10.954-.001-2.41077086 8.8449479L23.7421805 13.9775798 3.63522914 4.36121177Z" fill="currentColor" />
+            </g>
+        </g>
+    </symbol>
+
+    <symbol id="icon-send-square" viewBox="0 0 20 20">
+        <rect x="7" y="7" width="6" height="6" rx="0.9" ry="0.9" />
+    </symbol>
+
+    <symbol id="icon-send-circle" viewBox="0 0 20 20">
+        <circle cx="10" cy="10" r="7" />
+    </symbol>
+
+    <symbol id="icon-close-x" viewBox="0 0 20 20">
+        <g transform="scale(1.6666667)">
+            <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" />
+        </g>
+    </symbol>
+
+    <symbol id="icon-spinner-half" viewBox="0 0 12 12">
+        <path d="M2 6A4 4 0 0 1 10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" />
+    </symbol>
+
+    <symbol id="icon-clear-history" viewBox="0 0 20 20">
+        <g transform="scale(0.3125)">
+            <path d="M19.186 16.493V14.5c.043-3.346 2.865-6.296 6.277-6.427 3.072-.04 10.144-.04 13.216 0 3.346.129 6.233 3.012 6.277 6.427v1.993h9.106v4H49.62v29.11c-.043 3.348-2.865 6.296-6.278 6.428-7.462.095-14.926.002-22.39.002-3.396-.044-6.385-2.96-6.429-6.43v-29.11H10.08v-4h9.106Zm26.434 4H18.521c-.014 9.72-.122 19.441.002 29.16.049 1.25 1.125 2.33 2.379 2.379 7.446.095 14.893.095 22.338 0 1.273-.049 2.363-1.163 2.38-2.455v-29.084Zm-4.701-4c-.014-.83 0-1.973 0-1.973 0 0-.059-2.418-2.343-2.447-3.003-.039-10.007-.039-13.01 0-1.273.049-2.363 1.162-2.38 2.454v1.966h17.733Z" fill="currentColor" />
+            <rect x="22.58" y="28.099" width="3" height="16.327" fill="currentColor" />
+            <rect x="30.571" y="28.099" width="3" height="16.327" fill="currentColor" />
+            <rect x="38.58" y="28.099" width="3" height="16.327" fill="currentColor" />
+        </g>
+    </symbol>
+
+    <symbol id="icon-tool-equipment" viewBox="0 0 20 20">
+        <g transform="scale(0.2)">
+            <path d="M66.958 54.602c-1.821-1.821-4.786-1.821-6.608 0l-.066.066-1.298-1.298 12.849-12.848c6.649 2.043 13.76.297 18.692-4.635 4.337-4.337 6.27-10.528 5.17-16.56-.067-.366-.331-.665-.686-.775-.354-.111-.741-.015-1.005.248l-8.954 8.953-11.038-1.767-1.767-11.038L81.2 5.994c.263-.263.358-.65.248-1.005s-.409-.619-.775-.686c-6.031-1.098-12.223.833-16.56 5.17-4.932 4.932-6.679 12.042-4.635 18.692L46.63 41.015 19.821 14.206a.985.985 0 0 0-.356-.229l-6.717-2.516a.996.996 0 0 0-1.058.229.997.997 0 0 0-.229 1.058l2.516 6.717c.05.134.128.255.229.356L41.015 46.63 28.166 59.478c-6.65-2.044-13.761-.296-18.692 4.635-4.338 4.337-6.271 10.528-5.171 16.56.067.366.331.665.686.775.355.112.742.016 1.005-.248l8.954-8.953 11.038 1.767 1.767 11.038L18.8 94.006c-.263.263-.358.65-.248 1.005s.409.619.775.686c1.115.203 2.236.303 3.349.303 4.909 0 9.676-1.938 13.211-5.474 4.932-4.931 6.679-12.042 4.635-18.692L53.37 58.985l1.298 1.298-.066.066c-1.822 1.822-1.822 4.786 0 6.608L78.84 91.195a4.637 4.637 0 0 0 3.288 1.358c1.197 0 2.396-.457 3.309-1.37l5.748-5.748c1.822-1.822 1.827-4.781.011-6.596L66.958 54.602ZM63.693 73.221l1.941-1.941 8.877 8.877-1.941 1.941-8.877-8.877Zm8.113-10.941-2.647 2.647-4.232 4.232-2.647 2.647-2.818-2.818 9.526-9.526 2.818 2.818Zm-1.94 4.768 8.877 8.877-2.818 2.818-8.877-8.877 2.818-2.818Zm4.119 16.463 2.647-2.647 4.232-4.232 2.647-2.647 2.818 2.818-9.526 9.526-2.818-2.818Zm6.172-9-8.877-8.877 1.941-1.941 8.877 8.878-1.941 1.94ZM61.326 29.147a.996.996 0 0 0 .239-1.032c-2.091-6.091-.573-12.692 3.962-17.228 3.4-3.399 8.075-5.144 12.808-4.856l-7.863 7.863a1 1 0 0 0-.28.865l1.962 12.257a.996.996 0 0 0 .829.829l12.257 1.962a1 1 0 0 0 .865-.28l7.863-7.863c.289 4.734-1.457 9.409-4.856 12.808-4.535 4.536-11.136 6.054-17.228 3.962a.996.996 0 0 0-1.032.239L57.571 51.956l-2.822-2.822 10.246-10.246a2.74 2.74 0 0 0 .804-1.942 2.73 2.73 0 0 0-.803-1.942c-1.036-1.036-2.849-1.036-3.884 0L50.866 45.25l-2.822-2.822 13.282-13.281ZM52.28 46.665l10.247-10.246c.28-.281.774-.282 1.055 0 .141.14.218.328.218.527s-.077.387-.218.527L53.335 47.72 52.28 46.665ZM38.674 70.853a.996.996 0 0 0-.239 1.032c2.091 6.091.573 12.692-3.962 17.227-3.399 3.399-8.069 5.146-12.808 4.857l7.863-7.863a1 1 0 0 0 .28-.865l-1.962-12.257a.996.996 0 0 0-.829-.829L14.76 70.192a1.006 1.006 0 0 0-.865.28l-7.863 7.863c-.289-4.734 1.457-9.409 4.857-12.808 4.536-4.535 11.138-6.052 17.227-3.962a.996.996 0 0 0 1.032-.239l13.282-13.282 2.822 2.822L35.004 61.111a2.73 2.73 0 0 0-.804 1.942c0 .734.286 1.424.803 1.942.518.518 1.208.804 1.942.804s1.424-.286 1.942-.804L49.134 54.75l2.822 2.822-13.282 13.281ZM47.72 53.335 37.474 63.582c-.28.281-.774.282-1.055 0a.746.746 0 0 1-.218-.527c0-.199.077-.387.218-.528L46.665 52.28l1.055 1.055Zm6.357 3.529-4.236-4.236-2.47-2.47-4.236-4.236L15.773 18.561l-1.669-4.456 4.456 1.669 27.362 27.362 4.236 4.236 2.47 2.47 4.236 4.236 2.005 2.005-2.787 2.787-2.066-2.006Zm1.939 4.9.773-.773 4.201-4.201.773-.773a2.652 2.652 0 0 1 3.78 0l2.031 2.031-9.528 9.528-2.031-2.031c-1.041-1.043-1.041-2.739.001-3.781ZM89.77 84.022l-5.748 5.748a2.646 2.646 0 0 1-1.887.786c-.708.007-1.379-.273-1.881-.775l-2.037-2.037 9.527-9.527 2.037 2.037c.502.502.777 1.17.775 1.881-.002.712-.281 1.382-.786 1.887Z" fill="currentColor" />
+        </g>
+    </symbol>
+
+    <symbol id="icon-comment-add" viewBox="0 0 20 20">
+        <g transform="scale(0.8333333)">
+            <path d="M12.022 2.999c-.297.464-.536.968-.709 1.501H5.25A3.25 3.25 0 0 0 2 7.75v8.5A3.25 3.25 0 0 0 5.25 19.5H6v2.75a1.25 1.25 0 0 0 2 1l5.013-3.75h5.737A3.25 3.25 0 0 0 22 16.25v-3.56a7.04 7.04 0 0 1-1.499 1.077V16.25A1.75 1.75 0 0 1 18.75 18h-6.236l-5.015 3.75L7.5 18H5.25a1.75 1.75 0 0 1-1.75-1.75v-8.5A1.75 1.75 0 0 1 5.25 6h6.063a6.99 6.99 0 0 1 .709-3.001Z" fill="currentColor" />
+            <circle cx="17.5" cy="6.5" r="5.5" fill="#22c55e" />
+            <path d="M17.5 4.2v4.6M15.2 6.5h4.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" />
+        </g>
+    </symbol>
+
+    <symbol id="icon-delete-chat-history" viewBox="0 0 20 20">
+        <g transform="scale(0.8333333)">
+            <line x1="3.5" y1="6" x2="12.5" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="3.5" y1="9.5" x2="12.5" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="3.5" y1="13" x2="20.5" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="3.5" y1="17" x2="20.5" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="14.8" y1="3.2" x2="21.4" y2="9.8" stroke="#ff0000" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="21.4" y1="3.2" x2="14.8" y2="9.8" stroke="#ff0000" stroke-width="1.5" stroke-linecap="round" />
+        </g>
+    </symbol>
+
+    <symbol id="icon-plugin-logo" viewBox="0 0 1024 1024">
+        <defs>
+            <linearGradient id="icon-plugin-logo-bgGrad" x1="160" y1="160" x2="864" y2="864" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#4F46E5" />
+                <stop offset="1" stop-color="#06B6D4" />
+            </linearGradient>
+            <linearGradient id="icon-plugin-logo-aiGrad" x1="410" y1="410" x2="650" y2="620" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#4F46E5" />
+                <stop offset="1" stop-color="#06B6D4" />
+            </linearGradient>
+            <radialGradient id="icon-plugin-logo-halo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 512) rotate(90) scale(360)">
+                <stop stop-color="white" stop-opacity="0.25" />
+                <stop offset="1" stop-color="white" stop-opacity="0" />
+            </radialGradient>
+            <filter id="icon-plugin-logo-softGlow" x="0" y="0" width="1024" height="1024" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                <feGaussianBlur stdDeviation="8" />
+            </filter>
+        </defs>
+        <rect x="112" y="112" width="800" height="800" rx="220" fill="url(#icon-plugin-logo-bgGrad)" />
+        <circle cx="512" cy="512" r="320" fill="url(#icon-plugin-logo-halo)" />
+
+        <g filter="url(#icon-plugin-logo-softGlow)" opacity="0.55">
+            <circle cx="272" cy="300" r="7" fill="white" />
+            <circle cx="752" cy="280" r="7" fill="white" />
+            <circle cx="796" cy="706" r="7" fill="white" />
+            <circle cx="240" cy="732" r="7" fill="white" />
+        </g>
+
+        <path d="M346 328H678C719.974 328 754 362.026 754 404V578C754 619.974 719.974 654 678 654H522L404 748C387.461 761.174 362 749.398 362 728V654H346C304.026 654 270 619.974 270 578V404C270 362.026 304.026 328 346 328Z" fill="white" />
+
+        <path d="M434 590L512 424L590 590" stroke="url(#icon-plugin-logo-aiGrad)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M468 526H556" stroke="url(#icon-plugin-logo-aiGrad)" stroke-width="34" stroke-linecap="round" />
+        <circle cx="642" cy="456" r="18" fill="url(#icon-plugin-logo-aiGrad)" />
+
+        <path d="M232 362L278 398" stroke="white" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round" />
+        <path d="M746 238L700 274" stroke="white" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round" />
+        <path d="M804 646L758 610" stroke="white" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round" />
+        <path d="M278 742L232 706" stroke="white" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round" />
+    </symbol>
+
+    <symbol id="icon-chat-speech-bubble" viewBox="0 0 20 20">
+        <g transform="scale(0.0390625)">
+            <path d="M437.333 32H74.667C33.493 32 0 65.493 0 106.667V320c0 41.173 33.493 74.667 74.667 74.667h25.387L65.11 464.555c-2.091 4.203-1.195 9.301 2.219 12.523C69.355 478.997 72 480 74.667 480c1.813 0 3.627-.448 5.291-1.408l146.88-83.925h210.496C478.507 394.667 512 361.173 512 320V106.667C512 65.493 478.507 32 437.333 32zm53.312 287.979c0 29.397-23.936 53.333-53.333 53.333H223.979c-1.856 0-3.669.491-5.291 1.408L99.947 442.581l26.923-53.824c1.664-3.285 1.472-7.232-.469-10.368s-5.376-5.056-9.067-5.056H74.667c-29.397 0-53.333-23.936-53.333-53.333V106.667c0-29.397 23.936-53.333 53.333-53.333v-.021h362.645c29.397 0 53.333 23.936 53.333 53.333v213.333z" fill="currentColor" />
+        </g>
+    </symbol>
+</svg>

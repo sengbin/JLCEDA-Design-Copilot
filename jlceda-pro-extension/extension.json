@@ -1,0 +1,103 @@
+{
+	"name": "jlceda-design-copilot",
+	"uuid": "4585803ac4eb41d19e17c601bfa15528",
+	"displayName": "AI 设计助理",
+	"description": "使用自然语言与AI大模型聊天辅助设计原理图和PCB。",
+	"version": "1.1.0",
+	"publisher": "Lion",
+	"engines": {
+		"eda": "^3.0.0"
+	},
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "extension-store",
+		"url": ""
+	},
+	"categories": "Project",
+	"keywords": [
+		"EDA",
+		"AI",
+		"Design",
+		"Copilot",
+		"Agent"
+	],
+	"images": {
+		"logo": "./images/logo.png"
+	},
+	"homepage": "https://github.com/sengbin/JLCEDA-Design-Copilot",
+	"bugs": "https://github.com/sengbin/JLCEDA-Design-Copilot/issues",
+	"activationEvents": {},
+	"entry": "./dist/index",
+	"dependentExtensions": {},
+	"headerMenus": {
+		"home": [
+			{
+				"id": "jlceda-design-copilot",
+				"title": "AI 设计助理",
+				"menuItems": [
+					{
+						"id": "ChatTool",
+						"title": "聊天",
+						"registerFn": "openChatTool"
+					},
+					{
+						"id": "AIModelConfig",
+						"title": "设置",
+						"registerFn": "openAiModelConfig"
+					},
+					{
+						"id": "About",
+						"title": "About...",
+						"registerFn": "about"
+					}
+				]
+			}
+		],
+		"sch": [
+			{
+				"id": "jlceda-design-copilot",
+				"title": "AI 设计助理",
+				"menuItems": [
+					{
+						"id": "ChatTool",
+						"title": "聊天",
+						"registerFn": "openChatTool"
+					},
+					{
+						"id": "AIModelConfig",
+						"title": "设置",
+						"registerFn": "openAiModelConfig"
+					},
+					{
+						"id": "About",
+						"title": "About...",
+						"registerFn": "about"
+					}
+				]
+			}
+		],
+		"pcb": [
+			{
+				"id": "jlceda-design-copilot",
+				"title": "AI 设计助理",
+				"menuItems": [
+					{
+						"id": "ChatTool",
+						"title": "聊天",
+						"registerFn": "openChatTool"
+					},
+					{
+						"id": "AIModelConfig",
+						"title": "设置",
+						"registerFn": "openAiModelConfig"
+					},
+					{
+						"id": "About",
+						"title": "About...",
+						"registerFn": "about"
+					}
+				]
+			}
+		]
+	}
+}

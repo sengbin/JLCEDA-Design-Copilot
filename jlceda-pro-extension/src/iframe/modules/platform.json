@@ -1,0 +1,48 @@
+{
+	"platforms": [
+		{
+			"id": "deepseek",
+			"label": "DeepSeek",
+			"entryUrl": "https://platform.deepseek.com/",
+			"endpoint": "https://api.deepseek.com/chat/completions",
+			"keyField": "deepseekKey",
+			"endpointField": "deepseekUrl",
+			"modelField": "deepseekModel",
+			"model": "deepseek-reasoner",
+			"imagePayloadMode": ""
+		},
+		{
+			"id": "zhipu",
+			"label": "智谱",
+			"entryUrl": "https://open.bigmodel.cn/",
+			"endpoint": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+			"keyField": "zhipuKey",
+			"endpointField": "zhipuUrl",
+			"modelField": "zhipuModel",
+			"model": "GLM-4.6V",
+			"imagePayloadMode": "image_url"
+		},
+		{
+			"id": "ali",
+			"label": "阿里",
+			"entryUrl": "https://dashscope.console.aliyun.com/",
+			"endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+			"keyField": "aliKey",
+			"endpointField": "aliUrl",
+			"modelField": "aliModel",
+			"model": "qwen3.5-plus",
+			"imagePayloadMode": "image_url"
+		},
+		{
+			"id": "baidu",
+			"label": "百度",
+			"entryUrl": "https://console.bce.baidu.com/qianfan/overview",
+			"endpoint": "https://qianfan.baidubce.com/v2/chat/completions",
+			"keyField": "baiduKey",
+			"endpointField": "baiduUrl",
+			"modelField": "baiduModel",
+			"model": "ernie-5.0-thinking-preview",
+			"imagePayloadMode": "image_url"
+		}
+	]
+}

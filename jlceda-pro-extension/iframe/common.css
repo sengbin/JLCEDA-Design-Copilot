@@ -1,0 +1,83 @@
+* {
+	box-sizing: border-box;
+}
+
+:root {
+	--common-button-hover-bg: rgba(90, 90, 90, 0.08);
+	--common-button-active-bg: rgba(90, 90, 90, 0.14);
+	--common-button-enabled-text: #4b4b4b;
+	--common-button-hover-text: #2f2f2f;
+	--common-button-active-text: #1f1f1f;
+	--common-button-disabled-text: #9a9a9a;
+	--common-button-focus-shadow: rgba(130, 130, 130, 0.26);
+}
+
+:root[data-theme='dark'] {
+	--common-button-hover-bg: rgba(255, 255, 255, 0.12);
+	--common-button-active-bg: rgba(255, 255, 255, 0.18);
+	--common-button-enabled-text: #dcdcdc;
+	--common-button-hover-text: #ffffff;
+	--common-button-active-text: #ffffff;
+	--common-button-disabled-text: #8f8f8f;
+	--common-button-focus-shadow: rgba(170, 170, 170, 0.35);
+}
+
+.image-upload-button,
+.clear-history-button,
+.image-attachment-remove,
+.send-button {
+	border: 1px solid transparent;
+	background: transparent;
+	color: var(--common-button-enabled-text);
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		color 0.15s ease,
+		opacity 0.15s ease;
+}
+.image-upload-button:hover:not(:disabled),
+.clear-history-button:hover:not(:disabled),
+.image-attachment-remove:hover:not(:disabled),
+.send-button:hover:not(:disabled) {
+	background: var(--common-button-hover-bg);
+	color: var(--common-button-hover-text);
+}
+
+.image-upload-button:active:not(:disabled),
+.clear-history-button:active:not(:disabled),
+.image-attachment-remove:active:not(:disabled),
+.send-button:active:not(:disabled) {
+	background: var(--common-button-active-bg);
+	color: var(--common-button-active-text);
+}
+
+.image-upload-button:focus-visible,
+.clear-history-button:focus-visible,
+.image-attachment-remove:focus-visible,
+.send-button:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--common-button-focus-shadow);
+}
+
+.image-upload-button:disabled,
+.clear-history-button:disabled,
+.image-attachment-remove:disabled,
+.send-button:disabled,
+.send-button[data-can-send='0']:not([data-sending='1']) {
+	background: transparent;
+	color: var(--common-button-disabled-text);
+	border-color: transparent;
+	box-shadow: none;
+	cursor: default;
+}
+
+.send-button[data-can-send='1']:not([data-sending='1']) {
+	color: var(--common-button-enabled-text);
+	border-color: transparent;
+}
+
+.send-button[data-sending='1'] {
+	background: transparent;
+	color: var(--common-button-active-text);
+	border-color: transparent;
+}

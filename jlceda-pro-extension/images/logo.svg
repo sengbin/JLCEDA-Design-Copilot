@@ -1,0 +1,40 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="160" y1="160" x2="864" y2="864" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="aiGrad" x1="410" y1="410" x2="650" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 512) rotate(90) scale(360)">
+      <stop stop-color="white" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="0" y="0" width="1024" height="1024" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+
+  <rect x="112" y="112" width="800" height="800" rx="220" fill="url(#bgGrad)"/>
+  <circle cx="512" cy="512" r="320" fill="url(#halo)"/>
+
+  <g filter="url(#softGlow)" opacity="0.55">
+    <circle cx="272" cy="300" r="7" fill="white"/>
+    <circle cx="752" cy="280" r="7" fill="white"/>
+    <circle cx="796" cy="706" r="7" fill="white"/>
+    <circle cx="240" cy="732" r="7" fill="white"/>
+  </g>
+
+  <path d="M346 328H678C719.974 328 754 362.026 754 404V578C754 619.974 719.974 654 678 654H522L404 748C387.461 761.174 362 749.398 362 728V654H346C304.026 654 270 619.974 270 578V404C270 362.026 304.026 328 346 328Z" fill="white"/>
+
+  <path d="M434 590L512 424L590 590" stroke="url(#aiGrad)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M468 526H556" stroke="url(#aiGrad)" stroke-width="34" stroke-linecap="round"/>
+  <circle cx="642" cy="456" r="18" fill="url(#aiGrad)"/>
+
+  <path d="M232 362L278 398" stroke="white" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round"/>
+  <path d="M746 238L700 274" stroke="white" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round"/>
+  <path d="M804 646L758 610" stroke="white" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round"/>
+  <path d="M278 742L232 706" stroke="white" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round"/>
+</svg>

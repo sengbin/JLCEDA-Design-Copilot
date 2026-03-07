@@ -1,0 +1,86 @@
+[
+	{
+		"type": "function",
+		"function": {
+			"name": "jlceda_list_apis",
+			"description": "列出当前可用的嘉立创 EDA API 模块与方法。调用成功时返回：{ ok: true, detectedCandidates: number, totalModules: number, enumCount: number, enums: string[], modules: Array<{ module: string, methodCount: number, methods: string[] }> }；调用失败时返回：{ ok: false, error: string }。注意：limit 实际最大值为 200；modules 仅包含可调用方法数量大于 0 的模块。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"moduleKeyword": {
+						"type": "string",
+						"description": "模块关键字过滤（可选，字符串）。仅做模块名包含匹配。"
+					},
+					"limit": {
+						"type": "number",
+						"description": "最大返回模块数（可选，数字）。默认 200，实际生效范围为 1~200。"
+					}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "jlceda_get_api_member",
+			"description": "读取指定 API 成员值。调用成功时返回：{ ok: true, apiPath: string, resolvedApiPath: string, valueType: string, value: null | string | number | boolean | object | any[] }；调用失败时返回：{ ok: false, error: string }。注意：当成员值为 undefined 时，value 会被标准化为 null；valueType 是运行时 typeof 结果。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"apiPath": {
+						"type": "string",
+						"description": "成员路径（必填）。格式：模块.方法。"
+					}
+				},
+				"required": ["apiPath"],
+				"additionalProperties": false
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "jlceda_search_offline_api_doc",
+			"description": "检索离线 API 文档。调用成功时返回：{ ok: true, keyword: string, docPath: string, docFormat: 'jlceda-pro-api-reference', documentType: string, schemaVersion: string, source: string, generatedAt: string, totalEntries: number, totalMatches: number, returnedMatches: number, searchStats: { candidateCount: number, scannedCount: number, indexUsed: boolean }, matches: Array<MatchItem> }；失败时返回：{ ok: false, error: string }。MatchItem 统一字段：type/kind/name/fullName/ownerFullName/summary/signatureText/returnType/typeText/enumValue/parameters/typeParameters/heritage/location/symbolId/score。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"keyword": {
+						"type": "string",
+						"description": "检索关键字（必填，字符串）。支持名称、全名、签名、返回值、说明文本等模糊匹配。"
+					},
+					"maxResults": {
+						"type": "number",
+						"description": "返回上限（可选，数字）。默认 8，实际生效范围为 1~30。"
+					}
+				},
+				"required": ["keyword"],
+				"additionalProperties": false
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "jlceda_call_api",
+			"description": "调用单个 EDA API 方法。调用成功时返回：{ ok: true, apiPath: string, resolvedApiPath: string, result: any }；若为鼠标交互型 API（路径包含 withMouse），会立即返回 result={ pending: true, message: string }；调用失败时返回：{ ok: false, apiPath?: string, resolvedApiPath?: string, error: string }。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"apiPath": {
+						"type": "string",
+						"description": "格式：模块.方法。"
+					},
+					"args": {
+						"type": "array",
+						"description": "位置参数数组（可选）。示例：{\"apiPath\":\"模块.方法\",\"args\":[{\"参数1\":\"123456\",\"参数2\":\"123456\"},100,200]}。",
+						"items": {}
+					}
+				},
+				"required": ["apiPath"],
+				"additionalProperties": false
+			}
+		}
+	}
+]
