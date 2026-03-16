@@ -1,6 +1,8 @@
 // 文件说明：提供调试信息提取与 API 路径收集相关辅助函数。
+
 // 工具执行调试开关：开启时显示可展开的详情，关闭时仅显示标题。
 export const DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE: any = true;
+
 // 工具折叠展示：总览行开关，每行控制折叠展开视图是否展示对应数据。
 const DEBUG_TOOL_EXEC_SHOW_TOOL_NAME: any = true; // 展示工具名
 const DEBUG_TOOL_EXEC_SHOW_CALL_STATUS: any = true; // 展示调用状态（执行中/已完成/超时）
@@ -11,14 +13,17 @@ const DEBUG_TOOL_EXEC_SHOW_REPAIR_RECEIVED_ARGUMENTS: any = false; // 修复成�
 const DEBUG_TOOL_EXEC_SHOW_SUCCESS_RECEIVED_ARGUMENTS: any = false; // API 调用成功时展示收到参数
 const DEBUG_TOOL_EXEC_SHOW_REPAIR_FAILED_ARGUMENTS: any = false; // 修复失败时展示错误参数快照
 const DEBUG_TOOL_EXEC_SHOW_ERROR_INFO: any = true; // 展示整体错误信息摘要
+
 // 工具错误详情：字段开关，控制每种错误子信息是否加入折叠详情内容。
 const DEBUG_TOOL_ERROR_SHOW_BASE_ERROR: any = true; // 基础 error 文本
-const DEBUG_TOOL_ERROR_SHOW_STAGE: any = false; // 失败阶段说明
-const DEBUG_TOOL_ERROR_SHOW_EXPECTED_FORMAT: any = false; // 期望参数格式示例
-const DEBUG_TOOL_ERROR_SHOW_RECEIVED_ARGUMENTS: any = false; // 实际收到的参数片段
-const DEBUG_TOOL_ERROR_SHOW_REPAIR_STATUS: any = false; // 参数修复状态
-const DEBUG_TOOL_ERROR_SHOW_REPAIR_FAILED_ARGUMENTS: any = false; // 修复失败时的原始参数展示
-const DEBUG_TOOL_ERROR_SHOW_REPAIR_DIAGNOSIS: any = false; // 修复诊断信息
+const DEBUG_TOOL_ERROR_SHOW_STAGE: any = true; // 失败阶段说明
+const DEBUG_TOOL_ERROR_SHOW_EXPECTED_FORMAT: any = true; // 期望参数格式示例
+
+const DEBUG_TOOL_ERROR_SHOW_RECEIVED_ARGUMENTS: any = true; // 实际收到的参数片段
+const DEBUG_TOOL_ERROR_SHOW_REPAIR_STATUS: any = true; // 参数修复状态
+const DEBUG_TOOL_ERROR_SHOW_REPAIR_FAILED_ARGUMENTS: any = true; // 修复失败时的原始参数展示
+const DEBUG_TOOL_ERROR_SHOW_REPAIR_DIAGNOSIS: any = true; // 修复诊断信息
+
 const DEBUG_TOOL_ERROR_SHOW_TARGET_API: any = true; // 目标 API 路径
 const DEBUG_TOOL_ERROR_SHOW_CONCLUSION: any = true; // 调用结论信息
 // 追加展示片段。
