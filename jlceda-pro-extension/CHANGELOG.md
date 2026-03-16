@@ -1,6 +1,7 @@
 # 2.0.0 (2026-03-16)
 
 - 升级到 2.0.0 版本，扩展改名为：AI 设计助手。
+- 新增"自定义"平台选项卡：用户可填写任意 OpenAI 兼容接口的终结点、API Key 和模型名称，实现对接各类第三方大模型。
 - API 返回文件（Blob）时，自动生成 `downloadUrl` 下载链接并携带文件名，AI 回复中输出可点击的 Markdown 链接，用户点击即可直接下载 BOM、网表等导出文件。
 - Markdown 渲染支持 `blob:` URL 链接，渲染为带 `download` 属性的 `<a>` 标签，点击触发浏览器下载。
 - 修复 `page.ts` 中访问 `window.eda` 和 `window.parent.eda` 时的 TypeScript 类型报错。

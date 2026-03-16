@@ -108,7 +108,9 @@ export function normalizeModelConfig(configObject: unknown): Record<string, stri
 			: legacyThinkingValue;
 		normalizedConfig[platformItem.keyField] = String(configObjectAny[platformItem.keyField] || '').trim();
 		normalizedConfig[platformItem.modelField] = String(configObjectAny[platformItem.modelField] || initialModelMap[platformItem.id] || '').trim();
-		normalizedConfig[platformItem.endpointField] = String(fixedEndpointMap[platformItem.id] || '').trim();
+		// 自定义平台的终结点由用户填写，不存在固定值，从已保存配置中读取。
+		const fixedEndpoint: any = String(fixedEndpointMap[platformItem.id] || '').trim();
+		normalizedConfig[platformItem.endpointField] = fixedEndpoint || String(configObjectAny[platformItem.endpointField] || '').trim();
 		normalizedConfig[thinkingModeConfigKey] = String(thinkingRawValue || '').trim() === '0' ? '0' : '1';
 	}
 	return normalizedConfig;

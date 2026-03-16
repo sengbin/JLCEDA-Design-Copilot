@@ -43,6 +43,18 @@
 			"modelField": "baiduModel",
 			"model": "ernie-5.0-thinking-preview",
 			"imagePayloadMode": "image_url"
+		},
+		{
+			"id": "custom",
+			"label": "自定义",
+			"entryUrl": "",
+			"endpoint": "",
+			"keyField": "customKey",
+			"endpointField": "customUrl",
+			"modelField": "customModel",
+			"model": "",
+			"imagePayloadMode": "",
+			"isCustomEndpoint": true
 		}
 	]
 }

@@ -27,6 +27,7 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 	const contentArea: any = document.querySelector('.content-area');
 	const keyInputMap: any = {};
 	const modelInputMap: any = {};
+	const endpointInputMap: any = {};
 	const thinkingModeSwitchMap: any = {};
 	const MENU_MODEL_CONFIG: any = 'model-config';
 	const MENU_PROMPT: any = 'prompt-config';
@@ -200,11 +201,21 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 			panelNode.className = 'platform-panel';
 			panelNode.setAttribute('data-platform', platformItem.id);
 			panelNode.hidden = index !== 0;
+			const topSectionHtml: any = platformItem.isCustomEndpoint
+				? [
+					'<div class="field">',
+					'<label class="label">终结点（Endpoint）</label>',
+					`<input id="${platformItem.endpointField}" class="input" type="text" placeholder="https://api.example.com/v1/chat/completions" />`,
+					'</div>',
+				].join('')
+				: [
+					'<div class="platform-entry">',
+					'<label class="label">平台入口</label>',
+					`<a class="platform-entry-link" href="${platformItem.entryUrl}" target="_blank" rel="noopener noreferrer">${platformItem.entryUrl}</a>`,
+					'</div>',
+				].join('');
 			panelNode.innerHTML = [
-				'<div class="platform-entry">',
-				'<label class="label">平台入口</label>',
-				`<a class="platform-entry-link" href="${platformItem.entryUrl}" target="_blank" rel="noopener noreferrer">${platformItem.entryUrl}</a>`,
-				'</div>',
+				topSectionHtml,
 				'<div class="field">',
 				'<label class="label">密钥（Key）</label>',
 				`<input id="${platformItem.keyField}" class="input" type="text" placeholder="请输入 API Key" />`,
@@ -237,6 +248,9 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 			keyInputMap[platformItem.id] = document.getElementById(platformItem.keyField);
 			modelInputMap[platformItem.id] = document.getElementById(platformItem.modelField);
 			thinkingModeSwitchMap[platformItem.id] = document.getElementById(`thinking-mode-switch-${platformItem.id}`);
+			if (platformItem.isCustomEndpoint) {
+				endpointInputMap[platformItem.id] = document.getElementById(platformItem.endpointField);
+			}
 		}
 	}
 	// 按平台读取思考模式开关状态。
@@ -489,7 +503,13 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 			const modelInput: any = modelInputMap[platformItem.id];
 			payload[platformItem.keyField] = String((keyInput && keyInput.value) || '').trim();
 			payload[platformItem.modelField] = String((modelInput && modelInput.value) || '').trim();
-			payload[platformItem.endpointField] = String(platformItem.endpoint || '').trim();
+			if (platformItem.isCustomEndpoint) {
+				const endpointInput: any = endpointInputMap[platformItem.id];
+				payload[platformItem.endpointField] = String((endpointInput && endpointInput.value) || '').trim();
+			}
+			else {
+				payload[platformItem.endpointField] = String(platformItem.endpoint || '').trim();
+			}
 			payload[buildThinkingModeConfigKey(platformItem.id)] = readThinkingModeEnabledByPlatform(platformItem.id) ? '1' : '0';
 		}
 		return payload;
@@ -510,7 +530,9 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 				: legacyThinkingValue;
 			normalized[platformItem.keyField] = String(saved[platformItem.keyField] || '').trim();
 			normalized[platformItem.modelField] = String(saved[platformItem.modelField] || platformItem.model || '').trim();
-			normalized[platformItem.endpointField] = String(platformItem.endpoint || '').trim();
+			normalized[platformItem.endpointField] = platformItem.isCustomEndpoint
+				? String(saved[platformItem.endpointField] || '').trim()
+				: String(platformItem.endpoint || '').trim();
 			normalized[thinkingModeConfigKey] = String(thinkingRawValue || '').trim() === '0' ? '0' : '1';
 		}
 		return normalized;
@@ -534,6 +556,12 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 				if (switchInput) {
 					switchInput.checked = true;
 				}
+				if (platformItem.isCustomEndpoint) {
+					const endpointInput: any = endpointInputMap[platformItem.id];
+					if (endpointInput) {
+						endpointInput.value = '';
+					}
+				}
 			}
 			hasPassedVerification = false;
 			return;
@@ -553,6 +581,12 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 				const thinkingModeConfigKey: any = buildThinkingModeConfigKey(platformItem.id);
 				switchInput.checked = String(normalized[thinkingModeConfigKey] || '1').trim() !== '0';
 			}
+			if (platformItem.isCustomEndpoint) {
+				const endpointInput: any = endpointInputMap[platformItem.id];
+				if (endpointInput) {
+					endpointInput.value = String(normalized[platformItem.endpointField] || '').trim();
+				}
+			}
 		}
 		hasPassedVerification = false;
 		setNotes('已加载本地配置，可直接修改并点击“保存”更新。', 'success');
@@ -571,6 +605,19 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 		if (!hasAnyApiKey) {
 			setNotes('保存失败：至少填写一个平台的 API Key。', 'error');
 			return false;
+		}
+		// 验证自定义平台：填写了 Key 就必须填写终结点。
+		for (let index: any = 0; index < PLATFORM_LIST.length; index += 1) {
+			const platformItem: any = PLATFORM_LIST[index];
+			if (!platformItem.isCustomEndpoint) {
+				continue;
+			}
+			const customKey: any = String(payload[platformItem.keyField] || '').trim();
+			const customEndpoint: any = String(payload[platformItem.endpointField] || '').trim();
+			if (customKey && !customEndpoint) {
+				setNotes('保存失败：使用自定义模型时必须填写终结点。', 'error');
+				return false;
+			}
 		}
 		const existed: any = !!readConfig();
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -702,10 +749,17 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 				failMessages.push(`${platformItem.label}：模型名称未填写`);
 				continue;
 			}
+			const targetEndpoint: any = platformItem.isCustomEndpoint
+				? String((endpointInputMap[platformItem.id] && endpointInputMap[platformItem.id].value) || '').trim()
+				: platformItem.endpoint;
+			if (!targetEndpoint) {
+				failMessages.push(`${platformItem.label}：终结点未填写`);
+				continue;
+			}
 			targets.push({
 				label: platformItem.label,
 				apiKey,
-				endpoint: platformItem.endpoint,
+				endpoint: targetEndpoint,
 				model: modelName,
 			});
 		}
@@ -853,6 +907,14 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 				modelInput.addEventListener('input', () => {
 					hasPassedVerification = false;
 				});
+			}
+			if (platformItem.isCustomEndpoint) {
+				const endpointInput: any = endpointInputMap[platformItem.id];
+				if (endpointInput) {
+					endpointInput.addEventListener('input', () => {
+						hasPassedVerification = false;
+					});
+				}
 			}
 		}
 	}
