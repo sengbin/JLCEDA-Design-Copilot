@@ -1,7 +1,7 @@
 // 文件说明：提供页面展示相关能力，包括图标符号表加载、Markdown 渲染、HTML 转义与展示文案格式化。
-import { formatToolExecDisplayText } from './debug';
-import { activeBlobUrls } from './tool';
-import { readExtensionTextFileByCandidates } from './utils';
+import { formatToolExecDisplayText } from '../debug';
+import { activeBlobUrls } from '../tools/executor';
+import { readExtensionTextFileByCandidates } from '../utils';
 
 let svgIconSpriteLoading: any = false;
 /**

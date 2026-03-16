@@ -1,5 +1,5 @@
 // 文件说明：封装聊天页模型配置、模型选择读写与模型能力相关通用逻辑。
-import { readFixedEndpointMapByPlatform, readImagePayloadModeMapByPlatform, readInitialModelMapByPlatform, readModelConfigMapByPlatform, readPlatformConfigs } from './platform';
+import { readFixedEndpointMapByPlatform, readImagePayloadModeMapByPlatform, readInitialModelMapByPlatform, readModelConfigMapByPlatform, readPlatformConfigs } from '../platform/platform';
 
 const THINKING_MODE_CONFIG_KEY_PREFIX: any = 'thinkingEnabled_';
 const THINKING_MODE_LEGACY_CONFIG_KEY: any = 'thinkingEnabled';

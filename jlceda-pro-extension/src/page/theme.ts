@@ -263,7 +263,7 @@ export function detectThemeFromEdaApi(applyTheme: unknown): string {
 	try {
 		const parentWindow: any = window.parent || window;
 		const topWindow: any = window.top || window;
-		const edaInstance: any = window.eda || parentWindow.eda || topWindow.eda;
+		const edaInstance: any = (window as any).eda || parentWindow.eda || topWindow.eda;
 		if (!edaInstance || !edaInstance.sys_Window || typeof edaInstance.sys_Window.getCurrentTheme !== 'function') {
 			return '';
 		}

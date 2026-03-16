@@ -1,3 +1,9 @@
+# 2.1.0 (2026-03-17)
+
+- 重构 `src/` 目录结构，改为按职责分层：`llm/`、`llm/agent/`、`platform/`、`page/`、`session/`、`tools/`。
+- 将 `model.ts`、`upload.ts` 移入 `page/` 目录，职责归属更清晰。
+- 修复 `theme.ts` 中访问 `window.eda` 时的 TypeScript 类型报错（ts2339）。
+
 # 2.0.0 (2026-03-16)
 
 - 升级到 2.0.0 版本，扩展改名为：AI 设计助手。

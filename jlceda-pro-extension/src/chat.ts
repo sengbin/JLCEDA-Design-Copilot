@@ -1,20 +1,20 @@
 import { OverlayScrollbars } from 'overlayscrollbars';
 import scrollIntoView from 'scroll-into-view-if-needed';
-import { DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE } from './modules/debug';
-import { AI_AGENT_RUNTIME, getModelContextHistoryBudgetTokens, throwIfAgentAborted } from './modules/llm/agent/agent';
-import tools from './modules/llm/agent/agent-tools.json';
-import { buildModelRequestPayload, buildResponsesTools, pickManualExposedTools, validateModelRequestConfig } from './modules/llm/llm-client';
-import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock } from './modules/llm/llm-stream';
-import { buildThinkingModeConfigKey, CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveImagePayloadMode, resolveModelConfig } from './modules/model';
-import { closeIFramePageById, ensureSvgIconSpriteLoaded, escapeHtml, formatToolExecRawText, renderMarkdown, renderToolExecPlainText } from './modules/page';
-import { readPlatformConfigs } from './modules/platform';
-import { readAgentSystemPrompt } from './modules/prompt';
-import { createChatSessionManager } from './modules/session';
-import { generateSessionTitleByModel } from './modules/session-title';
-import { applyTheme, setupThemeSync } from './modules/theme';
-import { createAgentToolRuntime, executeToolWithTimeout } from './modules/tool';
-import { buildUserMessageContentForApi, cloneImageEntries, collectClipboardImageFiles, convertImageFileToEntry, isGenericClipboardImageName, resolveImageEntryName } from './modules/upload';
-import { messageType, safeJsonStringify, showEdaToastMessage } from './modules/utils';
+import { DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE } from './debug';
+import { readAgentSystemPrompt } from './llm/agent/instructions';
+import { AI_AGENT_RUNTIME, getModelContextHistoryBudgetTokens, throwIfAgentAborted } from './llm/agent/runtime';
+import tools from './llm/agent/tools.json';
+import { buildModelRequestPayload, buildResponsesTools, pickManualExposedTools, validateModelRequestConfig } from './llm/client';
+import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock } from './llm/stream';
+import { buildThinkingModeConfigKey, CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveImagePayloadMode, resolveModelConfig } from './page/model';
+import { closeIFramePageById, ensureSvgIconSpriteLoaded, escapeHtml, formatToolExecRawText, renderMarkdown, renderToolExecPlainText } from './page/render';
+import { applyTheme, setupThemeSync } from './page/theme';
+import { buildUserMessageContentForApi, cloneImageEntries, collectClipboardImageFiles, convertImageFileToEntry, isGenericClipboardImageName, resolveImageEntryName } from './page/upload';
+import { readPlatformConfigs } from './platform/platform';
+import { createChatSessionManager } from './session/session';
+import { generateSessionTitleByModel } from './session/title';
+import { createAgentToolRuntime, executeToolWithTimeout } from './tools/executor';
+import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 
 (function () {
 	ensureSvgIconSpriteLoaded();

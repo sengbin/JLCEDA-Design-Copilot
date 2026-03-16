@@ -1,9 +1,9 @@
 import { OverlayScrollbars } from 'overlayscrollbars';
-import { closeIFramePageById } from './modules/page';
-import { readInitialPlatformId, readPlatformConfigs } from './modules/platform';
-import { persistAgentSystemPrompt, readAgentSystemPrompt } from './modules/prompt';
-import { applyTheme, setupThemeSync } from './modules/theme';
-import { messageType, showEdaToastMessage } from './modules/utils';
+import { persistAgentSystemPrompt, readAgentSystemPrompt } from './llm/agent/instructions';
+import { closeIFramePageById } from './page/render';
+import { applyTheme, setupThemeSync } from './page/theme';
+import { readInitialPlatformId, readPlatformConfigs } from './platform/platform';
+import { messageType, showEdaToastMessage } from './utils';
 
 (function () {
 	const STORAGE_KEY: any = 'jlceda-design-copilot-ai-model-config';
@@ -203,17 +203,17 @@ import { messageType, showEdaToastMessage } from './modules/utils';
 			panelNode.hidden = index !== 0;
 			const topSectionHtml: any = platformItem.isCustomEndpoint
 				? [
-					'<div class="field">',
-					'<label class="label">终结点（Endpoint）</label>',
-					`<input id="${platformItem.endpointField}" class="input" type="text" placeholder="https://api.example.com/v1/chat/completions" />`,
-					'</div>',
-				].join('')
+						'<div class="field">',
+						'<label class="label">终结点（Endpoint）</label>',
+						`<input id="${platformItem.endpointField}" class="input" type="text" placeholder="https://api.example.com/v1/chat/completions" />`,
+						'</div>',
+					].join('')
 				: [
-					'<div class="platform-entry">',
-					'<label class="label">平台入口</label>',
-					`<a class="platform-entry-link" href="${platformItem.entryUrl}" target="_blank" rel="noopener noreferrer">${platformItem.entryUrl}</a>`,
-					'</div>',
-				].join('');
+						'<div class="platform-entry">',
+						'<label class="label">平台入口</label>',
+						`<a class="platform-entry-link" href="${platformItem.entryUrl}" target="_blank" rel="noopener noreferrer">${platformItem.entryUrl}</a>`,
+						'</div>',
+					].join('');
 			panelNode.innerHTML = [
 				topSectionHtml,
 				'<div class="field">',
