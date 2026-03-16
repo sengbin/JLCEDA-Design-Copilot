@@ -1,0 +1,92 @@
+[
+	{
+		"type": "function",
+		"function": {
+			"name": "jlceda_api_search",
+			"description": "在扩展离线 API 文档中检索可调用 API。建议先使用 scope=callable，并结合 owner 缩小范围。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"query": {
+						"type": "string",
+						"description": "检索关键词（必填），可输入 API 名称、摘要或命名空间关键词。"
+					},
+					"scope": {
+						"type": "string",
+						"description": "检索范围（可选）：all | callable | type。默认 all。"
+					},
+					"owner": {
+						"type": "string",
+						"description": "命名空间过滤（可选），例如 lib/sch/pcb/dmt。"
+					},
+					"limit": {
+						"type": "number",
+						"description": "返回上限（可选），范围 1~50。"
+					}
+				},
+				"required": ["query"],
+				"additionalProperties": false
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "jlceda_context_get",
+			"description": "读取当前 EDA 运行时上下文快照，包括工程、文档、图页与选区信息。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"scope": {
+						"type": "string",
+						"description": "上下文范围标识（可选），用于业务侧分组标记。"
+					}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "jlceda_api_invoke",
+			"description": "按 apiFullName 调用 EDA API。args 支持 positionalArgs、args、namedArgs 三种格式。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"apiFullName": {
+						"type": "string",
+						"description": "完整 API 路径（必填），格式例如 eda.sch_Drc.check。"
+					},
+					"args": {
+						"type": "object",
+						"description": "调用参数对象（可选），支持 positionalArgs/args/namedArgs/parameterOrder。",
+						"properties": {
+							"positionalArgs": {
+								"type": "array",
+								"items": {}
+							},
+							"args": {
+								"type": "array",
+								"items": {}
+							},
+							"namedArgs": {
+								"type": "object",
+								"additionalProperties": true
+							},
+							"parameterOrder": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						},
+						"additionalProperties": true
+					}
+				},
+				"required": ["apiFullName"],
+				"additionalProperties": false
+			}
+		}
+	}
+]

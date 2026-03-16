@@ -1,6 +1,6 @@
 // 文件说明：提供调试信息提取与 API 路径收集相关辅助函数。
 // 工具执行调试开关：开启时显示可展开的详情，关闭时仅显示标题。
-export const DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE: any = false;
+export const DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE: any = true;
 // 工具折叠展示：总览行开关，每行控制折叠展开视图是否展示对应数据。
 const DEBUG_TOOL_EXEC_SHOW_TOOL_NAME: any = true; // 展示工具名
 const DEBUG_TOOL_EXEC_SHOW_CALL_STATUS: any = true; // 展示调用状态（执行中/已完成/超时）
@@ -65,7 +65,7 @@ function parseToolArgumentsObject(rawArguments?: any) {
 	}
 	return null;
 }
-// 从原始参数文本中提取 apiPath。
+// 从原始参数文本中提取 API 全路径。
 function extractApiPathFromRawArguments(rawArguments?: any) {
 	if (typeof rawArguments !== 'string') {
 		return '';
@@ -74,9 +74,17 @@ function extractApiPathFromRawArguments(rawArguments?: any) {
 	if (!sourceText) {
 		return '';
 	}
+	const quotedFullNameMatch: any = sourceText.match(/["']apiFullName["']\s*:\s*["']([^"']+)["']/i);
+	if (quotedFullNameMatch && quotedFullNameMatch[1]) {
+		return normalizeApiPath(quotedFullNameMatch[1]);
+	}
 	const quotedMatch: any = sourceText.match(/["']apiPath["']\s*:\s*["']([^"']+)["']/i);
 	if (quotedMatch && quotedMatch[1]) {
 		return normalizeApiPath(quotedMatch[1]);
+	}
+	const plainFullNameMatch: any = sourceText.match(/\bapiFullName\s*:\s*([\w.$]+)/i);
+	if (plainFullNameMatch && plainFullNameMatch[1]) {
+		return normalizeApiPath(plainFullNameMatch[1]);
 	}
 	const plainMatch: any = sourceText.match(/\bapiPath\s*:\s*([\w.$]+)/i);
 	if (plainMatch && plainMatch[1]) {
@@ -154,10 +162,10 @@ export function formatToolErrorDisplayText(toolCall?: any, toolResult?: any, run
 	const hasBaseError: any = !!(baseErrorText && baseErrorText !== '无');
 	appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_BASE_ERROR && hasBaseError, baseErrorText);
 	appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_STAGE && !!errorStage, `失败阶段：${errorStage}`);
-	if (toolName === 'jlceda_call_api' && errorCode === 'INVALID_TOOL_ARGUMENTS_JSON') {
-		const expectedFormat: any = String(resultObject.expectedArgumentsFormat || '{"apiPath":"模块.方法","args":[{"参数1":"值1","参数2":"值2"}]}').trim();
+	if (toolName === 'jlceda_api_invoke' && errorCode === 'INVALID_TOOL_ARGUMENTS_JSON') {
+		const expectedFormat: any = String(resultObject.expectedArgumentsFormat || '{"apiFullName":"eda.sch_Drc.check","args":{"positionalArgs":[false,false,true]}}').trim();
 		const rawArgumentsPreview: any = String(resultObject.rawArgumentsPreview || getToolCallArgumentsText(toolCall) || '').trim();
-		const candidateApiPath: any = normalizeApiPath(resultObject.apiPath || extractApiPathFromRawArguments(rawArgumentsPreview));
+		const candidateApiPath: any = normalizeApiPath(resultObject.apiFullName || resultObject.apiPath || extractApiPathFromRawArguments(rawArgumentsPreview));
 		const argumentsRepairStatus: any = String(resultObject.argumentsRepairStatus || '').trim();
 		const argumentsRepairOriginalPreview: any = String(resultObject.argumentsRepairOriginalPreview || '').trim();
 		const argumentsRepairError: any = String(resultObject.argumentsRepairError || '').trim();
@@ -222,7 +230,7 @@ export function formatToolExecDisplayText(toolCall?: any, toolResult?: any, runn
 	const calledApiPaths: any = extractToolCalledApiPaths(toolCall, toolResult);
 	const calledApiText: any = calledApiPaths.length > 0
 		? calledApiPaths.join('，')
-		: (!running && toolName === 'jlceda_call_api' && String(resultObject.errorStage || '').trim() === 'parse-arguments'
+		: (!running && toolName === 'jlceda_api_invoke' && String(resultObject.errorStage || '').trim() === 'parse-arguments'
 				? '未执行（参数解析失败）'
 				: '无');
 	const outputLines: any = [];
@@ -230,7 +238,7 @@ export function formatToolExecDisplayText(toolCall?: any, toolResult?: any, runn
 	appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_CALL_STATUS, `调用状态：${statusText}`);
 	appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_RESULT_STATUS, `返回结果：${resultText}`);
 	appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_CALLED_API, `调用 API：${calledApiText}`);
-	if (!running && toolName === 'jlceda_call_api' && isSuccess && argumentsRepairStatus !== 'fixed') {
+	if (!running && toolName === 'jlceda_api_invoke' && isSuccess && argumentsRepairStatus !== 'fixed') {
 		appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_SUCCESS_RECEIVED_ARGUMENTS, `收到参数：${rawArgumentsText || '无'}`);
 	}
 	if (!running && argumentsRepairStatus === 'fixed') {
@@ -252,7 +260,7 @@ export function formatToolExecDisplayText(toolCall?: any, toolResult?: any, runn
 	return outputLines.join('\n');
 }
 /**
- * 提取对象中的 apiPath 与 resolvedApiPath 字段并追加到输出列表。
+ * 提取对象中的 API 路径字段并追加到输出列表。
  * @param value - 待检测对象。
  * @param outputList - 输出路径列表。
  */
@@ -265,6 +273,12 @@ export function appendDebugApiPaths(value: unknown, outputList: string[]): void 
 		const apiPathText: any = normalizeApiPath(sourceObject.apiPath);
 		if (apiPathText) {
 			outputList.push(apiPathText);
+		}
+	}
+	if (Object.prototype.hasOwnProperty.call(sourceObject, 'apiFullName')) {
+		const apiFullNameText: any = normalizeApiPath(sourceObject.apiFullName);
+		if (apiFullNameText) {
+			outputList.push(apiFullNameText);
 		}
 	}
 	if (Object.prototype.hasOwnProperty.call(sourceObject, 'resolvedApiPath')) {

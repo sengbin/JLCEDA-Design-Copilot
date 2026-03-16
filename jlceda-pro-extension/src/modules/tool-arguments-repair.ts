@@ -145,6 +145,46 @@ function insertTextAt(sourceText?: any, index?: any, insertion?: any) {
 	const insertIndex: any = Math.max(0, Math.min(text.length, Number(index) || 0));
 	return text.slice(0, insertIndex) + String(insertion || '') + text.slice(insertIndex);
 }
+// 尝试在 args 对象值前补充缺失左花括号（示例："args": positionalArgs":[] -> "args": {positionalArgs":[]}）。
+function fixMissingLeftBraceForArgsObjectValue(sourceText?: any) {
+	const text: any = String(sourceText || '');
+	const matchResult: any = /"args"\s*:\s*/i.exec(text);
+	if (!matchResult) {
+		return {
+			changed: false,
+			text: sourceText,
+		};
+	}
+	let valueStartIndex: any = matchResult.index + matchResult[0].length;
+	while (valueStartIndex < text.length && /\s/.test(text[valueStartIndex])) {
+		valueStartIndex += 1;
+	}
+	if (valueStartIndex >= text.length) {
+		return {
+			changed: false,
+			text: sourceText,
+		};
+	}
+	if (text[valueStartIndex] === '}') {
+		const replacedText: any = insertTextAt(text, valueStartIndex, '{');
+		return {
+			changed: replacedText !== sourceText,
+			text: replacedText,
+		};
+	}
+	const lookaheadText: any = text.slice(valueStartIndex);
+	if (!/^"?[A-Z_]\w*"?\s*:/i.test(lookaheadText)) {
+		return {
+			changed: false,
+			text: sourceText,
+		};
+	}
+	const replacedText: any = insertTextAt(text, valueStartIndex, '{');
+	return {
+		changed: replacedText !== sourceText,
+		text: replacedText,
+	};
+}
 // 尝试按规则修复对象键名前缺失引号（示例：libraryUuid": -> "libraryUuid":）。
 function fixMissingOpeningQuoteForObjectKey(sourceText?: any) {
 	const replacedText: any = String(sourceText || '').replace(/([{[,\s]\s*)([A-Z_]\w*)(")\s*:/gi, '$1"$2":');
@@ -426,6 +466,7 @@ export function autoRepairToolArgumentsJson(rawArgumentsText?: any) {
 	let currentText: any = sourceText;
 	const appliedRules: any = [];
 	const stepList: any = [
+		{ key: 'fixMissingLeftBraceForArgsObjectValue', fn: fixMissingLeftBraceForArgsObjectValue },
 		{ key: 'fixMissingOpeningQuoteForObjectKey', fn: fixMissingOpeningQuoteForObjectKey },
 		{ key: 'fixMissingQuotesForObjectKey', fn: fixMissingQuotesForObjectKey },
 		{ key: 'fixMissingLeftBraceForFirstArgsObject', fn: fixMissingLeftBraceForFirstArgsObject },

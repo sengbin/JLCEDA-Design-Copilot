@@ -1,9 +1,9 @@
 {
 	"name": "jlceda-design-copilot",
 	"uuid": "4585803ac4eb41d19e17c601bfa15528",
-	"displayName": "AI 设计助理",
+	"displayName": "AI 设计助手",
 	"description": "使用自然语言与AI大模型聊天辅助设计原理图和PCB。",
-	"version": "1.1.0",
+	"version": "2.0.0",
 	"publisher": "Lion",
 	"engines": {
 		"eda": "^3.0.0"
@@ -33,7 +33,7 @@
 		"home": [
 			{
 				"id": "jlceda-design-copilot",
-				"title": "AI 设计助理",
+				"title": "AI 设计助手",
 				"menuItems": [
 					{
 						"id": "ChatTool",
@@ -56,7 +56,7 @@
 		"sch": [
 			{
 				"id": "jlceda-design-copilot",
-				"title": "AI 设计助理",
+				"title": "AI 设计助手",
 				"menuItems": [
 					{
 						"id": "ChatTool",
@@ -79,7 +79,7 @@
 		"pcb": [
 			{
 				"id": "jlceda-design-copilot",
-				"title": "AI 设计助理",
+				"title": "AI 设计助手",
 				"menuItems": [
 					{
 						"id": "ChatTool",

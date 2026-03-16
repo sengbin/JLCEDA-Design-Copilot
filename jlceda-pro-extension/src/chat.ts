@@ -28,7 +28,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './modules/u
 	const CHAT_SESSION_MAX_MESSAGES: any = 120;
 	const CHAT_SESSION_DEFAULT_TITLE: any = '新对话';
 	const THINKING_MODE_LEGACY_CONFIG_KEY: any = 'thinkingEnabled';
-	const CHAT_EMPTY_STATE_TITLE_TEXT: any = 'AI 设计助理';
+	const CHAT_EMPTY_STATE_TITLE_TEXT: any = 'AI 设计助手';
 	const CHAT_EMPTY_STATE_NOTICE_TEXT: any = '我是个辅助工具，也可能会出错，请注意核对结果。';
 	const CHAT_EMPTY_STATE_EXAMPLES: any = [
 		'帮我检查一下这个原理图。',

@@ -3,8 +3,8 @@ import type esbuild from 'esbuild';
 export default {
 	entryPoints: {
 		'index': './src/index',
-		'iframe/chat': './src/iframe/chat',
-		'iframe/config': './src/iframe/config',
+		'iframe/chat': './src/chat',
+		'iframe/config': './src/config',
 	},
 	entryNames: '[dir]/[name]',
 	assetNames: '[name]',

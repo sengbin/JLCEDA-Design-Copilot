@@ -1,3 +1,14 @@
+# 2.0.0 (2026-03-16)
+
+- 升级到 2.0.0 版本，扩展改名为：AI 设计助手。
+- 重构工具体系：删除旧的四工具实现（`jlceda_list_apis`、`jlceda_get_api_member`、`jlceda_search_offline_api_doc`、`jlceda_call_api`）。
+- 新增并启用三工具实现（`jlceda_api_search`、`jlceda_context_get`、`jlceda_api_invoke`），逻辑对齐 `JLCEDA-MCP/mcp-connector`。
+- `jlceda_api_search` 改为直接读取离线文档 `iframe/jlceda-pro-api-doc.json`，支持 `query/scope/owner/limit` 检索参数。
+- `jlceda_context_get` 新增 EDA 运行时上下文快照采集（工程、文档、图页、选区等）。
+- `jlceda_api_invoke` 改为基于 `apiFullName`（`eda.xxx.yyy`）解析并调用 API，参数支持 `positionalArgs/args/namedArgs`。
+- 更新工具声明、工具白名单与调试展示逻辑，全面切换到新三工具命名与参数格式。
+- 增强工具参数自动修复规则，补齐 `"args": }}` 与 `"args": positionalArgs":[]}` 等异常 JSON 形态，避免在 `parse-arguments` 阶段误失败。
+
 # 1.1.0 (2026-03-08)
 
 - 优化了一些 UI 细节，字体、颜色、大小、粗细，深色主题以及浅色主题都有了更好的视觉体验。
