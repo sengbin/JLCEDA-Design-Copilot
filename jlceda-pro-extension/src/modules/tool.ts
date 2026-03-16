@@ -1,6 +1,9 @@
 import { autoRepairToolArgumentsJson } from './tool-arguments-repair';
 import { getEdaApiRoot, makeJsonSafe, readExtensionTextFileByCandidates } from './utils';
 
+// 当前会话中有效的 blob URL 集合，页面关闭后自动失效，不会持久化。
+export const activeBlobUrls: Set<string> = new Set();
+
 interface ApiProjectionItem {
 	id: number;
 	name: string;
@@ -127,9 +130,11 @@ async function serializeBlobLike(value: Blob): Promise<Record<string, unknown>> 
 	if (typeof blobLike.lastModified === 'number' && Number.isFinite(blobLike.lastModified)) {
 		output.lastModified = blobLike.lastModified;
 	}
-	// 生成 Object URL，供用户直接点击下载文件。
+	// 生成 Object URL，供用户直接点击下载文件，并注册到当前会话有效集合。
 	try {
-		output.downloadUrl = URL.createObjectURL(value);
+		const objectUrl = URL.createObjectURL(value);
+		output.downloadUrl = objectUrl;
+		activeBlobUrls.add(objectUrl);
 	}
 	catch {
 		// 环境不支持时跳过，不影响主流程。

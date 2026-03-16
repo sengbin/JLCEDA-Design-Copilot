@@ -1066,6 +1066,11 @@ body {
 	background: var(--link-download-bg-hover);
 	text-decoration: none;
 }
+.chat-message.ai .download-link-expired {
+	font-size: 0.85em;
+	color: var(--secondary-text, #999);
+	margin-left: 4px;
+}
 .chat-message.user {
 	background: transparent;
 	color: var(--user-text);

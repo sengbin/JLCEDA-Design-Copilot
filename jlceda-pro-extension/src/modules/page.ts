@@ -1,5 +1,6 @@
 // 文件说明：提供页面展示相关能力，包括图标符号表加载、Markdown 渲染、HTML 转义与展示文案格式化。
 import { formatToolExecDisplayText } from './debug';
+import { activeBlobUrls } from './tool';
 import { readExtensionTextFileByCandidates } from './utils';
 
 let svgIconSpriteLoading: any = false;
@@ -100,8 +101,13 @@ export function parseInlineMarkdown(text: unknown): string {
 	html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 	html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
 	html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-	// 支持 blob: URL 渲染为可下载链接，链接文本同时作为下载文件名。
-	html = html.replace(/\[([^\]]+)\]\((blob:[^)\s]+)\)/g, '<a href="$2" download="$1">$1</a>');
+	// blob: URL：在当前会话有效集合中则渲染为下载链接，否则显示失效提示。
+	html = html.replace(/\[([^\]]+)\]\((blob:[^)\s]+)\)/g, (_match: string, name: string, url: string) => {
+		if (activeBlobUrls.has(url)) {
+			return `<a href="${url}" download="${name}">${name}</a>`;
+		}
+		return `${name}<span class="download-link-expired">（下载链接已失效）</span>`;
+	});
 	return html;
 }
 /**
