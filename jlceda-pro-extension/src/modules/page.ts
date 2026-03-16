@@ -59,15 +59,17 @@ export async function closeIFramePageById(iframeId: unknown): Promise<void> {
 		return;
 	}
 	try {
-		if (window.eda && window.eda.sys_IFrame && window.eda.sys_IFrame.closeIFrame) {
-			await window.eda.sys_IFrame.closeIFrame(targetId);
+		const win: any = window;
+		if (win.eda && win.eda.sys_IFrame && win.eda.sys_IFrame.closeIFrame) {
+			await win.eda.sys_IFrame.closeIFrame(targetId);
 			return;
 		}
 	}
 	catch { }
 	try {
-		if (window.parent && window.parent.eda && window.parent.eda.sys_IFrame && window.parent.eda.sys_IFrame.closeIFrame) {
-			await window.parent.eda.sys_IFrame.closeIFrame(targetId);
+		const parentWin: any = window.parent;
+		if (parentWin && parentWin.eda && parentWin.eda.sys_IFrame && parentWin.eda.sys_IFrame.closeIFrame) {
+			await parentWin.eda.sys_IFrame.closeIFrame(targetId);
 			return;
 		}
 	}
@@ -98,6 +100,8 @@ export function parseInlineMarkdown(text: unknown): string {
 	html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 	html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
 	html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+	// 支持 blob: URL 渲染为可下载链接，链接文本同时作为下载文件名。
+	html = html.replace(/\[([^\]]+)\]\((blob:[^)\s]+)\)/g, '<a href="$2" download="$1">$1</a>');
 	return html;
 }
 /**

@@ -112,7 +112,7 @@ function isBlobLike(value: unknown): value is Blob {
 		&& typeof obj.slice === 'function';
 }
 
-// 将 Blob/File 序列化为纯对象（包含文本内容）。
+// 将 Blob/File 序列化为纯对象（包含文本内容与下载链接）。
 async function serializeBlobLike(value: Blob): Promise<Record<string, unknown>> {
 	const blobLike = value as Blob & { name?: unknown; lastModified?: unknown };
 	const output: Record<string, unknown> = {
@@ -126,6 +126,13 @@ async function serializeBlobLike(value: Blob): Promise<Record<string, unknown>> 
 	}
 	if (typeof blobLike.lastModified === 'number' && Number.isFinite(blobLike.lastModified)) {
 		output.lastModified = blobLike.lastModified;
+	}
+	// 生成 Object URL，供用户直接点击下载文件。
+	try {
+		output.downloadUrl = URL.createObjectURL(value);
+	}
+	catch {
+		// 环境不支持时跳过，不影响主流程。
 	}
 	return output;
 }
