@@ -19,7 +19,11 @@
 	--code-bg: #ffffff;
 	--code-border: #d8d8d8;
 	--blockquote-border: #d8d8d8;
-	--link-color: #5f5f5f;
+	--link-color: #1677cc;
+	--link-download-bg: rgba(22, 119, 204, 0.08);
+	--link-download-bg-hover: rgba(22, 119, 204, 0.16);
+	--link-download-color: #1677cc;
+	--link-download-border: rgba(22, 119, 204, 0.32);
 	--user-bg: #e1f2fa;
 	--user-bg-hover: #cce2eb;
 	--user-text: #2f2f2f;
@@ -82,7 +86,11 @@
 	--code-bg: #2b2b2b;
 	--code-border: #4f4f4f;
 	--blockquote-border: #606060;
-	--link-color: #c0c0c0;
+	--link-color: #6ea8ff;
+	--link-download-bg: rgba(110, 168, 255, 0.10);
+	--link-download-bg-hover: rgba(110, 168, 255, 0.20);
+	--link-download-color: #6ea8ff;
+	--link-download-border: rgba(110, 168, 255, 0.36);
 	--user-bg: #2f3a46;
 	--user-bg-hover: #354250;
 	--user-text: #e6edf3;
@@ -1030,6 +1038,33 @@ body {
 .chat-message.ai a {
 	color: var(--link-color);
 	text-decoration: underline;
+}
+.chat-message.ai a[download] {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 10px 3px 8px;
+	border-radius: 20px;
+	background: var(--link-download-bg);
+	border: 1px solid var(--link-download-border);
+	color: var(--link-download-color);
+	text-decoration: none;
+	font-size: 12.5px;
+	font-weight: 500;
+	transition: background 0.16s ease, border-color 0.16s ease;
+	vertical-align: middle;
+	max-width: 100%;
+	word-break: break-all;
+}
+.chat-message.ai a[download]::before {
+	content: '\2193';
+	font-size: 13px;
+	line-height: 1;
+	flex-shrink: 0;
+}
+.chat-message.ai a[download]:hover {
+	background: var(--link-download-bg-hover);
+	text-decoration: none;
 }
 .chat-message.user {
 	background: transparent;

@@ -31,9 +31,9 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './modules/u
 	const CHAT_EMPTY_STATE_TITLE_TEXT: any = 'AI 设计助手';
 	const CHAT_EMPTY_STATE_NOTICE_TEXT: any = '我是个辅助工具，也可能会出错，请注意核对结果。';
 	const CHAT_EMPTY_STATE_EXAMPLES: any = [
-		'帮我检查一下这个原理图。',
-		'帮我看一下这个PCB布局有什么问题吗？',
+		'把当前打开的原理图的BOM给我。',
 		'这个电路有什么可以优化的地方吗？',
+		'帮我检查一下这个原理图。',
 	];
 	const RUNNING_INDICATOR_TEXT: any = '执行中...';
 	const imageUploadButton: any = document.querySelector('.image-upload-button');
