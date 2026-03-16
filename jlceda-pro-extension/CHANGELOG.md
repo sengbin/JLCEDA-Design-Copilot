@@ -1,6 +1,9 @@
 # 2.0.0 (2026-03-16)
 
 - 升级到 2.0.0 版本，扩展改名为：AI 设计助手。
+- API 返回文件（Blob）时，自动生成 `downloadUrl` 下载链接并携带文件名，AI 回复中输出可点击的 Markdown 链接，用户点击即可直接下载 BOM、网表等导出文件。
+- Markdown 渲染支持 `blob:` URL 链接，渲染为带 `download` 属性的 `<a>` 标签，点击触发浏览器下载。
+- 修复 `page.ts` 中访问 `window.eda` 和 `window.parent.eda` 时的 TypeScript 类型报错。
 - 重构工具体系：删除旧的四工具实现（`jlceda_list_apis`、`jlceda_get_api_member`、`jlceda_search_offline_api_doc`、`jlceda_call_api`）。
 - 新增并启用三工具实现（`jlceda_api_search`、`jlceda_context_get`、`jlceda_api_invoke`），逻辑对齐 `JLCEDA-MCP/mcp-connector`。
 - `jlceda_api_search` 改为直接读取离线文档 `iframe/jlceda-pro-api-doc.json`，支持 `query/scope/owner/limit` 检索参数。
