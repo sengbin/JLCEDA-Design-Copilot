@@ -69,6 +69,11 @@
   <path d="M468 526H556" stroke="url(#aiGrad)" stroke-width="36" stroke-linecap="round"/>
   <!-- i 圆点 -->
   <circle cx="642" cy="454" r="21" fill="url(#aiGrad)"/>
+  <!-- i：电容符号（上引线 + 双平行极板 + 下引线） -->
+  <path d="M642 481 L642 514" stroke="url(#aiGrad)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M608 522 L676 522" stroke="url(#aiGrad)" stroke-width="15" stroke-linecap="round"/>
+  <path d="M608 540 L676 540" stroke="url(#aiGrad)" stroke-width="15" stroke-linecap="round"/>
+  <path d="M642 548 L642 590" stroke="url(#aiGrad)" stroke-width="18" stroke-linecap="round"/>
 
   <!-- 角落装饰斜线 -->
   <path d="M232 362L278 398" stroke="white" stroke-opacity="0.55" stroke-width="11" stroke-linecap="round"/>
