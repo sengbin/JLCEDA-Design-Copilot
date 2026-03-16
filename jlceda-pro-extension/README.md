@@ -2,9 +2,9 @@
 
 你可以在 EDA 里直接和 AI 对话，描述需求、分析电路，或让 AI 调用 EDA API 完成操作。
 
-<!-- GIF 动画 1 -->
+![聊天演示](images/chat.gif)
 
-<!-- GIF 动画 2 -->
+![配置演示](images/config.gif)
 
 项目地址：https://github.com/sengbin/JLCEDA-Design-Copilot
 
