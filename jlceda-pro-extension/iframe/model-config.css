@@ -338,7 +338,7 @@ body {
 	display: none;
 }
 
-.prompt-panel {
+.instructions-panel {
 	padding: 0;
 	gap: 10px;
 	flex: 1;
@@ -346,36 +346,36 @@ body {
 	height: 100%;
 }
 
-.prompt-example {
+.instructions-example {
 	border: none;
 	background: var(--tutorial-link-row-bg);
 	border-radius: 6px;
 	padding: 8px 10px;
 }
 
-.prompt-example-title {
+.instructions-example-title {
 	font-size: 13px;
 	font-weight: 700;
 	color: var(--text-primary);
 	margin-bottom: 4px;
 }
 
-.prompt-example-text {
+.instructions-example-text {
 	font-size: 12px;
 	line-height: 1.5;
 	color: var(--text-secondary);
 	white-space: normal;
 }
 
-.prompt-example-text p {
+.instructions-example-text p {
 	margin: 0;
 }
 
-.prompt-example-text p + p {
+.instructions-example-text p + p {
 	margin-top: 4px;
 }
 
-.prompt-editor {
+.instructions-editor {
 	width: 100%;
 	min-height: 100%;
 	height: auto;
@@ -392,7 +392,7 @@ body {
 	outline: none;
 }
 
-.prompt-editor.input {
+.instructions-editor.input {
 	min-height: 100%;
 	height: auto;
 	border: none !important;
@@ -400,22 +400,22 @@ body {
 	background: transparent !important;
 }
 
-.prompt-editor.input:hover,
-.prompt-editor.input:focus,
-.prompt-editor.input:focus-visible {
+.instructions-editor.input:hover,
+.instructions-editor.input:focus,
+.instructions-editor.input:focus-visible {
 	border: none !important;
 	box-shadow: none !important;
 	background: transparent !important;
 }
 
-.prompt-editor:empty::before {
+.instructions-editor:empty::before {
 	content: attr(data-placeholder);
 	color: var(--text-secondary);
 	opacity: 0.88;
 	pointer-events: none;
 }
 
-.prompt-textarea-scroll {
+.instructions-textarea-scroll {
 	width: 100%;
 	min-height: 0;
 	height: 100%;
@@ -426,34 +426,34 @@ body {
 	background: var(--input-field-bg);
 }
 
-.prompt-textarea-scroll:focus-within {
+.instructions-textarea-scroll:focus-within {
 	border-color: var(--input-field-border-focus);
 }
 
-.prompt-backup-tip {
+.instructions-backup-tip {
 	font-size: 12px;
 	line-height: 1.4;
 	color: var(--text-secondary);
 	padding: 0 2px;
 }
 
-.prompt-file-input {
+.instructions-file-input {
 	display: none;
 }
 
-.prompt-local-button-row {
+.instructions-local-button-row {
 	justify-content: flex-start;
 	margin-right: auto;
 	flex-wrap: wrap;
 }
 
-.prompt-button-row {
+.instructions-button-row {
 	justify-content: flex-end;
 	margin-left: 0;
 	flex-wrap: wrap;
 }
 
-.prompt-bottom-row {
+.instructions-bottom-row {
 	margin-top: 0;
 	justify-content: space-between;
 }
@@ -840,7 +840,7 @@ body {
 	margin-top: auto;
 }
 
-.prompt-panel .prompt-bottom-row {
+.instructions-panel .instructions-bottom-row {
 	margin-top: 8px;
 	margin-bottom: 0;
 }
@@ -993,15 +993,15 @@ body {
 	.left-menu-item.is-active::before {
 		display: none;
 	}
-	.prompt-editor {
+	.instructions-editor {
 		min-height: 100%;
 		height: auto;
 	}
-	.prompt-editor.input {
+	.instructions-editor.input {
 		min-height: 100%;
 		height: auto;
 	}
-	.prompt-textarea-scroll {
+	.instructions-textarea-scroll {
 		min-height: 0;
 		height: 100%;
 	}

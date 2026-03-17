@@ -1,7 +1,7 @@
 import { OverlayScrollbars } from 'overlayscrollbars';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE } from './debug';
-import { readAgentSystemPrompt } from './llm/agent/instructions';
+import { readAgentSystemInstructions } from './llm/agent/instructions';
 import { AI_AGENT_RUNTIME, getModelContextHistoryBudgetTokens, throwIfAgentAborted } from './llm/agent/runtime';
 import tools from './llm/agent/tools.json';
 import { buildModelRequestPayload, buildResponsesTools, pickManualExposedTools, validateModelRequestConfig } from './llm/client';
@@ -1879,7 +1879,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		return sliced;
 	}
 	// 组装 responses 回退输入文本。
-	function buildResponsesInputText(systemPromptText?: any) {
+	function buildResponsesInputText(systemInstructionsText?: any) {
 		const contextMessages: any = buildContextWindowMessages();
 		const historyLines: any = [];
 		for (let index: any = 0; index < contextMessages.length; index += 1) {
@@ -1895,7 +1895,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		}
 		const recentLines: any = historyLines.slice(-12);
 		const historyText: any = recentLines.join('\n');
-		const pieces: any = [`系统提示：${String(systemPromptText || '').trim()}`];
+		const pieces: any = [`系统提示：${String(systemInstructionsText || '').trim()}`];
 		if (historyText) {
 			pieces.push(`对话历史：\n${historyText}`);
 		}
@@ -1957,7 +1957,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		return normalized;
 	}
 	// 构建 responses 输入条目数组。
-	function buildResponsesInputEntries(systemPromptText?: any) {
+	function buildResponsesInputEntries(systemInstructionsText?: any) {
 		const contextMessages: any = buildContextWindowMessages();
 		const lastUserIndex: any = findLastUserMessageIndex(contextMessages);
 		const entries: any = [];
@@ -2007,7 +2007,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 				content: [
 					{
 						type: 'input_text',
-						text: buildResponsesInputText(systemPromptText),
+						text: buildResponsesInputText(systemInstructionsText),
 					},
 				],
 			});
@@ -2085,8 +2085,8 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		return textLines.join('\n').trim();
 	}
 	// 构建 chat/completions 消息数组。
-	function buildChatMessagesEntries(selectedModelValue?: any, systemPromptText?: any) {
-		const outputMessages: any = [{ role: 'system', content: String(systemPromptText || '').trim() }];
+	function buildChatMessagesEntries(selectedModelValue?: any, systemInstructionsText?: any) {
+		const outputMessages: any = [{ role: 'system', content: String(systemInstructionsText || '').trim() }];
 		const contextMessages: any = buildContextWindowMessages();
 		const lastUserIndex: any = findLastUserMessageIndex(contextMessages);
 		const imagePayloadMode: any = resolveImagePayloadMode(selectedModelValue);
@@ -2267,14 +2267,14 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		const modelName: any = requestConfig.modelName;
 		const apiKey: any = requestConfig.apiKey;
 		const isResponsesEndpoint: any = endpoint.endsWith('/responses');
-		const promptResult: any = readAgentSystemPrompt();
-		const systemPromptText: any = String(promptResult && promptResult.prompt ? promptResult.prompt : '').trim();
+		const instructionsResult: any = readAgentSystemInstructions();
+		const systemInstructionsText: any = String(instructionsResult && instructionsResult.instructions ? instructionsResult.instructions : '').trim();
 		const payload: any = buildModelRequestPayload({
 			isResponsesEndpoint,
 			modelName,
-			responsesInput: buildResponsesInputEntries(systemPromptText),
+			responsesInput: buildResponsesInputEntries(systemInstructionsText),
 			responsesTools: buildResponsesTools(exposedTools),
-			chatMessages: buildChatMessagesEntries(config.selectedModel, systemPromptText),
+			chatMessages: buildChatMessagesEntries(config.selectedModel, systemInstructionsText),
 			chatTools: exposedTools,
 			selectedModel: config.selectedModel,
 			thinkingEnabled: readThinkingModeEnabledFromConfig(config, config.selectedModel),

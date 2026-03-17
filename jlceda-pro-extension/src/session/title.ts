@@ -42,8 +42,8 @@ function buildThinkingControlByModel(modelName: string): Record<string, unknown>
 		thinking: SESSION_TITLE_THINKING_CONFIG,
 	};
 }
-// 构建标题生成用系统提示词。
-function buildSessionTitleSystemPrompt(): string {
+// 构建标题生成用系统指令。
+function buildSessionTitleSystemInstructions(): string {
 	return [
 		'你是一个会话标题生成器。',
 		'请根据用户输入生成一个简短、明确、可读的中文标题。',
@@ -135,7 +135,7 @@ function buildResponsesTitlePayload(modelName: string, userText: string): Record
 				content: [
 					{
 						type: 'input_text',
-						text: buildSessionTitleSystemPrompt(),
+						text: buildSessionTitleSystemInstructions(),
 					},
 				],
 			},
@@ -163,7 +163,7 @@ function buildChatCompletionsTitlePayload(modelName: string, userText: string): 
 		messages: [
 			{
 				role: 'system',
-				content: buildSessionTitleSystemPrompt(),
+				content: buildSessionTitleSystemInstructions(),
 			},
 			{
 				role: 'user',

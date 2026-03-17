@@ -1,5 +1,5 @@
 import { OverlayScrollbars } from 'overlayscrollbars';
-import { persistAgentSystemPrompt, readAgentSystemPrompt } from './llm/agent/instructions';
+import { persistAgentSystemInstructions, readAgentSystemInstructions } from './llm/agent/instructions';
 import { closeIFramePageById } from './page/render';
 import { applyTheme, setupThemeSync } from './page/theme';
 import { readInitialPlatformId, readPlatformConfigs } from './platform/platform';
@@ -14,13 +14,13 @@ import { messageType, showEdaToastMessage } from './utils';
 	const platformConfigBlock: any = document.querySelector('.platform-config-block');
 	const leftMenu: any = document.querySelector('.left-menu');
 	const notes: any = document.getElementById('notes');
-	const promptEditor: any = document.getElementById('promptEditor');
-	const promptTextareaScroll: any = document.querySelector('.prompt-textarea-scroll');
-	const promptExportBtn: any = document.getElementById('promptExportBtn');
-	const promptImportBtn: any = document.getElementById('promptImportBtn');
-	const promptImportInput: any = document.getElementById('promptImportInput');
-	const promptSaveBtn: any = document.getElementById('promptSaveBtn');
-	const promptCancelBtn: any = document.getElementById('promptCancelBtn');
+	const instructionsEditor: any = document.getElementById('instructionsEditor');
+	const instructionsTextareaScroll: any = document.querySelector('.instructions-textarea-scroll');
+	const instructionsExportBtn: any = document.getElementById('instructionsExportBtn');
+	const instructionsImportBtn: any = document.getElementById('instructionsImportBtn');
+	const instructionsImportInput: any = document.getElementById('instructionsImportInput');
+	const instructionsSaveBtn: any = document.getElementById('instructionsSaveBtn');
+	const instructionsCancelBtn: any = document.getElementById('instructionsCancelBtn');
 	const verifyBtn: any = document.getElementById('verifyBtn');
 	const saveBtn: any = document.getElementById('saveBtn');
 	const closeBtn: any = document.getElementById('closeBtn');
@@ -30,23 +30,23 @@ import { messageType, showEdaToastMessage } from './utils';
 	const endpointInputMap: any = {};
 	const thinkingModeSwitchMap: any = {};
 	const MENU_MODEL_CONFIG: any = 'model-config';
-	const MENU_PROMPT: any = 'prompt-config';
+	const MENU_INSTRUCTIONS: any = 'instructions-config';
 	const VERIFY_TIMEOUT_MS: any = 15000;
 	const SCROLLBAR_AUTO_HIDE_DELAY: any = 1000;
 	const OVERLAY_SCROLLBAR_THEME_CLASS: any = 'os-theme-jlceda';
 	const THINKING_MODE_CONFIG_KEY_PREFIX: any = 'thinkingEnabled_';
 	const THINKING_MODE_LEGACY_CONFIG_KEY: any = 'thinkingEnabled';
-	const PROMPT_IMPORT_MAX_FILE_SIZE: any = 1024 * 1024;
+	const INSTRUCTIONS_IMPORT_MAX_FILE_SIZE: any = 1024 * 1024;
 	const overlayScrollbarInstanceMap: any = new WeakMap();
 	let hasPassedVerification: any = false;
 	let activeMenuName: any = MENU_MODEL_CONFIG;
-	// 生成提示词本地备份文件名，格式：自定义提示词_YYYYMMDD_HHMMSS.txt。
-	function buildPromptBackupFileName() {
+	// 生成指令本地备份文件名，格式：自定义指令_YYYYMMDD_HHMMSS.txt。
+	function buildInstructionsBackupFileName() {
 		const now: any = new Date();
 		const formatNumber: any = (value: any) => String(value).padStart(2, '0');
 		const datePart: any = now.getFullYear() + formatNumber(now.getMonth() + 1) + formatNumber(now.getDate());
 		const timePart: any = formatNumber(now.getHours()) + formatNumber(now.getMinutes()) + formatNumber(now.getSeconds());
-		return `自定义提示词_${datePart}_${timePart}.txt`;
+		return `自定义指令_${datePart}_${timePart}.txt`;
 	}
 	// 生成平台独立的思考模式配置键。
 	function buildThinkingModeConfigKey(platformId?: any) {
@@ -98,7 +98,7 @@ import { messageType, showEdaToastMessage } from './utils';
 					allowHorizontalScroll: false,
 					autoHideMode: 'leave',
 				}),
-				ensureOverlayScrollbarInstance(promptTextareaScroll, {
+				ensureOverlayScrollbarInstance(instructionsTextareaScroll, {
 					allowHorizontalScroll: false,
 					autoHideMode: 'move',
 				}),
@@ -112,57 +112,57 @@ import { messageType, showEdaToastMessage } from './utils';
 			}
 		});
 	}
-	// 获取提示词滚动视口节点，优先使用 OverlayScrollbars 视口。
-	function getPromptScrollViewport() {
-		if (!promptTextareaScroll) {
+	// 获取指令滚动视口节点，优先使用 OverlayScrollbars 视口。
+	function getInstructionsScrollViewport() {
+		if (!instructionsTextareaScroll) {
 			return null;
 		}
-		const overlayInstance: any = overlayScrollbarInstanceMap.get(promptTextareaScroll);
+		const overlayInstance: any = overlayScrollbarInstanceMap.get(instructionsTextareaScroll);
 		if (overlayInstance && typeof overlayInstance.elements === 'function') {
 			const overlayElements: any = overlayInstance.elements();
 			if (overlayElements && overlayElements.viewport) {
 				return overlayElements.viewport;
 			}
 		}
-		return promptTextareaScroll;
+		return instructionsTextareaScroll;
 	}
-	// 将提示词滚动视口滚动到底部。
-	function scrollPromptViewportToBottom() {
-		const viewport: any = getPromptScrollViewport();
+	// 将指令滚动视口滚动到底部。
+	function scrollInstructionsViewportToBottom() {
+		const viewport: any = getInstructionsScrollViewport();
 		if (!viewport) {
 			return;
 		}
 		viewport.scrollTop = viewport.scrollHeight;
 	}
-	// 将提示词滚动视口滚动到顶部。
-	function scrollPromptViewportToTop() {
-		const viewport: any = getPromptScrollViewport();
+	// 将指令滚动视口滚动到顶部。
+	function scrollInstructionsViewportToTop() {
+		const viewport: any = getInstructionsScrollViewport();
 		if (!viewport) {
 			return;
 		}
 		viewport.scrollTop = 0;
 	}
 	// 输入后执行两帧贴底滚动，避免换行时出现底部差一小段的问题。
-	function schedulePromptViewportStickToBottom() {
+	function scheduleInstructionsViewportStickToBottom() {
 		window.requestAnimationFrame(() => {
-			scrollPromptViewportToBottom();
+			scrollInstructionsViewportToBottom();
 			window.requestAnimationFrame(() => {
-				scrollPromptViewportToBottom();
+				scrollInstructionsViewportToBottom();
 			});
 		});
 	}
-	// 默认加载提示词时回到顶部，避免自动滚到底。
-	function schedulePromptViewportResetToTop() {
+	// 默认加载指令时回到顶部，避免自动滚到底。
+	function scheduleInstructionsViewportResetToTop() {
 		window.requestAnimationFrame(() => {
-			scrollPromptViewportToTop();
+			scrollInstructionsViewportToTop();
 			window.requestAnimationFrame(() => {
-				scrollPromptViewportToTop();
+				scrollInstructionsViewportToTop();
 			});
 		});
 	}
-	// 判断提示词编辑器光标是否位于文本末尾。
-	function isPromptSelectionAtEnd() {
-		if (!promptEditor) {
+	// 判断指令编辑器光标是否位于文本末尾。
+	function isInstructionsSelectionAtEnd() {
+		if (!instructionsEditor) {
 			return false;
 		}
 		const selection: any = window.getSelection();
@@ -170,14 +170,14 @@ import { messageType, showEdaToastMessage } from './utils';
 			return false;
 		}
 		const range: any = selection.getRangeAt(0);
-		if (!range || !promptEditor.contains(range.endContainer)) {
+		if (!range || !instructionsEditor.contains(range.endContainer)) {
 			return false;
 		}
 		const textBeforeCaretRange: any = range.cloneRange();
-		textBeforeCaretRange.selectNodeContents(promptEditor);
+		textBeforeCaretRange.selectNodeContents(instructionsEditor);
 		textBeforeCaretRange.setEnd(range.endContainer, range.endOffset);
 		const caretOffset: any = textBeforeCaretRange.toString().length;
-		const totalLength: any = String(promptEditor.textContent || '').length;
+		const totalLength: any = String(instructionsEditor.textContent || '').length;
 		return caretOffset >= totalLength;
 	}
 	// 渲染平台页签与表单区域。
@@ -335,62 +335,62 @@ import { messageType, showEdaToastMessage } from './utils';
 	function setNotes(message?: any, type?: any, options?: any) {
 		setNotesUi(notes, message, type, options);
 	}
-	// 规范化提示词文本，统一换行格式。
-	function normalizePromptText(value?: any) {
+	// 规范化指令文本，统一换行格式。
+	function normalizeInstructionsText(value?: any) {
 		return String(value || '').replace(/\r\n/g, '\n');
 	}
-	// 读取提示词编辑器纯文本内容。
-	function readPromptEditorText() {
-		if (!promptEditor) {
+	// 读取指令编辑器纯文本内容。
+	function readInstructionsEditorText() {
+		if (!instructionsEditor) {
 			return '';
 		}
-		return normalizePromptText(promptEditor.textContent || '');
+		return normalizeInstructionsText(instructionsEditor.textContent || '');
 	}
-	// 写入提示词编辑器纯文本内容。
-	function writePromptEditorText(value?: any) {
-		if (!promptEditor) {
+	// 写入指令编辑器纯文本内容。
+	function writeInstructionsEditorText(value?: any) {
+		if (!instructionsEditor) {
 			return;
 		}
-		promptEditor.textContent = normalizePromptText(value);
+		instructionsEditor.textContent = normalizeInstructionsText(value);
 	}
-	// 加载本地提示词到输入框。
-	function loadPromptToForm() {
-		if (!promptEditor) {
+	// 加载本地指令到输入框。
+	function loadInstructionsToForm() {
+		if (!instructionsEditor) {
 			return;
 		}
-		const promptResult: any = readAgentSystemPrompt();
-		writePromptEditorText(promptResult.customPrompt);
+		const instructionsResult: any = readAgentSystemInstructions();
+		writeInstructionsEditorText(instructionsResult.customInstructions);
 		refreshConfigOverlayScrollbars();
-		schedulePromptViewportResetToTop();
+		scheduleInstructionsViewportResetToTop();
 	}
-	// 保存提示词输入框内容到本地。
-	function savePrompt() {
-		if (!promptEditor) {
+	// 保存指令输入框内容到本地。
+	function saveInstructions() {
+		if (!instructionsEditor) {
 			return;
 		}
-		const promptValue: any = readPromptEditorText();
-		const saved: any = persistAgentSystemPrompt(promptValue);
+		const instructionsValue: any = readInstructionsEditorText();
+		const saved: any = persistAgentSystemInstructions(instructionsValue);
 		if (saved) {
-			showEdaToastMessage(window, '自定义提示词修改成功。', messageType.info);
+			showEdaToastMessage(window, '自定义指令修改成功。', messageType.info);
 			return;
 		}
-		showEdaToastMessage(window, '自定义提示词修改失败。', messageType.error);
+		showEdaToastMessage(window, '自定义指令修改失败。', messageType.error);
 	}
-	// 将提示词文本导出到本地文件，便于手动备份。
-	function exportPromptToLocalFile() {
-		if (!promptEditor || !document.body) {
-			showEdaToastMessage(window, '保存失败：提示词编辑器未就绪。', messageType.error);
+	// 将指令文本导出到本地文件，便于手动备份。
+	function exportInstructionsToLocalFile() {
+		if (!instructionsEditor || !document.body) {
+			showEdaToastMessage(window, '保存失败：指令编辑器未就绪。', messageType.error);
 			return;
 		}
 		try {
-			const promptValue: any = readPromptEditorText();
-			const fileBlob: any = new Blob([promptValue], {
+			const instructionsValue: any = readInstructionsEditorText();
+			const fileBlob: any = new Blob([instructionsValue], {
 				type: 'text/plain;charset=utf-8',
 			});
 			const objectUrl: any = URL.createObjectURL(fileBlob);
 			const linkNode: any = document.createElement('a');
 			linkNode.href = objectUrl;
-			linkNode.download = buildPromptBackupFileName();
+			linkNode.download = buildInstructionsBackupFileName();
 			linkNode.style.display = 'none';
 			document.body.appendChild(linkNode);
 			linkNode.click();
@@ -405,8 +405,8 @@ import { messageType, showEdaToastMessage } from './utils';
 			showEdaToastMessage(window, '保存失败：无法写入本地文件。', messageType.error);
 		}
 	}
-	// 读取本地文件文本内容，导入到提示词编辑器。
-	function readPromptTextFromFile(fileNode?: any) {
+	// 读取本地文件文本内容，导入到指令编辑器。
+	function readInstructionsTextFromFile(fileNode?: any) {
 		return new Promise((resolve?: any, reject?: any) => {
 			if (!fileNode) {
 				reject(new Error('未选择文件。'));
@@ -414,7 +414,7 @@ import { messageType, showEdaToastMessage } from './utils';
 			}
 			const reader: any = new FileReader();
 			reader.onload = () => {
-				resolve(normalizePromptText(reader.result || ''));
+				resolve(normalizeInstructionsText(reader.result || ''));
 			};
 			reader.onerror = () => {
 				reject(new Error('读取本地文件失败。'));
@@ -422,23 +422,23 @@ import { messageType, showEdaToastMessage } from './utils';
 			reader.readAsText(fileNode, 'utf-8');
 		});
 	}
-	// 从本地选择文件并写入提示词编辑器，导入后由用户点击“修改”进行持久化。
-	async function importPromptFromLocalFile(fileInputNode?: any) {
-		if (!promptEditor || !fileInputNode || !fileInputNode.files || fileInputNode.files.length === 0) {
+	// 从本地选择文件并写入指令编辑器，导入后由用户点击“修改”进行持久化。
+	async function importInstructionsFromLocalFile(fileInputNode?: any) {
+		if (!instructionsEditor || !fileInputNode || !fileInputNode.files || fileInputNode.files.length === 0) {
 			return;
 		}
 		const fileNode: any = fileInputNode.files[0];
-		if (Number(fileNode.size || 0) > PROMPT_IMPORT_MAX_FILE_SIZE) {
+		if (Number(fileNode.size || 0) > INSTRUCTIONS_IMPORT_MAX_FILE_SIZE) {
 			showEdaToastMessage(window, '导入失败：文件过大，请控制在 1MB 内。', messageType.error);
 			fileInputNode.value = '';
 			return;
 		}
 		try {
-			const importedText: any = await readPromptTextFromFile(fileNode);
-			writePromptEditorText(importedText);
+			const importedText: any = await readInstructionsTextFromFile(fileNode);
+			writeInstructionsEditorText(importedText);
 			refreshConfigOverlayScrollbars();
-			schedulePromptViewportResetToTop();
-			showEdaToastMessage(window, '本地提示词已载入，请点击“修改”保存。', messageType.info);
+			scheduleInstructionsViewportResetToTop();
+			showEdaToastMessage(window, '本地指令已载入，请点击“修改”保存。', messageType.info);
 		}
 		catch {
 			showEdaToastMessage(window, '导入失败：读取本地文件失败。', messageType.error);
@@ -470,8 +470,8 @@ import { messageType, showEdaToastMessage } from './utils';
 			panelNode.hidden = !isActive;
 			panelNode.classList.toggle('is-active', isActive);
 		}
-		if (targetMenuName === MENU_PROMPT) {
-			loadPromptToForm();
+		if (targetMenuName === MENU_INSTRUCTIONS) {
+			loadInstructionsToForm();
 		}
 		refreshConfigOverlayScrollbars();
 	}
@@ -816,32 +816,32 @@ import { messageType, showEdaToastMessage } from './utils';
 				switchMainMenu(menuName);
 			});
 		}
-		if (promptSaveBtn) {
-			promptSaveBtn.addEventListener('click', () => {
-				savePrompt();
+		if (instructionsSaveBtn) {
+			instructionsSaveBtn.addEventListener('click', () => {
+				saveInstructions();
 			});
 		}
-		if (promptExportBtn) {
-			promptExportBtn.addEventListener('click', () => {
-				exportPromptToLocalFile();
+		if (instructionsExportBtn) {
+			instructionsExportBtn.addEventListener('click', () => {
+				exportInstructionsToLocalFile();
 			});
 		}
-		if (promptImportBtn && promptImportInput) {
-			promptImportBtn.addEventListener('click', () => {
-				promptImportInput.click();
+		if (instructionsImportBtn && instructionsImportInput) {
+			instructionsImportBtn.addEventListener('click', () => {
+				instructionsImportInput.click();
 			});
-			promptImportInput.addEventListener('change', () => {
-				importPromptFromLocalFile(promptImportInput);
+			instructionsImportInput.addEventListener('change', () => {
+				importInstructionsFromLocalFile(instructionsImportInput);
 			});
 		}
-		if (promptEditor) {
-			promptEditor.addEventListener('input', (event?: any) => {
+		if (instructionsEditor) {
+			instructionsEditor.addEventListener('input', (event?: any) => {
 				const inputTypeText: any = event && event.inputType ? String(event.inputType) : '';
 				const isLineBreakInput: any = inputTypeText === 'insertParagraph' || inputTypeText === 'insertLineBreak';
-				const shouldStickToBottom: any = isLineBreakInput || isPromptSelectionAtEnd();
+				const shouldStickToBottom: any = isLineBreakInput || isInstructionsSelectionAtEnd();
 				refreshConfigOverlayScrollbars();
 				if (shouldStickToBottom) {
-					schedulePromptViewportStickToBottom();
+					scheduleInstructionsViewportStickToBottom();
 				}
 			});
 		}
@@ -855,8 +855,8 @@ import { messageType, showEdaToastMessage } from './utils';
 				hasPassedVerification = false;
 			});
 		}
-		if (promptCancelBtn) {
-			promptCancelBtn.addEventListener('click', () => {
+		if (instructionsCancelBtn) {
+			instructionsCancelBtn.addEventListener('click', () => {
 				closeIFramePageById(IFRAME_ID);
 			});
 		}

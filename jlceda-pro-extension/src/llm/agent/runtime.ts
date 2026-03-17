@@ -11,7 +11,7 @@ export const AI_AGENT_RUNTIME: any = {
 	modelMaxOutputTokens: 8192,
 	// 模型总上下文窗口上限（token）。
 	modelContextLimitTokens: 128 * 1024,
-	// 为系统提示词与额外元数据预留的安全余量（token）。
+	// 为系统指令与额外元数据预留的安全余量（token）。
 	modelContextSafeMarginTokens: 4096,
 };
 /**

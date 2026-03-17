@@ -16,7 +16,7 @@
 			<div class="config-layout">
 				<div class="left-menu" aria-label="配置菜单">
 					<button class="left-menu-item is-active" type="button" data-menu="model-config">模型配置</button>
-					<button class="left-menu-item" type="button" data-menu="prompt-config">自定义提示词</button>
+					<button class="left-menu-item" type="button" data-menu="instructions-config">自定义指令</button>
 				</div>
 
 				<div class="content-area">
@@ -49,10 +49,10 @@
 						</div>
 					</div>
 
-					<div class="content-panel prompt-panel" data-menu-panel="prompt-config" hidden>
-						<div class="prompt-example" role="note">
-							<div class="prompt-example-title">设置示例</div>
-							<div class="prompt-example-text">
+					<div class="content-panel instructions-panel" data-menu-panel="instructions-config" hidden>
+						<div class="instructions-example" role="note">
+							<div class="instructions-example-title">设置示例</div>
+							<div class="instructions-example-text">
 								<p>请按“目标、约束、输出格式”书写。</p>
 								<p>目标：优先给出可直接执行的EDA操作步骤。</p>
 								<p>约束：仅输出中文，禁止虚构接口。</p>
@@ -60,23 +60,23 @@
 							</div>
 						</div>
 
-						<div class="prompt-textarea-scroll">
-							<div id="promptEditor" class="input prompt-editor" contenteditable="plaintext-only"
-								role="textbox" aria-multiline="true" data-placeholder="请输入提示词"></div>
+						<div class="instructions-textarea-scroll">
+							<div id="instructionsEditor" class="input instructions-editor" contenteditable="plaintext-only"
+								role="textbox" aria-multiline="true" data-placeholder="请输入指令"></div>
 						</div>
 
-						<div class="prompt-backup-tip">建议点击下面的保存到本地按钮手动备份提示词文本。</div>
+						<div class="instructions-backup-tip">建议点击下面的保存到本地按钮手动备份指令文本。</div>
 
-						<div class="bottom-row prompt-bottom-row">
-							<div class="button-row prompt-local-button-row">
-								<button id="promptExportBtn" class="button" type="button">保存到本地</button>
-								<button id="promptImportBtn" class="button" type="button">从本地上传</button>
+						<div class="bottom-row instructions-bottom-row">
+							<div class="button-row instructions-local-button-row">
+								<button id="instructionsExportBtn" class="button" type="button">保存到本地</button>
+								<button id="instructionsImportBtn" class="button" type="button">从本地上传</button>
 							</div>
-							<div class="button-row prompt-button-row">
-								<button id="promptSaveBtn" class="button button-primary" type="button">修改</button>
-								<button id="promptCancelBtn" class="button button-danger" type="button">关闭</button>
+							<div class="button-row instructions-button-row">
+								<button id="instructionsSaveBtn" class="button button-primary" type="button">修改</button>
+								<button id="instructionsCancelBtn" class="button button-danger" type="button">关闭</button>
 							</div>
-							<input id="promptImportInput" class="prompt-file-input" type="file"
+							<input id="instructionsImportInput" class="instructions-file-input" type="file"
 								accept=".txt,.md,.prompt" />
 						</div>
 					</div>
