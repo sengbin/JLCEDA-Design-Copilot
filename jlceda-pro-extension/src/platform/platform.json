@@ -12,17 +12,6 @@
 			"imagePayloadMode": ""
 		},
 		{
-			"id": "zhipu",
-			"label": "智谱",
-			"entryUrl": "https://open.bigmodel.cn/",
-			"endpoint": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-			"keyField": "zhipuKey",
-			"endpointField": "zhipuUrl",
-			"modelField": "zhipuModel",
-			"model": "GLM-4.6V",
-			"imagePayloadMode": "image_url"
-		},
-		{
 			"id": "ali",
 			"label": "阿里",
 			"entryUrl": "https://dashscope.console.aliyun.com/",
@@ -34,31 +23,31 @@
 			"imagePayloadMode": "image_url"
 		},
 		{
-			"id": "baidu",
-			"label": "百度",
-			"entryUrl": "https://console.bce.baidu.com/qianfan/overview",
-			"endpoint": "https://qianfan.baidubce.com/v2/chat/completions",
-			"keyField": "baiduKey",
-			"endpointField": "baiduUrl",
-			"modelField": "baiduModel",
-			"model": "ernie-5.0-thinking-preview",
+			"id": "zhipu",
+			"label": "智谱",
+			"entryUrl": "https://open.bigmodel.cn/",
+			"endpoint": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+			"keyField": "zhipuKey",
+			"endpointField": "zhipuUrl",
+			"modelField": "zhipuModel",
+			"model": "GLM-4.6V",
 			"imagePayloadMode": "image_url"
 		},
 		{
-			"id": "custom",
-			"label": "OpenAI 自定义",
+			"id": "custom-openai",
+			"label": "OpenAI 兼容自定义",
 			"entryUrl": "",
 			"endpoint": "",
-			"keyField": "customKey",
-			"endpointField": "customUrl",
-			"modelField": "customModel",
+			"keyField": "customOpenAIKey",
+			"endpointField": "customOpenAIUrl",
+			"modelField": "customOpenAIModel",
 			"model": "",
 			"imagePayloadMode": "image_url",
 			"isCustomEndpoint": true
 		},
 		{
 			"id": "custom-anthropic",
-			"label": "Anthropic 自定义",
+			"label": "Anthropic 兼容自定义",
 			"entryUrl": "",
 			"endpoint": "",
 			"keyField": "customAnthropicKey",

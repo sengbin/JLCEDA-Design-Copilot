@@ -1504,6 +1504,22 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 					messageNode.innerHTML = `<div class="tool-exec-title-only"><span class="tool-exec-title-only-glyph" aria-hidden="true"><svg class="tool-exec-title-only-icon" viewBox="0 0 100 100" focusable="false"><use xlink:href="#icon-tool-equipment"></use></svg><span class="tool-exec-title-only-spinner"><svg class="tool-exec-title-only-spinner-icon" viewBox="0 0 12 12" focusable="false"><use xlink:href="#icon-spinner-half"></use></svg></span></span><span class="tool-exec-title-only-text">${escapeHtml(foldTitle)}</span></div>`;
 				}
 			}
+			else if (variant === 'model-loop-error') {
+				// 循环错误框：头部标题 + 正文说明两段分开渲染。
+				const firstLineEnd: any = normalizedText.indexOf('\n');
+				const headerLine: any = firstLineEnd >= 0 ? normalizedText.slice(0, firstLineEnd).replace(/[*_]/g, '').trim() : normalizedText.trim();
+				const bodyText: any = firstLineEnd >= 0 ? normalizedText.slice(firstLineEnd + 1).trim() : '';
+				const bodyHtml: any = bodyText ? renderMarkdown(bodyText) : '';
+				messageNode.innerHTML = [
+					'<div class="model-loop-error-box">',
+					'<div class="model-loop-error-header">',
+					'<span class="model-loop-error-icon" aria-hidden="true">⚠</span>',
+					`<span>${escapeHtml(headerLine)}</span>`,
+					'</div>',
+					bodyHtml ? `<div class="model-loop-error-body">${bodyHtml}</div>` : '',
+					'</div>',
+				].join('');
+			}
 			else if (variant !== 'round-separator' && variant !== 'round-model' && variant !== 'running') {
 				messageNode.innerHTML = renderMarkdown(normalizedText);
 			}
@@ -2618,6 +2634,9 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 	async function runAgent(config?: any, abortSignal?: any) {
 		const processFoldGroupController: any = createProcessFoldGroupController();
 		try {
+			// 循环检测：记录上一次助手回复+工具调用的复合指纹与连续相同次数。
+			let lastLoopFingerprint: any = '';
+			let sameLoopCount: any = 0;
 			for (let step: any = 0; step < MAX_AGENT_STEPS; step += 1) {
 				throwIfAgentAborted(abortSignal);
 				let reasoningStreamMessage: any = null;
@@ -2695,6 +2714,31 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 				if (Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
 					if (abortSignal && abortSignal.aborted) {
 						throw new DOMException('【诊断信息】用户已停止', 'AbortError');
+					}
+					// 检测循环：将助手回复文本 + 工具名列表合并为复合指纹。
+					// 仅比对助手内容与工具名（忽略参数），只要模型一直重复同样开场白+同类工具，就判定为循环。
+					const currentAssistantText: any = String(assistantContent || rawAssistantContent || '').trim().slice(0, 200);
+					const currentToolNames: any = message.tool_calls.map((tc: any) =>
+						tc && tc.function ? String(tc.function.name || '') : '',
+					).join(',');
+					const currentLoopFingerprint: any = `${currentAssistantText}||${currentToolNames}`;
+					if (currentLoopFingerprint === lastLoopFingerprint) {
+						sameLoopCount += 1;
+						if (sameLoopCount > 2) {
+							throw Object.assign(
+								new Error(
+									'**检测到模型陷入死循环，已为你自动终止本次对话。**\n\n'
+									+ '当前模型连续 3 次输出了相同的回复并重复调用相同工具，但始终无法推进任务。\n\n'
+									+ '这通常是由于模型丢失了上下文状态，或者该模型对工具调用的支持存在缺陷。\n\n'
+									+ '**这不是你的问题，是模型的缺陷。** 建议切换至其他模型（如 DeepSeek、通义千问等）后重新发起对话。',
+								),
+								{ name: 'ToolCallLoopError' },
+							);
+						}
+					}
+					else {
+						lastLoopFingerprint = currentLoopFingerprint;
+						sameLoopCount = 1;
 					}
 					agentMessages.push({
 						role: 'assistant',
@@ -2863,6 +2907,10 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 			hideRunningIndicator();
 			if (isAbortError(error)) {
 				appendMessage('ai', '已停止。');
+				roundCompleted = true;
+			}
+			else if (error && error.name === 'ToolCallLoopError') {
+				appendMessage('ai', String(error.message || '模型循环错误'), 'model-loop-error');
 				roundCompleted = true;
 			}
 			else {
