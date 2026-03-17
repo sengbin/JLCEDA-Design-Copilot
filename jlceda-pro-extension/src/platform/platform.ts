@@ -15,6 +15,7 @@ export interface PlatformConfigItem {
 	imagePayloadMode: string;
 	isCustomEndpoint: boolean;
 	apiFormat: string;
+	modelHint: string;
 }
 /**
  * 读取平台配置列表。
@@ -40,6 +41,7 @@ export function readPlatformConfigs(): PlatformConfigItem[] {
 		const imagePayloadMode: any = String(sourceItem.imagePayloadMode || '').trim();
 		const isCustomEndpoint: boolean = Boolean(sourceItem.isCustomEndpoint);
 		const apiFormat: any = String(sourceItem.apiFormat || '').trim();
+		const modelHint: any = String(sourceItem.modelHint || '').trim();
 		if (!id || !label || !keyField || !endpointField || !modelField) {
 			continue;
 		}
@@ -58,6 +60,7 @@ export function readPlatformConfigs(): PlatformConfigItem[] {
 			imagePayloadMode,
 			isCustomEndpoint,
 			apiFormat,
+			modelHint,
 		});
 	}
 	return platformList;

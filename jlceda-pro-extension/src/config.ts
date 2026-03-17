@@ -214,6 +214,9 @@ import { messageType, showEdaToastMessage } from './utils';
 						`<a class="platform-entry-link" href="${platformItem.entryUrl}" target="_blank" rel="noopener noreferrer">${platformItem.entryUrl}</a>`,
 						'</div>',
 					].join('');
+			const modelHintHtml: any = platformItem.modelHint
+				? `<div class="model-hint" role="note">${platformItem.modelHint}</div>`
+				: '';
 			panelNode.innerHTML = [
 				topSectionHtml,
 				'<div class="field">',
@@ -237,6 +240,7 @@ import { messageType, showEdaToastMessage } from './utils';
 				'</div>',
 				'</div>',
 				'</div>',
+				modelHintHtml,
 			].join('');
 			platformPanels.appendChild(panelNode);
 		}

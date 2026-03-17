@@ -45,6 +45,9 @@
 	--thinking-switch-tip-bg: #fff2df;
 	--thinking-switch-tip-border: #e5c697;
 	--thinking-switch-tip-text: #8a5f2a;
+	--model-hint-bg: #fff8e0;
+	--model-hint-border: #f0a820;
+	--model-hint-text: #7a4800;
 	--button-hover-brightness: 1.08;
 	--button-active-brightness: 0.94;
 	--status-success-border: #9fc8b2;
@@ -136,6 +139,9 @@
 	--thinking-switch-tip-bg: #5a4731;
 	--thinking-switch-tip-border: #896841;
 	--thinking-switch-tip-text: #efd2a8;
+	--model-hint-bg: #4a3a18;
+	--model-hint-border: #9a7820;
+	--model-hint-text: #f0cc88;
 	--button-hover-brightness: 1.03;
 	--button-active-brightness: 0.97;
 	--status-success-border: #5fa78a;
@@ -524,6 +530,18 @@ body {
 }
 .model-input-half {
 	width: 100%;
+}
+.model-hint {
+	margin-top: 0;
+	padding: 8px 10px;
+	border: 1px solid var(--model-hint-border);
+	border-left: 3px solid var(--model-hint-border);
+	border-radius: 5px;
+	background: var(--model-hint-bg);
+	color: var(--model-hint-text);
+	font-size: 12px;
+	line-height: 1.55;
+	word-break: break-all;
 }
 .thinking-switch-field {
 	flex: 1;

@@ -2715,13 +2715,9 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 					if (abortSignal && abortSignal.aborted) {
 						throw new DOMException('【诊断信息】用户已停止', 'AbortError');
 					}
-					// 检测循环：将助手回复文本 + 工具名列表合并为复合指纹。
-					// 仅比对助手内容与工具名（忽略参数），只要模型一直重复同样开场白+同类工具，就判定为循环。
-					const currentAssistantText: any = String(assistantContent || rawAssistantContent || '').trim().slice(0, 200);
-					const currentToolNames: any = message.tool_calls.map((tc: any) =>
-						tc && tc.function ? String(tc.function.name || '') : '',
-					).join(',');
-					const currentLoopFingerprint: any = `${currentAssistantText}||${currentToolNames}`;
+					// 循环检测：仅取正文（或推理内容）前 200 字符作为指纹，避免因工具名相同导致误判。
+					const currentTextBody: any = String(assistantContent || rawAssistantContent || reasoningContent || '').trim().slice(0, 200);
+					const currentLoopFingerprint: any = currentTextBody;
 					if (currentLoopFingerprint === lastLoopFingerprint) {
 						sameLoopCount += 1;
 						if (sameLoopCount > 2) {
