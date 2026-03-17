@@ -4,7 +4,7 @@
 
 B站演示视频：https://www.bilibili.com/video/BV1uwwXzSEpU/
 
-讨论 QQ 群：9041389，欢迎你反馈更多的问题和建议。
+讨论QQ群：9041389，欢迎你反馈更多的问题和建议。
 
 ![聊天演示](images/chat.gif)
 

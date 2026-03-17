@@ -4,7 +4,7 @@ JLCEDA Design Copilot 是面向嘉立创 EDA 专业版的 AI 对话插件，让�
 
 项目地址：https://github.com/sengbin/JLCEDA-Design-Copilot
 
-讨论 QQ 群：9041389，欢迎你反馈更多的问题和建议。
+讨论QQ群：9041389，欢迎你反馈更多的问题和建议。
 
 ## 整体架构
 
