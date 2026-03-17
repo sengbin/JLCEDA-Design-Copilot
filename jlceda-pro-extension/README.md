@@ -1,16 +1,16 @@
 # AI 设计助手
 
+你可以在 EDA 里直接和 AI 对话，描述需求、分析电路，或让 AI 帮你完成在 EDA 上的操作。
+
 B站教程视频：https://www.bilibili.com/video/BV1uwwXzSEpU/
 
-你可以在 EDA 里直接和 AI 对话，描述需求、分析电路，或让 AI 帮你完成在 EDA 上的操作。
+讨论 QQ 群：9041389，欢迎你反馈更多的问题和建议。
 
 ![聊天演示](images/chat.gif)
 
 ![配置演示](images/config.gif)
 
 项目地址：https://github.com/sengbin/JLCEDA-Design-Copilot
-
-讨论 QQ 群：9041389，欢迎你反馈更多的问题和建议。
 
 ## 安装
 
