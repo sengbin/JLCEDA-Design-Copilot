@@ -825,7 +825,15 @@ body {
 :root[data-theme='dark'] .chat-message.ai.tool-exec .tool-exec-value-failed {
 	color: #f07070;
 }
-/* JSON 滚动容器：限制高度，超出自动显示滚动条 */
+/* 发送数据 JSON 容器：自适应高度，完整展示内容 */
+.chat-message.ai.tool-exec .tool-exec-json-auto {
+	border-radius: 4px;
+	background: var(--tool-bg);
+}
+:root[data-theme='dark'] .chat-message.ai.tool-exec .tool-exec-json-auto {
+	background: rgba(0, 0, 0, 0.18);
+}
+/* 接收数据 JSON 滚动容器：限制高度，由 OverlayScrollbars 接管滚动条 */
 .chat-message.ai.tool-exec .tool-exec-json-scroll {
 	max-height: 180px;
 	overflow-y: auto;

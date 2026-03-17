@@ -721,8 +721,21 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 				allowHorizontalScroll: false,
 			});
 		}
+		// 接收数据 JSON 滚动容器：应用 OverlayScrollbars，鼠标悬停显示滚动条。
+		const jsonScrollElements: any = messageNode.querySelectorAll('.tool-exec-json-scroll');
+		for (let index: any = 0; index < jsonScrollElements.length; index += 1) {
+			ensureOverlayScrollController(jsonScrollElements[index], {
+				bottomSnapThreshold: 0,
+				allowHorizontalScroll: true,
+				autoHideMode: 'leave',
+			});
+		}
 		const preElements: any = messageNode.querySelectorAll('pre');
 		for (let index: any = 0; index < preElements.length; index += 1) {
+			// 跳过已由 OverlayScrollbars 接管的接收数据容器内的 pre，避免嵌套冲突。
+			if (preElements[index].closest('.tool-exec-json-scroll')) {
+				continue;
+			}
 			ensureOverlayScrollController(preElements[index], {
 				bottomSnapThreshold: 0,
 				allowHorizontalScroll: true,

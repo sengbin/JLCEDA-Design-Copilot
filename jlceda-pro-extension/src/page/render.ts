@@ -305,14 +305,15 @@ export function renderToolExecPlainText(text: unknown): string {
 		}
 		return rawText.substring(contentStart, endIdx).trim();
 	}
-	// 渲染 JSON 区块（限制高度，超出显示滚动条）。
-	function renderJsonSectionHtml(label: string, rawJson: string): string {
+	// 渲染 JSON 区块。autoHeight 为 true 时自适应高度，为 false 时限制高度由滚动库接管。
+	function renderJsonSectionHtml(label: string, rawJson: string, autoHeight: boolean): string {
 		let prettyJson: any = rawJson;
 		try {
 			prettyJson = JSON.stringify(JSON.parse(rawJson), null, 2);
 		}
 		catch { }
-		return `<div class="tool-exec-field"><div class="tool-exec-field-label">${escapeHtml(label)}</div><div class="tool-exec-json-scroll"><pre class="tool-exec-json-pre"><code>${escapeHtml(prettyJson)}</code></pre></div></div>`;
+		const containerClass: any = autoHeight ? 'tool-exec-json-auto' : 'tool-exec-json-scroll';
+		return `<div class="tool-exec-field"><div class="tool-exec-field-label">${escapeHtml(label)}</div><div class="${containerClass}"><pre class="tool-exec-json-pre"><code>${escapeHtml(prettyJson)}</code></pre></div></div>`;
 	}
 	const sentData: any = extractSection(TOOL_EXEC_SENT_DATA_BEGIN, TOOL_EXEC_SENT_DATA_END);
 	const receivedData: any = extractSection(TOOL_EXEC_RECEIVED_DATA_BEGIN, TOOL_EXEC_RECEIVED_DATA_END);
@@ -320,10 +321,12 @@ export function renderToolExecPlainText(text: unknown): string {
 	const resultStatusMatch: any = rawText.match(/(?:^|\n)\s*返回结果[：:]\s*([^\r\n]+)/u);
 	const output: string[] = [];
 	if (sentData !== null) {
-		output.push(renderJsonSectionHtml('发送数据：', sentData));
+		// 发送数据自适应高度，完整展示发送内容。
+		output.push(renderJsonSectionHtml('发送数据：', sentData, true));
 	}
 	if (receivedData !== null) {
-		output.push(renderJsonSectionHtml('接收数据：', receivedData));
+		// 接收数据限制高度，由 OverlayScrollbars 接管滚动条。
+		output.push(renderJsonSectionHtml('接收数据：', receivedData, false));
 	}
 	if (callStatusMatch) {
 		output.push(`<div class="tool-exec-field tool-exec-field-row"><span class="tool-exec-field-label">调用状态：</span><span class="tool-exec-field-value">${escapeHtml(callStatusMatch[1].trim())}</span></div>`);
