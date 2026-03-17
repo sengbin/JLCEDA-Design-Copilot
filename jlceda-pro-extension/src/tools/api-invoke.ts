@@ -139,7 +139,7 @@ export function createApiInvokeHandler(runtimeWindow: Window, deps: ApiInvokeDep
 		}
 		const apiFullName: any = String(payload.apiFullName ?? '').trim();
 		const { callable, thisArg, resolvedPath } = resolveApiCallable(runtimeWindow, apiFullName);
-		const argsJsonText: any = typeof payload.argsJson === 'string' ? payload.argsJson.trim() : '';
+		const argsJsonText: any = typeof payload.args === 'string' ? payload.args.trim() : '';
 		const parsed: unknown = argsJsonText ? JSON.parse(argsJsonText) : [];
 		const invokeArgs: unknown[] = Array.isArray(parsed) ? parsed : [parsed];
 		const invokeResult: unknown = await Promise.resolve(callable.apply(thisArg, invokeArgs));

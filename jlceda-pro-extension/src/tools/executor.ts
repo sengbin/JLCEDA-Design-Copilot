@@ -154,7 +154,7 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 		return '{"scope":"sch"}';
 	}
 	if (toolName === 'jlceda_api_invoke') {
-		return '{"apiFullName":"eda.sch_Drc.check","argsJson":"[false,false,true]"}';
+		return '{"apiFullName":"eda.sch_Drc.check","args":"[false,false,true]"}';
 	}
 	return '{"参数1":"值1","参数2":"值2"}';
 }

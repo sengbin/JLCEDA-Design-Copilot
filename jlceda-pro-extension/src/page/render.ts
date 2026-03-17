@@ -1,5 +1,11 @@
 // 文件说明：提供页面展示相关能力，包括图标符号表加载、Markdown 渲染、HTML 转义与展示文案格式化。
-import { formatToolExecDisplayText } from '../debug';
+import {
+	formatToolExecDisplayText,
+	TOOL_EXEC_RECEIVED_DATA_BEGIN,
+	TOOL_EXEC_RECEIVED_DATA_END,
+	TOOL_EXEC_SENT_DATA_BEGIN,
+	TOOL_EXEC_SENT_DATA_END,
+} from '../debug';
 import { activeBlobUrls } from '../tools/executor';
 import { readExtensionTextFileByCandidates } from '../utils';
 
@@ -279,12 +285,56 @@ export function formatToolExecRawText(toolCall?: any, toolResult?: any, running?
 	return formatToolExecDisplayText(toolCall, toolResult, running);
 }
 /**
- * 渲染工具执行文本。
- * @param text - 文本。
+ * 渲染工具执行详情区块 HTML。
+ * 固定格式：发送数据（JSON）→ 接收数据（JSON）→ 调用状态 → 返回结果 → 错误详情。
+ * @param text - formatToolExecDisplayText 产生的结构化文本。
  * @returns HTML。
  */
 export function renderToolExecPlainText(text: unknown): string {
 	const rawText: any = String(text || '');
-	const displayText: any = rawText.replace(/^\s*工具名[：:][^\r\n]*\r?\n?/u, '');
-	return `<div class="tool-exec-plain">${escapeHtml(displayText)}</div>`;
+	// 从结构化文本中提取指定区块内容。
+	function extractSection(beginMarker: string, endMarker: string): string | null {
+		const beginIdx: any = rawText.indexOf(beginMarker);
+		if (beginIdx < 0) {
+			return null;
+		}
+		const contentStart: any = beginIdx + beginMarker.length;
+		const endIdx: any = rawText.indexOf(endMarker, contentStart);
+		if (endIdx < 0) {
+			return null;
+		}
+		return rawText.substring(contentStart, endIdx).trim();
+	}
+	// 渲染 JSON 区块（限制高度，超出显示滚动条）。
+	function renderJsonSectionHtml(label: string, rawJson: string): string {
+		let prettyJson: any = rawJson;
+		try {
+			prettyJson = JSON.stringify(JSON.parse(rawJson), null, 2);
+		}
+		catch { }
+		return `<div class="tool-exec-field"><div class="tool-exec-field-label">${escapeHtml(label)}</div><div class="tool-exec-json-scroll"><pre class="tool-exec-json-pre"><code>${escapeHtml(prettyJson)}</code></pre></div></div>`;
+	}
+	const sentData: any = extractSection(TOOL_EXEC_SENT_DATA_BEGIN, TOOL_EXEC_SENT_DATA_END);
+	const receivedData: any = extractSection(TOOL_EXEC_RECEIVED_DATA_BEGIN, TOOL_EXEC_RECEIVED_DATA_END);
+	const callStatusMatch: any = rawText.match(/(?:^|\n)\s*调用状态[：:]\s*([^\r\n]+)/u);
+	const resultStatusMatch: any = rawText.match(/(?:^|\n)\s*返回结果[：:]\s*([^\r\n]+)/u);
+	const output: string[] = [];
+	if (sentData !== null) {
+		output.push(renderJsonSectionHtml('发送数据：', sentData));
+	}
+	if (receivedData !== null) {
+		output.push(renderJsonSectionHtml('接收数据：', receivedData));
+	}
+	if (callStatusMatch) {
+		output.push(`<div class="tool-exec-field tool-exec-field-row"><span class="tool-exec-field-label">调用状态：</span><span class="tool-exec-field-value">${escapeHtml(callStatusMatch[1].trim())}</span></div>`);
+	}
+	if (resultStatusMatch) {
+		const resultValue: any = resultStatusMatch[1].trim();
+		const isFailed: any = resultValue === '失败';
+		output.push(`<div class="tool-exec-field tool-exec-field-row"><span class="tool-exec-field-label">返回结果：</span><span class="tool-exec-field-value${isFailed ? ' tool-exec-value-failed' : ''}">${escapeHtml(resultValue)}</span></div>`);
+	}
+	if (output.length === 0) {
+		return '<div class="tool-exec-body"><span class="tool-exec-empty">（无详情）</span></div>';
+	}
+	return `<div class="tool-exec-body">${output.join('')}</div>`;
 }

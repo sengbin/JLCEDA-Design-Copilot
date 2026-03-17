@@ -781,16 +781,83 @@ body {
 .chat-message.ai.tool-exec .fold-content {
 	font-size: 12px;
 	line-height: 1.45;
-	padding: 4px 8px;
+	padding: 8px 12px 8px 24px;
 	background: transparent;
 	border-radius: 6px;
-	border: 1px solid var(--tool-border);
+	border: none;
 	transition: background-color 0.2s ease;
 }
 .chat-message.ai.tool-exec .tool-exec-plain {
 	margin: 0;
 	white-space: pre-wrap;
 	word-break: break-word;
+}
+/* 工具调用详情区域整体容器 */
+.chat-message.ai.tool-exec .tool-exec-body {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+/* 通用字段区块 */
+.chat-message.ai.tool-exec .tool-exec-field {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+/* 行内字段（调用状态 / 返回结果）*/
+.chat-message.ai.tool-exec .tool-exec-field.tool-exec-field-row {
+	flex-direction: row;
+	align-items: baseline;
+	gap: 0;
+}
+/* 字段标签 */
+.chat-message.ai.tool-exec .tool-exec-field-label {
+	color: var(--text-secondary);
+	font-weight: 500;
+	flex-shrink: 0;
+	word-break: break-word;
+}
+/* 行内字段值 */
+.chat-message.ai.tool-exec .tool-exec-field-value {
+	color: var(--text-primary);
+	flex: 1;
+	word-break: break-word;
+}
+/* 失败状态高亮 */
+.chat-message.ai.tool-exec .tool-exec-value-failed {
+	color: #d44;
+}
+:root[data-theme='dark'] .chat-message.ai.tool-exec .tool-exec-value-failed {
+	color: #f07070;
+}
+/* JSON 滚动容器：限制高度，超出自动显示滚动条 */
+.chat-message.ai.tool-exec .tool-exec-json-scroll {
+	max-height: 180px;
+	overflow-y: auto;
+	overflow-x: auto;
+	border-radius: 4px;
+	background: var(--tool-bg);
+}
+:root[data-theme='dark'] .chat-message.ai.tool-exec .tool-exec-json-scroll {
+	background: rgba(0, 0, 0, 0.18);
+}
+/* JSON 代码块 */
+.chat-message.ai.tool-exec .tool-exec-json-pre {
+	margin: 0;
+	padding: 6px 8px;
+	font-size: 11px;
+	line-height: 1.5;
+	white-space: pre;
+	word-break: normal;
+	overflow-wrap: normal;
+}
+.chat-message.ai.tool-exec .tool-exec-json-pre code {
+	font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+}
+/* 无详情占位 */
+.chat-message.ai.tool-exec .tool-exec-empty {
+	color: var(--text-secondary);
+	font-style: italic;
 }
 .chat-message.ai.tool-exec .tool-exec-title-only {
 	font-size: 12px;

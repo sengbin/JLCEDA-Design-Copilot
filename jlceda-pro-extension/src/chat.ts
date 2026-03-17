@@ -1,6 +1,6 @@
 import { OverlayScrollbars } from 'overlayscrollbars';
 import scrollIntoView from 'scroll-into-view-if-needed';
-import { DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE } from './debug';
+import { DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE, DEBUG_TOOL_EXEC_SHOW_TOOL_NAME, DEBUG_TOOL_EXEC_SHOW_CALLED_API } from './debug';
 import { readAgentSystemInstructions } from './llm/agent/instructions';
 import { AI_AGENT_RUNTIME, getModelContextHistoryBudgetTokens, throwIfAgentAborted } from './llm/agent/runtime';
 import tools from './llm/agent/tools.json';
@@ -1403,14 +1403,22 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		if (variant === 'tool-exec') {
 			const sourceText: any = String(text || '');
 			const toolNameMatched: any = sourceText.match(/^\s*工具名[：:]\s*([^\r\n]+)/mu);
-			const apiPathMatched: any = sourceText.match(/^\s*调用\s*API[：:]\s*([^\r\n]+)/mu);
+			const apiPathMatched: any = sourceText.match(/^\s*调用API[：:]\s*([^\r\n]+)/mu);
 			const toolName: any = toolNameMatched && toolNameMatched[1] ? String(toolNameMatched[1]).trim() : '';
 			const apiPathRaw: any = apiPathMatched && apiPathMatched[1] ? String(apiPathMatched[1]).trim() : '';
 			const apiPath: any = apiPathRaw && apiPathRaw !== '无' ? apiPathRaw : '';
-			if (apiPath) {
+			const showToolName: any = Boolean(DEBUG_TOOL_EXEC_SHOW_TOOL_NAME);
+			const showCalledApi: any = Boolean(DEBUG_TOOL_EXEC_SHOW_CALLED_API) && Boolean(apiPath);
+			if (showToolName && showCalledApi) {
 				return `工具：${toolName || '未命名工具'}，API：${apiPath}。`;
 			}
-			return `工具：${toolName || '未命名工具'}。`;
+			if (showToolName) {
+				return `工具：${toolName || '未命名工具'}。`;
+			}
+			if (showCalledApi) {
+				return `工具，API：${apiPath}。`;
+			}
+			return '工具调用。';
 		}
 		return '';
 	}

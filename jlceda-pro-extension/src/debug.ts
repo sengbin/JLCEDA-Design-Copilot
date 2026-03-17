@@ -1,39 +1,24 @@
-// 文件说明：提供调试信息提取与 API 路径收集相关辅助函数。
+// 文件说明：提供调试信息提取与工具调用展示相关辅助函数。
 
-// 工具执行调试开关：开启时显示可展开的详情，关闭时仅显示标题。
+// 总开关：开启时显示可展开的详情，关闭时仅显示标题。
 export const DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE: any = true;
 
-// 工具折叠展示：总览行开关，每行控制折叠展开视图是否展示对应数据。
-const DEBUG_TOOL_EXEC_SHOW_TOOL_NAME: any = true; // 展示工具名
-const DEBUG_TOOL_EXEC_SHOW_CALL_STATUS: any = true; // 展示调用状态（执行中/已完成/超时）
-const DEBUG_TOOL_EXEC_SHOW_RESULT_STATUS: any = true; // 展示返回结果（成功/失败/等待中）
-const DEBUG_TOOL_EXEC_SHOW_CALLED_API: any = true; // 展示调用 API 路径列表
-const DEBUG_TOOL_EXEC_SHOW_SUCCESS_RECEIVED_ARGUMENTS: any = true; // API 调用成功时展示收到参数
-const DEBUG_TOOL_EXEC_SHOW_ERROR_INFO: any = true; // 展示整体错误信息摘要
+// 折叠标题开关：控制标题栏中各字段是否显示。
+export const DEBUG_TOOL_EXEC_SHOW_TOOL_NAME: any = true; // 标题中显示工具名
+export const DEBUG_TOOL_EXEC_SHOW_CALLED_API: any = true; // 标题中显示调用 API 路径
 
-// 工具错误详情：字段开关，控制每种错误子信息是否加入折叠详情内容。
-const DEBUG_TOOL_ERROR_SHOW_BASE_ERROR: any = true; // 基础 error 文本
-const DEBUG_TOOL_ERROR_SHOW_STAGE: any = true; // 失败阶段说明
-const DEBUG_TOOL_ERROR_SHOW_EXPECTED_FORMAT: any = true; // 期望参数格式示例
+// 内容区开关：控制折叠展开后各区块是否显示。
+const DEBUG_SHOW_SENT_DATA: any = true; // 发送数据（AI 发出的工具调用参数）
+const DEBUG_SHOW_RECEIVED_DATA: any = true; // 接收数据（EDA API 返回结果）
+const DEBUG_SHOW_CALL_STATUS: any = true; // 调用状态
+const DEBUG_SHOW_RESULT_STATUS: any = true; // 返回结果
 
-const DEBUG_TOOL_ERROR_SHOW_RECEIVED_ARGUMENTS: any = true; // 实际收到的参数片段
+// 内容区节标记（供解析方识别各数据区块用）。
+export const TOOL_EXEC_SENT_DATA_BEGIN = '<<<SENT_DATA_BEGIN>>>';
+export const TOOL_EXEC_SENT_DATA_END = '<<<SENT_DATA_END>>>';
+export const TOOL_EXEC_RECEIVED_DATA_BEGIN = '<<<RECEIVED_DATA_BEGIN>>>';
+export const TOOL_EXEC_RECEIVED_DATA_END = '<<<RECEIVED_DATA_END>>>';
 
-const DEBUG_TOOL_ERROR_SHOW_TARGET_API: any = true; // 目标 API 路径
-const DEBUG_TOOL_ERROR_SHOW_CONCLUSION: any = true; // 调用结论信息
-// 追加展示片段。
-function appendDisplayPart(parts?: any, enabled?: any, text?: any) {
-	if (!Array.isArray(parts)) {
-		return;
-	}
-	if (!enabled) {
-		return;
-	}
-	const normalizedText: any = String(text || '').trim();
-	if (!normalizedText) {
-		return;
-	}
-	parts.push(normalizedText);
-}
 // 规范化 API 路径文本。
 function normalizeApiPath(apiPath: unknown): string {
 	return String(apiPath || '').trim();
@@ -142,94 +127,68 @@ function getToolCallArgumentsText(toolCall?: any) {
 	return String(argumentsValue || '').trim();
 }
 /**
- * 构建工具错误信息展示文本。
- * @param toolCall - 工具调用对象。
- * @param toolResult - 工具返回对象。
- * @param running - 是否执行中。
- * @returns 展示用错误文本。
- */
-export function formatToolErrorDisplayText(toolCall?: any, toolResult?: any, running?: any) {
-	if (running) {
-		return '无';
-	}
-	const resultObject: any = toolResult && typeof toolResult === 'object' ? toolResult : {};
-	const baseErrorText: any = formatDebugErrorValue(resultObject.error);
-	const outputParts: any = [];
-	const toolName: any = getToolCallName(toolCall);
-	const errorCode: any = String(resultObject.errorCode || '').trim();
-	const errorStage: any = String(resultObject.errorStage || '').trim();
-	const hasBaseError: any = !!(baseErrorText && baseErrorText !== '无');
-	appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_BASE_ERROR && hasBaseError, baseErrorText);
-	appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_STAGE && !!errorStage, `失败阶段：${errorStage}`);
-	if (toolName === 'jlceda_api_invoke' && errorCode === 'INVALID_TOOL_ARGUMENTS_JSON') {
-		const expectedFormat: any = String(resultObject.expectedArgumentsFormat || '{"apiFullName":"eda.sch_Drc.check","argsJson":"[false,false,true]"}').trim();
-		const rawArgumentsPreview: any = String(resultObject.rawArgumentsPreview || getToolCallArgumentsText(toolCall) || '').trim();
-		const candidateApiPath: any = normalizeApiPath(resultObject.apiFullName || resultObject.apiPath || extractApiPathFromRawArguments(rawArgumentsPreview));
-		appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_EXPECTED_FORMAT, `参数格式：${expectedFormat}`);
-		appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_RECEIVED_ARGUMENTS, `收到参数：${rawArgumentsPreview || '无'}`);
-		if (candidateApiPath) {
-			appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_TARGET_API, `目标API：${candidateApiPath}`);
-		}
-		else {
-			appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_TARGET_API, '目标API：未识别');
-		}
-		appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_CONCLUSION, '调用结论：未执行 API 调用（参数解析失败）。');
-	}
-	if (outputParts.length <= 0) {
-		return '无';
-	}
-	return outputParts.join('\n');
-}
-/**
- * 构建工具折叠展示文本。
+ * 构建工具折叠展示文本（固定格式：发送数据 / 接收数据 / 调用状态 / 返回结果）。
  * @param toolCall - 工具调用对象。
  * @param toolResult - 工具返回对象。
  * @param running - 是否执行中。
  * @returns 折叠展示文本。
  */
 export function formatToolExecDisplayText(toolCall?: any, toolResult?: any, running?: any) {
-	const callObject: any = toolCall && typeof toolCall === 'object' ? toolCall : {};
-	const toolName: any = callObject && callObject.function
-		? String(callObject.function.name || '').trim()
-		: '';
-	const resultObject: any = toolResult && typeof toolResult === 'object' ? toolResult : {};
+	const toolName: any = getToolCallName(toolCall);
 	const rawArgumentsText: any = getToolCallArgumentsText(toolCall);
-	const hasOkFlag: any = toolResult && typeof toolResult === 'object' && Object.prototype.hasOwnProperty.call(toolResult, 'ok');
-	const hasBooleanBusinessResult: any = toolResult && typeof toolResult === 'object' && typeof toolResult.result === 'boolean';
-	const isBusinessResultPassed: any = hasBooleanBusinessResult ? Boolean(toolResult.result) : true;
-	const businessFailReason: any = hasOkFlag && Boolean(toolResult && toolResult.ok) && !isBusinessResultPassed
-		? '调用成功但返回 false（业务检查未通过）。'
-		: '';
-	const errorText: any = formatToolErrorDisplayText(toolCall, toolResult, running);
-	const isTimeout: any = !running && errorText.includes('超时');
-	const statusText: any = running ? '执行中' : (isTimeout ? '超时' : '已完成');
-	const isSuccess: any = hasOkFlag
-		? (Boolean(toolResult && toolResult.ok) && isBusinessResultPassed)
-		: !(errorText && errorText !== '无');
-	const resultText: any = running
-		? '等待中'
-		: (isSuccess ? '成功' : '失败');
+	const resultObject: any = toolResult && typeof toolResult === 'object' ? toolResult : {};
+	// 提取 API 路径。
 	const calledApiPaths: any = extractToolCalledApiPaths(toolCall, toolResult);
 	const calledApiText: any = calledApiPaths.length > 0
 		? calledApiPaths.join('，')
-		: (!running && toolName === 'jlceda_api_invoke' && String(resultObject.errorStage || '').trim() === 'parse-arguments'
-				? '未执行（参数解析失败）'
-				: '无');
-	const outputLines: any = [];
-	appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_TOOL_NAME, `工具名：${toolName || '未命名工具'}`);
-	appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_CALL_STATUS, `调用状态：${statusText}`);
-	appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_RESULT_STATUS, `返回结果：${resultText}`);
-	appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_CALLED_API, `调用 API：${calledApiText}`);
-	if (!running && toolName === 'jlceda_api_invoke' && isSuccess) {
-		appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_SUCCESS_RECEIVED_ARGUMENTS, `收到参数：${rawArgumentsText || '无'}`);
+		: '无';
+	// 计算调用状态与返回结果。
+	const hasOkFlag: any = toolResult && typeof toolResult === 'object' && Object.prototype.hasOwnProperty.call(toolResult, 'ok');
+	const hasBooleanBusinessResult: any = toolResult && typeof toolResult === 'object' && typeof toolResult.result === 'boolean';
+	const isBusinessResultPassed: any = hasBooleanBusinessResult ? Boolean(toolResult.result) : true;
+	const rawErrorText: any = formatDebugErrorValue(resultObject.error);
+	// 错误文本为"无"表示没有真实错误。
+	const hasRealError: any = rawErrorText !== '无';
+	const isTimeout: any = !running && hasRealError && rawErrorText.includes('超时');
+	const callStatus: any = running ? '执行中' : (isTimeout ? '超时' : '已完成');
+	const isSuccess: any = hasOkFlag
+		? (Boolean(toolResult && toolResult.ok) && isBusinessResultPassed)
+		: !hasRealError;
+	const resultStatus: any = running ? '等待中' : (isSuccess ? '成功' : '失败');
+	// 组装输出文本，标题行始终输出以供 buildFoldTitle 解析。
+	const lines: string[] = [];
+	lines.push(`工具名：${toolName || '未命名工具'}`);
+	lines.push(`调用API：${calledApiText}`);
+	// 发送数据区块。
+	if (DEBUG_SHOW_SENT_DATA && rawArgumentsText) {
+		lines.push(TOOL_EXEC_SENT_DATA_BEGIN);
+		lines.push(rawArgumentsText);
+		lines.push(TOOL_EXEC_SENT_DATA_END);
 	}
-	if (!running && !isSuccess) {
-		appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_ERROR_INFO, `错误信息：${businessFailReason || errorText}`);
+	// 接收数据区块（仅在有结果时输出）。
+	if (DEBUG_SHOW_RECEIVED_DATA && !running && toolResult !== undefined && toolResult !== null) {
+		let receivedJson: any = '';
+		try {
+			receivedJson = typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult);
+		}
+		catch {
+			receivedJson = '[unserializable-result]';
+		}
+		if (receivedJson) {
+			lines.push(TOOL_EXEC_RECEIVED_DATA_BEGIN);
+			lines.push(receivedJson);
+			lines.push(TOOL_EXEC_RECEIVED_DATA_END);
+		}
 	}
-	if (outputLines.length <= 0) {
-		return '无';
+	// 调用状态行。
+	if (DEBUG_SHOW_CALL_STATUS) {
+		lines.push(`调用状态：${callStatus}`);
 	}
-	return outputLines.join('\n');
+	// 返回结果行。
+	if (DEBUG_SHOW_RESULT_STATUS) {
+		lines.push(`返回结果：${resultStatus}`);
+	}
+	return lines.join('\n');
 }
 /**
  * 提取对象中的 API 路径字段并追加到输出列表。
