@@ -1,17 +1,17 @@
 // 文件说明：提供调试信息提取与工具调用展示相关辅助函数。
 
 // 总开关：开启时显示可展开的详情，关闭时仅显示标题。
-export const DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE: any = true;
+export const DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE: any = false;
 
 // 折叠标题开关：控制标题栏中各字段是否显示。
 export const DEBUG_TOOL_EXEC_SHOW_TOOL_NAME: any = true; // 标题中显示工具名
 export const DEBUG_TOOL_EXEC_SHOW_CALLED_API: any = true; // 标题中显示调用 API 路径
 
 // 内容区开关：控制折叠展开后各区块是否显示。
-const DEBUG_SHOW_SENT_DATA: any = false; // 发送数据（AI 发出的工具调用参数）
-const DEBUG_SHOW_RECEIVED_DATA: any = false; // 接收数据（EDA API 返回结果）
-const DEBUG_SHOW_CALL_STATUS: any = false; // 调用状态
-const DEBUG_SHOW_RESULT_STATUS: any = false; // 返回结果
+const DEBUG_SHOW_SENT_DATA: any = true; // 发送数据（AI 发出的工具调用参数）
+const DEBUG_SHOW_RECEIVED_DATA: any = true; // 接收数据（EDA API 返回结果）
+const DEBUG_SHOW_CALL_STATUS: any = true; // 调用状态
+const DEBUG_SHOW_RESULT_STATUS: any = true; // 返回结果
 
 // 内容区节标记（供解析方识别各数据区块用）。
 export const TOOL_EXEC_SENT_DATA_BEGIN = '<<<SENT_DATA_BEGIN>>>';
