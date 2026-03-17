@@ -53,7 +53,7 @@
 			"endpointField": "customUrl",
 			"modelField": "customModel",
 			"model": "",
-			"imagePayloadMode": "",
+			"imagePayloadMode": "image_url",
 			"isCustomEndpoint": true
 		}
 	]

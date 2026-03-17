@@ -3,6 +3,7 @@
 - 重构 `src/` 目录结构，改为按职责分层：`llm/`、`llm/agent/`、`platform/`、`page/`、`session/`、`tools/`。
 - 将 `model.ts`、`upload.ts` 移入 `page/` 目录，职责归属更清晰。
 - 修复 `theme.ts` 中访问 `window.eda` 时的 TypeScript 类型报错（ts2339）。
+- 修复聊天页在选择“自定义”平台时图片上传按钮无法触发文件选择的问题，默认启用 `image_url` 图片载荷模式。
 
 # 2.0.0 (2026-03-16)
 
