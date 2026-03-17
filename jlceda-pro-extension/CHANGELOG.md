@@ -1,8 +1,13 @@
 # 2.2.0 (2026-03-17)
 
+- 新增 "Anthropic 自定义" 平台，支持 Anthropic Messages API 原生格式，使用 `x-api-key` + `anthropic-version` 请求头，工具调用基于 `input_schema`/`tool_use`/`tool_result` 格式，默认支持图片上传。
+- 将原 "自定义" 平台重命名为 "OpenAI 自定义"，与新增的 Anthropic 自定义平台区分。
+- 设置页验证功能支持 Anthropic 格式：使用正确的请求头与请求体对 Anthropic 接口进行连通性验证。
+- 缩小模型配置选项卡标题的左右边距，防止多平台时选项卡文字挤压变形。
+- 缩小文本输入框内部边距，使内容布局更紧凑。
 - 用 argsJson 字符串字段解决 DeepSeek strict 模式下 JSON 格式问题。
   - jlceda_api_invoke 工具参数 schema 只保留 argsJson（字符串），完全兼容 strict 封闭要求。
-  - 彻底移除 repair 死代码与所有旧参数格式兼容逻辑。
+  - 移除 repair 与所有旧参数格式兼容逻辑。
 
 # 2.1.0 (2026-03-17)
 
