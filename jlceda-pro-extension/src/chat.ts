@@ -2392,7 +2392,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		const modelName: any = requestConfig.modelName;
 		const apiKey: any = requestConfig.apiKey;
 		const isResponsesEndpoint: any = endpoint.endsWith('/responses');
-		const isAnthropicFormat: any = String(config && config.apiFormat || '').trim() === 'anthropic';
+		const isAnthropicFormat: any = String((config && config.apiFormat) || '').trim() === 'anthropic';
 		const instructionsResult: any = readAgentSystemInstructions();
 		const systemInstructionsText: any = String(instructionsResult && instructionsResult.instructions ? instructionsResult.instructions : '').trim();
 		const payload: any = isAnthropicFormat
@@ -2740,7 +2740,8 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 						sessionManager.schedulePersistChatSession();
 					}
 					processFoldGroupController.setLoading(false);
-					hideRunningIndicator();
+					showRunningIndicator();
+					processFoldGroupController.appendProcessNode(runningIndicatorNode);
 					continue;
 				}
 				agentMessages.push({
