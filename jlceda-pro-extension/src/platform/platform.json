@@ -35,7 +35,7 @@
 		},
 		{
 			"id": "custom-openai",
-			"label": "OpenAI 兼容自定义",
+			"label": "OpenAI 兼容",
 			"entryUrl": "",
 			"endpoint": "",
 			"keyField": "customOpenAIKey",
@@ -48,7 +48,7 @@
 		},
 		{
 			"id": "custom-anthropic",
-			"label": "Anthropic 兼容自定义",
+			"label": "Anthropic 兼容",
 			"entryUrl": "",
 			"endpoint": "",
 			"keyField": "customAnthropicKey",
