@@ -50,6 +50,33 @@ function buildThinkingControlPayload(selectedModel: unknown, thinkingEnabled: un
 	};
 }
 /**
+ * 判断是否为 DeepSeek 系列模型（按模型名称前缀匹配，不依赖平台标识）。
+ * @param modelName - 模型名称。
+ * @returns 是否为 DeepSeek 模型。
+ */
+export function isDeepSeekModel(modelName: unknown): boolean {
+	return String(modelName || '').trim().toLowerCase().startsWith('deepseek');
+}
+// 为工具列表的每个 function 定义注入 strict: true，用于 DeepSeek Function Calling strict 模式。
+function applyStrictModeToTools(sourceTools: unknown[]): unknown[] {
+	const toolList: any = Array.isArray(sourceTools) ? sourceTools : [];
+	return toolList.map((tool: any) => {
+		if (!tool || typeof tool !== 'object') {
+			return tool;
+		}
+		if (String(tool.type || '').trim() !== 'function' || !tool.function || typeof tool.function !== 'object') {
+			return tool;
+		}
+		return {
+			...tool,
+			function: {
+				...tool.function,
+				strict: true,
+			},
+		};
+	});
+}
+/**
  * 按固定名单筛选可暴露给模型的工具。
  * @param sourceTools - 原始工具列表。
  * @returns 固定名单内的工具列表。
@@ -155,6 +182,10 @@ export function buildModelRequestPayload(params: {
 	const manualResponsesTools: any = pickManualExposedTools(params.responsesTools);
 	const manualChatTools: any = pickManualExposedTools(params.chatTools);
 	const thinkingControlPayload: any = buildThinkingControlPayload(params.modelName || params.selectedModel, params.thinkingEnabled);
+	// DeepSeek 模型按名称前缀检测，匹配时对 chat 工具列表启用 strict Function Calling 模式。
+	const effectiveChatTools: any = isDeepSeekModel(params.modelName || params.selectedModel)
+		? applyStrictModeToTools(manualChatTools)
+		: manualChatTools;
 	if (params.isResponsesEndpoint) {
 		return {
 			model: params.modelName,
@@ -169,7 +200,7 @@ export function buildModelRequestPayload(params: {
 	return {
 		model: params.modelName,
 		messages: params.chatMessages,
-		tools: manualChatTools,
+		tools: effectiveChatTools,
 		tool_choice: 'auto',
 		...thinkingControlPayload,
 		temperature: 0.0,

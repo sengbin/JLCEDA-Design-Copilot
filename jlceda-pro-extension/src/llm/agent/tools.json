@@ -50,7 +50,7 @@
 		"type": "function",
 		"function": {
 			"name": "jlceda_api_invoke",
-			"description": "按 apiFullName 调用 EDA API。args 支持 positionalArgs、args、namedArgs 三种格式。",
+			"description": "按 apiFullName 调用 EDA API。将参数数组序列化为 JSON 字符串在 argsJson 中传入，无参数时传 \"[]\"。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -58,33 +58,12 @@
 						"type": "string",
 						"description": "完整 API 路径（必填），格式例如 eda.sch_Drc.check。"
 					},
-					"args": {
-						"type": "object",
-						"description": "调用参数对象（可选），支持 positionalArgs/args/namedArgs/parameterOrder。",
-						"properties": {
-							"positionalArgs": {
-								"type": "array",
-								"items": {}
-							},
-							"args": {
-								"type": "array",
-								"items": {}
-							},
-							"namedArgs": {
-								"type": "object",
-								"additionalProperties": true
-							},
-							"parameterOrder": {
-								"type": "array",
-								"items": {
-									"type": "string"
-								}
-							}
-						},
-						"additionalProperties": true
+					"argsJson": {
+						"type": "string",
+						"description": "参数数组的 JSON 字符串，将全部参数按顺序放入数组并序列化，例如 \"[false,false,true]\" 或 \"[{\\\"uuid\\\":\\\"abc\\\"},100,100]\"."
 					}
 				},
-				"required": ["apiFullName"],
+				"required": ["apiFullName", "argsJson"],
 				"additionalProperties": false
 			}
 		}

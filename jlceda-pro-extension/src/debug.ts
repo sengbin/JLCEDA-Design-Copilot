@@ -8,10 +8,7 @@ const DEBUG_TOOL_EXEC_SHOW_TOOL_NAME: any = true; // 展示工具名
 const DEBUG_TOOL_EXEC_SHOW_CALL_STATUS: any = true; // 展示调用状态（执行中/已完成/超时）
 const DEBUG_TOOL_EXEC_SHOW_RESULT_STATUS: any = true; // 展示返回结果（成功/失败/等待中）
 const DEBUG_TOOL_EXEC_SHOW_CALLED_API: any = true; // 展示调用 API 路径列表
-const DEBUG_TOOL_EXEC_SHOW_REPAIR_STATUS: any = false; // 展示参数修复状态输出
-const DEBUG_TOOL_EXEC_SHOW_REPAIR_RECEIVED_ARGUMENTS: any = false; // 修复成功时展示收到参数
-const DEBUG_TOOL_EXEC_SHOW_SUCCESS_RECEIVED_ARGUMENTS: any = false; // API 调用成功时展示收到参数
-const DEBUG_TOOL_EXEC_SHOW_REPAIR_FAILED_ARGUMENTS: any = false; // 修复失败时展示错误参数快照
+const DEBUG_TOOL_EXEC_SHOW_SUCCESS_RECEIVED_ARGUMENTS: any = true; // API 调用成功时展示收到参数
 const DEBUG_TOOL_EXEC_SHOW_ERROR_INFO: any = true; // 展示整体错误信息摘要
 
 // 工具错误详情：字段开关，控制每种错误子信息是否加入折叠详情内容。
@@ -20,9 +17,6 @@ const DEBUG_TOOL_ERROR_SHOW_STAGE: any = true; // 失败阶段说明
 const DEBUG_TOOL_ERROR_SHOW_EXPECTED_FORMAT: any = true; // 期望参数格式示例
 
 const DEBUG_TOOL_ERROR_SHOW_RECEIVED_ARGUMENTS: any = true; // 实际收到的参数片段
-const DEBUG_TOOL_ERROR_SHOW_REPAIR_STATUS: any = true; // 参数修复状态
-const DEBUG_TOOL_ERROR_SHOW_REPAIR_FAILED_ARGUMENTS: any = true; // 修复失败时的原始参数展示
-const DEBUG_TOOL_ERROR_SHOW_REPAIR_DIAGNOSIS: any = true; // 修复诊断信息
 
 const DEBUG_TOOL_ERROR_SHOW_TARGET_API: any = true; // 目标 API 路径
 const DEBUG_TOOL_ERROR_SHOW_CONCLUSION: any = true; // 调用结论信息
@@ -168,26 +162,11 @@ export function formatToolErrorDisplayText(toolCall?: any, toolResult?: any, run
 	appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_BASE_ERROR && hasBaseError, baseErrorText);
 	appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_STAGE && !!errorStage, `失败阶段：${errorStage}`);
 	if (toolName === 'jlceda_api_invoke' && errorCode === 'INVALID_TOOL_ARGUMENTS_JSON') {
-		const expectedFormat: any = String(resultObject.expectedArgumentsFormat || '{"apiFullName":"eda.sch_Drc.check","args":{"positionalArgs":[false,false,true]}}').trim();
+		const expectedFormat: any = String(resultObject.expectedArgumentsFormat || '{"apiFullName":"eda.sch_Drc.check","argsJson":"[false,false,true]"}').trim();
 		const rawArgumentsPreview: any = String(resultObject.rawArgumentsPreview || getToolCallArgumentsText(toolCall) || '').trim();
 		const candidateApiPath: any = normalizeApiPath(resultObject.apiFullName || resultObject.apiPath || extractApiPathFromRawArguments(rawArgumentsPreview));
-		const argumentsRepairStatus: any = String(resultObject.argumentsRepairStatus || '').trim();
-		const argumentsRepairOriginalPreview: any = String(resultObject.argumentsRepairOriginalPreview || '').trim();
-		const argumentsRepairError: any = String(resultObject.argumentsRepairError || '').trim();
 		appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_EXPECTED_FORMAT, `参数格式：${expectedFormat}`);
 		appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_RECEIVED_ARGUMENTS, `收到参数：${rawArgumentsPreview || '无'}`);
-		if (argumentsRepairStatus === 'fixed') {
-			appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_REPAIR_STATUS, '参数修复：接收到错误参数格式，已修复。');
-		}
-		if (argumentsRepairStatus === 'failed') {
-			appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_REPAIR_STATUS, '参数修复：接收到错误参数格式，修复失败。');
-			if (argumentsRepairOriginalPreview) {
-				appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_REPAIR_FAILED_ARGUMENTS, `错误参数：${argumentsRepairOriginalPreview}`);
-			}
-			if (argumentsRepairError) {
-				appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_REPAIR_DIAGNOSIS, `修复诊断：${argumentsRepairError}`);
-			}
-		}
 		if (candidateApiPath) {
 			appendDisplayPart(outputParts, DEBUG_TOOL_ERROR_SHOW_TARGET_API, `目标API：${candidateApiPath}`);
 		}
@@ -214,8 +193,6 @@ export function formatToolExecDisplayText(toolCall?: any, toolResult?: any, runn
 		? String(callObject.function.name || '').trim()
 		: '';
 	const resultObject: any = toolResult && typeof toolResult === 'object' ? toolResult : {};
-	const argumentsRepairStatus: any = String(resultObject.argumentsRepairStatus || '').trim();
-	const argumentsRepairOriginalPreview: any = String(resultObject.argumentsRepairOriginalPreview || '').trim();
 	const rawArgumentsText: any = getToolCallArgumentsText(toolCall);
 	const hasOkFlag: any = toolResult && typeof toolResult === 'object' && Object.prototype.hasOwnProperty.call(toolResult, 'ok');
 	const hasBooleanBusinessResult: any = toolResult && typeof toolResult === 'object' && typeof toolResult.result === 'boolean';
@@ -243,18 +220,8 @@ export function formatToolExecDisplayText(toolCall?: any, toolResult?: any, runn
 	appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_CALL_STATUS, `调用状态：${statusText}`);
 	appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_RESULT_STATUS, `返回结果：${resultText}`);
 	appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_CALLED_API, `调用 API：${calledApiText}`);
-	if (!running && toolName === 'jlceda_api_invoke' && isSuccess && argumentsRepairStatus !== 'fixed') {
+	if (!running && toolName === 'jlceda_api_invoke' && isSuccess) {
 		appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_SUCCESS_RECEIVED_ARGUMENTS, `收到参数：${rawArgumentsText || '无'}`);
-	}
-	if (!running && argumentsRepairStatus === 'fixed') {
-		appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_REPAIR_STATUS, '参数修复：接收到错误参数格式，已修复。');
-		appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_REPAIR_RECEIVED_ARGUMENTS, `收到参数：${argumentsRepairOriginalPreview || '无'}`);
-	}
-	if (!running && argumentsRepairStatus === 'failed') {
-		appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_REPAIR_STATUS, '参数修复：接收到错误参数格式，修复失败。');
-		if (argumentsRepairOriginalPreview) {
-			appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_REPAIR_FAILED_ARGUMENTS, `错误参数：${argumentsRepairOriginalPreview}`);
-		}
 	}
 	if (!running && !isSuccess) {
 		appendDisplayPart(outputLines, DEBUG_TOOL_EXEC_SHOW_ERROR_INFO, `错误信息：${businessFailReason || errorText}`);

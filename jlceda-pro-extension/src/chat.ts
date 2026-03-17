@@ -242,18 +242,13 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		const sourceText: any = String(text || '').replace(/\r\n/g, '\n');
 		return /(?:^|\n)\s*返回结果[：:]\s*失败(?:\s*$|\n)/u.test(sourceText);
 	}
-	// 生成可写入模型上下文的工具结果对象（移除本地内部修复字段）。
+	// 生成可写入模型上下文的工具结果对象。
 	function sanitizeToolResultForModel(result?: any) {
 		const resultObject: any = result && typeof result === 'object' ? result : null;
 		if (!resultObject) {
 			return result;
 		}
 		const sanitizedResult: any = { ...resultObject };
-		delete sanitizedResult.argumentsRepairStatus;
-		delete sanitizedResult.argumentsRepairOriginalPreview;
-		delete sanitizedResult.argumentsRepairRepairedPreview;
-		delete sanitizedResult.argumentsRepairAppliedRules;
-		delete sanitizedResult.argumentsRepairError;
 		if (String(sanitizedResult.errorCode || '').trim() === 'INVALID_TOOL_ARGUMENTS_JSON') {
 			sanitizedResult.error = '工具参数不是有效 JSON。';
 		}

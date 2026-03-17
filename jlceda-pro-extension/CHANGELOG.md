@@ -1,5 +1,11 @@
 # 2.1.1 (2026-03-17)
 
+- 用 argsJson 字符串字段解决 DeepSeek strict 模式下 JSON 格式问题。
+  - jlceda_api_invoke 工具参数 schema 只保留 argsJson（字符串），完全兼容 strict 封闭要求。
+  - 彻底移除 repair 死代码与所有旧参数格式兼容逻辑。
+
+# 2.1.0 (2026-03-17)
+
 - 重构 `src/` 目录结构，改为按职责分层：`llm/`、`llm/agent/`、`platform/`、`page/`、`session/`、`tools/`。
 - 将 `model.ts`、`upload.ts` 移入 `page/` 目录，职责归属更清晰。
 - 修复 `theme.ts` 中访问 `window.eda` 时的 TypeScript 类型报错（ts2339）。

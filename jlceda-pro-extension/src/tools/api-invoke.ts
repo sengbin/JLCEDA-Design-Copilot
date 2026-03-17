@@ -34,36 +34,6 @@ function resolveSegmentKey(target: Record<string, unknown>, segment: string): st
 	throw new Error(`调用路径不存在: ${segment}`);
 }
 
-// 解析工具调用参数格式。
-function normalizeInvokeArgs(rawArgs: unknown): unknown[] {
-	if (!isPlainObjectRecord(rawArgs)) {
-		return [];
-	}
-	if (Array.isArray(rawArgs.positionalArgs)) {
-		return rawArgs.positionalArgs;
-	}
-	if (Array.isArray(rawArgs.args)) {
-		return rawArgs.args;
-	}
-	if (isPlainObjectRecord(rawArgs.namedArgs)) {
-		if (Array.isArray(rawArgs.parameterOrder)) {
-			const ordered: unknown[] = [];
-			for (const key of rawArgs.parameterOrder) {
-				if (typeof key !== 'string' || !key.trim()) {
-					continue;
-				}
-				ordered.push(rawArgs.namedArgs[key]);
-			}
-			return ordered;
-		}
-		return [rawArgs.namedArgs];
-	}
-	if (Object.keys(rawArgs).length === 0) {
-		return [];
-	}
-	return [rawArgs];
-}
-
 // 解析 API 调用目标。
 function resolveApiCallable(runtimeWindow: Window, apiFullName: string): {
 	callable: (...args: unknown[]) => unknown;
@@ -169,7 +139,9 @@ export function createApiInvokeHandler(runtimeWindow: Window, deps: ApiInvokeDep
 		}
 		const apiFullName: any = String(payload.apiFullName ?? '').trim();
 		const { callable, thisArg, resolvedPath } = resolveApiCallable(runtimeWindow, apiFullName);
-		const invokeArgs: unknown[] = normalizeInvokeArgs(payload.args);
+		const argsJsonText: any = typeof payload.argsJson === 'string' ? payload.argsJson.trim() : '';
+		const parsed: unknown = argsJsonText ? JSON.parse(argsJsonText) : [];
+		const invokeArgs: unknown[] = Array.isArray(parsed) ? parsed : [parsed];
 		const invokeResult: unknown = await Promise.resolve(callable.apply(thisArg, invokeArgs));
 		return {
 			apiFullName: resolvedPath,
