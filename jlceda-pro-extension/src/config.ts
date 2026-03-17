@@ -675,38 +675,61 @@ import { messageType, showEdaToastMessage } from './utils';
 		if (!endpoint || !modelName) {
 			return { ok: false, message: '请求 URL 或模型名称未填写' };
 		}
-		const isResponsesEndpoint: any = endpoint.endsWith('/responses');
-		const requestBody: any = isResponsesEndpoint
-			? {
-					model: modelName,
-					input: [
-						{
-							role: 'user',
-							content: [
-								{
-									type: 'input_text',
-									text: 'ping',
-								},
-							],
-						},
-					],
-				}
-			: {
-					model: modelName,
-					messages: [
-						{ role: 'user', content: 'ping' },
-					],
-					max_tokens: 8,
-					temperature: 0,
-				};
+		const isAnthropicFormat: any = String(target.apiFormat || '').trim() === 'anthropic';
+		const isResponsesEndpoint: any = !isAnthropicFormat && endpoint.endsWith('/responses');
+		let requestBody: any;
+		let requestHeaders: any;
+		if (isAnthropicFormat) {
+			requestBody = {
+				model: modelName,
+				max_tokens: 8,
+				messages: [{ role: 'user', content: 'ping' }],
+			};
+			requestHeaders = {
+				'Content-Type': 'application/json',
+				'x-api-key': apiKey,
+				'anthropic-version': '2023-06-01',
+			};
+		}
+		else if (isResponsesEndpoint) {
+			requestBody = {
+				model: modelName,
+				input: [
+					{
+						role: 'user',
+						content: [
+							{
+								type: 'input_text',
+								text: 'ping',
+							},
+						],
+					},
+				],
+			};
+			requestHeaders = {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${apiKey}`,
+			};
+		}
+		else {
+			requestBody = {
+				model: modelName,
+				messages: [
+					{ role: 'user', content: 'ping' },
+				],
+				max_tokens: 8,
+				temperature: 0,
+			};
+			requestHeaders = {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${apiKey}`,
+			};
+		}
 		let response: any = null;
 		try {
 			response = await fetchWithTimeout(endpoint, {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${apiKey}`,
-				},
+				headers: requestHeaders,
 				body: JSON.stringify(requestBody),
 			}, VERIFY_TIMEOUT_MS);
 		}
@@ -761,6 +784,7 @@ import { messageType, showEdaToastMessage } from './utils';
 				apiKey,
 				endpoint: targetEndpoint,
 				model: modelName,
+				apiFormat: String(platformItem.apiFormat || '').trim(),
 			});
 		}
 		if (targets.length === 0 && failMessages.length === 0) {

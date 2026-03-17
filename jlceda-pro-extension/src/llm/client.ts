@@ -208,3 +208,63 @@ export function buildModelRequestPayload(params: {
 		stream: true,
 	};
 }
+/**
+ * 将 OpenAI 格式工具列表转换为 Anthropic Messages API 格式。
+ * @param sourceTools - OpenAI 格式工具列表。
+ * @returns Anthropic 格式工具列表。
+ */
+export function buildAnthropicTools(sourceTools: unknown[]): unknown[] {
+	const exposedTools: any = pickManualExposedTools(sourceTools);
+	const anthropicTools: unknown[] = [];
+	for (let index: any = 0; index < exposedTools.length; index += 1) {
+		const toolItem: any = exposedTools[index] && typeof exposedTools[index] === 'object' ? exposedTools[index] : {};
+		if (String(toolItem.type || '').trim() !== 'function' || !toolItem.function) {
+			continue;
+		}
+		const functionDef: any = toolItem.function && typeof toolItem.function === 'object' ? toolItem.function : {};
+		const toolName: any = String(functionDef.name || '').trim();
+		if (!toolName) {
+			continue;
+		}
+		anthropicTools.push({
+			name: toolName,
+			description: String(functionDef.description || ''),
+			input_schema: functionDef.parameters && typeof functionDef.parameters === 'object'
+				? functionDef.parameters
+				: { type: 'object', properties: {}, additionalProperties: true },
+		});
+	}
+	return anthropicTools;
+}
+/**
+ * 构建 Anthropic Messages API 请求体。
+ * @param params - 请求参数。
+ * @param params.modelName - 模型名称。
+ * @param params.systemText - 系统提示文本。
+ * @param params.messages - Anthropic 格式消息列表。
+ * @param params.tools - Anthropic 格式工具列表。
+ * @param params.maxOutputTokens - 最大输出 Token 数。
+ * @returns 请求体对象。
+ */
+export function buildAnthropicRequestPayload(params: {
+	modelName: string;
+	systemText: string;
+	messages: unknown[];
+	tools: unknown[];
+	maxOutputTokens: number;
+}): Record<string, unknown> {
+	const payload: Record<string, unknown> = {
+		model: params.modelName,
+		max_tokens: params.maxOutputTokens,
+		stream: true,
+		messages: params.messages,
+	};
+	if (params.systemText) {
+		payload.system = params.systemText;
+	}
+	if (params.tools.length > 0) {
+		payload.tools = params.tools;
+		payload.tool_choice = { type: 'auto' };
+	}
+	return payload;
+}

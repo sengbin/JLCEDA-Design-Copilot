@@ -14,6 +14,7 @@ export interface PlatformConfigItem {
 	model: string;
 	imagePayloadMode: string;
 	isCustomEndpoint: boolean;
+	apiFormat: string;
 }
 /**
  * 读取平台配置列表。
@@ -38,6 +39,7 @@ export function readPlatformConfigs(): PlatformConfigItem[] {
 		const model: any = String(sourceItem.model || '').trim();
 		const imagePayloadMode: any = String(sourceItem.imagePayloadMode || '').trim();
 		const isCustomEndpoint: boolean = Boolean(sourceItem.isCustomEndpoint);
+		const apiFormat: any = String(sourceItem.apiFormat || '').trim();
 		if (!id || !label || !keyField || !endpointField || !modelField) {
 			continue;
 		}
@@ -55,6 +57,7 @@ export function readPlatformConfigs(): PlatformConfigItem[] {
 			model,
 			imagePayloadMode,
 			isCustomEndpoint,
+			apiFormat,
 		});
 	}
 	return platformList;
@@ -136,6 +139,24 @@ export function readInitialModelMapByPlatform(): Record<string, string> {
 		modelMap[platformItem.id] = platformItem.model;
 	}
 	return modelMap;
+}
+/**
+ * 按平台标识读取单个平台配置。
+ * @param platformId - 平台标识。
+ * @returns 平台配置或 null。
+ */
+/**
+ * 构建模型 API 格式映射。
+ * @returns API 格式映射。
+ */
+export function readApiFormatMapByPlatform(): Record<string, string> {
+	const platformList: any = readPlatformConfigs();
+	const apiFormatMap: Record<string, string> = {};
+	for (let index: any = 0; index < platformList.length; index += 1) {
+		const platformItem: any = platformList[index];
+		apiFormatMap[platformItem.id] = platformItem.apiFormat;
+	}
+	return apiFormatMap;
 }
 /**
  * 按平台标识读取单个平台配置。

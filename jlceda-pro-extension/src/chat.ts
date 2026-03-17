@@ -4,9 +4,9 @@ import { DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE, DEBUG_TOOL_EXEC_SHOW_CALLED_API, DE
 import { readAgentSystemInstructions } from './llm/agent/instructions';
 import { AI_AGENT_RUNTIME, getModelContextHistoryBudgetTokens, throwIfAgentAborted } from './llm/agent/runtime';
 import tools from './llm/agent/tools.json';
-import { buildModelRequestPayload, buildResponsesTools, pickManualExposedTools, validateModelRequestConfig } from './llm/client';
-import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock } from './llm/stream';
-import { buildThinkingModeConfigKey, CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveImagePayloadMode, resolveModelConfig } from './page/model';
+import { buildAnthropicRequestPayload, buildAnthropicTools, buildModelRequestPayload, buildResponsesTools, pickManualExposedTools, validateModelRequestConfig } from './llm/client';
+import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock, processAnthropicStreamEvent } from './llm/stream';
+import { buildThinkingModeConfigKey, CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveApiFormat, resolveImagePayloadMode, resolveModelConfig } from './page/model';
 import { closeIFramePageById, ensureSvgIconSpriteLoaded, escapeHtml, formatToolExecRawText, renderMarkdown, renderToolExecPlainText } from './page/render';
 import { applyTheme, setupThemeSync } from './page/theme';
 import { buildUserMessageContentForApi, cloneImageEntries, collectClipboardImageFiles, convertImageFileToEntry, isGenericClipboardImageName, resolveImageEntryName } from './page/upload';
@@ -2266,6 +2266,125 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 			reasoningText: thinkParts.join('\n\n').trim(),
 		};
 	}
+	// 将内部消息内容转换为 Anthropic 用户消息内容块数组。
+	function buildAnthropicUserContentParts(content?: any, allowImagePart?: any) {
+		const parts: any[] = [];
+		// 追加文本内容块。
+		function pushText(text?: any) {
+			const trimmed: any = String(text || '').trim();
+			if (trimmed) {
+				parts.push({ type: 'text', text: trimmed });
+			}
+		}
+		// 追加图片内容块（base64 格式）。
+		function pushImage(imageValue?: any) {
+			if (!allowImagePart) {
+				return;
+			}
+			const imageUrl: any = typeof imageValue === 'string'
+				? imageValue
+				: (imageValue && imageValue.url ? String(imageValue.url) : '');
+			if (!imageUrl) {
+				return;
+			}
+			const dataUrlMatch: any = imageUrl.match(/^data:(image\/[^;]+);base64,(.+)$/i);
+			if (dataUrlMatch) {
+				parts.push({
+					type: 'image',
+					source: {
+						type: 'base64',
+						media_type: String(dataUrlMatch[1] || 'image/png').toLowerCase(),
+						data: dataUrlMatch[2],
+					},
+				});
+			}
+		}
+		if (typeof content === 'string') {
+			pushText(content);
+		}
+		else if (Array.isArray(content)) {
+			for (let index: any = 0; index < content.length; index += 1) {
+				const item: any = content[index];
+				if (!item) {
+					continue;
+				}
+				if (typeof item === 'string') {
+					pushText(item);
+					continue;
+				}
+				const itemType: any = String(item.type || '').trim().toLowerCase();
+				if (itemType === 'text' || itemType === 'input_text') {
+					pushText(item.text || item.output_text || '');
+				}
+				else if (itemType === 'image_url' || itemType === 'input_image') {
+					pushImage(item.image_url || '');
+				}
+			}
+		}
+		return parts;
+	}
+	// 将内部 agentMessages 转换为 Anthropic Messages API 格式消息数组。
+	function buildAnthropicMessagesEntries(selectedModelValue?: any) {
+		const contextMessages: any = buildContextWindowMessages();
+		const imagePayloadMode: any = resolveImagePayloadMode(selectedModelValue);
+		const allowImagePart: any = imagePayloadMode === 'image_url';
+		const anthropicMessages: any[] = [];
+		for (let index: any = 0; index < contextMessages.length; index += 1) {
+			const messageItem: any = contextMessages[index];
+			if (!messageItem || !messageItem.role) {
+				continue;
+			}
+			if (messageItem.role === 'user') {
+				const contentParts: any = buildAnthropicUserContentParts(messageItem.content, allowImagePart);
+				if (contentParts.length > 0) {
+					anthropicMessages.push({ role: 'user', content: contentParts });
+				}
+			}
+			else if (messageItem.role === 'assistant') {
+				const contentBlocks: any[] = [];
+				const textContent: any = readAssistantContent(messageItem.content);
+				if (textContent) {
+					contentBlocks.push({ type: 'text', text: textContent });
+				}
+				if (Array.isArray(messageItem.tool_calls) && messageItem.tool_calls.length > 0) {
+					for (let tc: any = 0; tc < messageItem.tool_calls.length; tc += 1) {
+						const toolCall: any = messageItem.tool_calls[tc];
+						let inputObject: any = {};
+						try {
+							const argText: any = String(toolCall && toolCall.function ? (toolCall.function.arguments || '{}') : '{}');
+							inputObject = JSON.parse(argText);
+						}
+						catch { }
+						contentBlocks.push({
+							type: 'tool_use',
+							id: String(toolCall && toolCall.id ? toolCall.id : '').trim() || (`toolu-${Date.now()}-${tc}`),
+							name: String(toolCall && toolCall.function ? (toolCall.function.name || '') : '').trim(),
+							input: inputObject,
+						});
+					}
+				}
+				if (contentBlocks.length > 0) {
+					anthropicMessages.push({ role: 'assistant', content: contentBlocks });
+				}
+			}
+			else if (messageItem.role === 'tool') {
+				// tool 结果合并到 user 消息的 tool_result 块中。
+				const toolResult: any = {
+					type: 'tool_result',
+					tool_use_id: String(messageItem.tool_call_id || '').trim(),
+					content: String(messageItem.content || '').trim(),
+				};
+				const lastMsg: any = anthropicMessages.length > 0 ? anthropicMessages[anthropicMessages.length - 1] : null;
+				if (lastMsg && lastMsg.role === 'user' && Array.isArray(lastMsg.content) && lastMsg.content.length > 0 && lastMsg.content[0].type === 'tool_result') {
+					lastMsg.content.push(toolResult);
+				}
+				else {
+					anthropicMessages.push({ role: 'user', content: [toolResult] });
+				}
+			}
+		}
+		return anthropicMessages;
+	}
 	// 调用模型并处理流式返回。
 	async function callModel(config?: any, onStreamDelta?: any, abortSignal?: any) {
 		const requestConfig: any = validateModelRequestConfig(config, getNormalizedEndpoint);
@@ -2273,25 +2392,41 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		const modelName: any = requestConfig.modelName;
 		const apiKey: any = requestConfig.apiKey;
 		const isResponsesEndpoint: any = endpoint.endsWith('/responses');
+		const isAnthropicFormat: any = String(config && config.apiFormat || '').trim() === 'anthropic';
 		const instructionsResult: any = readAgentSystemInstructions();
 		const systemInstructionsText: any = String(instructionsResult && instructionsResult.instructions ? instructionsResult.instructions : '').trim();
-		const payload: any = buildModelRequestPayload({
-			isResponsesEndpoint,
-			modelName,
-			responsesInput: buildResponsesInputEntries(systemInstructionsText),
-			responsesTools: buildResponsesTools(exposedTools),
-			chatMessages: buildChatMessagesEntries(config.selectedModel, systemInstructionsText),
-			chatTools: exposedTools,
-			selectedModel: config.selectedModel,
-			thinkingEnabled: readThinkingModeEnabledFromConfig(config, config.selectedModel),
-			maxOutputTokens: MODEL_MAX_OUTPUT_TOKENS,
-		});
+		const payload: any = isAnthropicFormat
+			? buildAnthropicRequestPayload({
+					modelName,
+					systemText: systemInstructionsText,
+					messages: buildAnthropicMessagesEntries(config.selectedModel),
+					tools: buildAnthropicTools(exposedTools),
+					maxOutputTokens: MODEL_MAX_OUTPUT_TOKENS,
+				})
+			: buildModelRequestPayload({
+					isResponsesEndpoint,
+					modelName,
+					responsesInput: buildResponsesInputEntries(systemInstructionsText),
+					responsesTools: buildResponsesTools(exposedTools),
+					chatMessages: buildChatMessagesEntries(config.selectedModel, systemInstructionsText),
+					chatTools: exposedTools,
+					selectedModel: config.selectedModel,
+					thinkingEnabled: readThinkingModeEnabledFromConfig(config, config.selectedModel),
+					maxOutputTokens: MODEL_MAX_OUTPUT_TOKENS,
+				});
+		const requestHeaders: any = isAnthropicFormat
+			? {
+					'Content-Type': 'application/json',
+					'x-api-key': apiKey,
+					'anthropic-version': '2023-06-01',
+				}
+			: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${apiKey}`,
+				};
 		const response: any = await fetch(endpoint, {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${apiKey}`,
-			},
+			headers: requestHeaders,
 			signal: abortSignal,
 			body: JSON.stringify(payload),
 		});
@@ -2396,6 +2531,22 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 				mergeToolCallDelta(message.tool_calls, responseToolCallDeltas);
 			}
 		}
+		// Anthropic 流式增量块活跃工具调用块映射（index → {id, name}）。
+		const activeAnthropicToolBlockMap: any = new Map();
+		// 处理 Anthropic 流式增量块。
+		function handleAnthropicChunk(chunkObject?: any, eventType?: any) {
+			const anthropicResult: any = processAnthropicStreamEvent(
+				chunkObject,
+				String(eventType || ''),
+				activeAnthropicToolBlockMap,
+			);
+			if (anthropicResult.textDelta) {
+				appendContentDelta(anthropicResult.textDelta);
+			}
+			if (anthropicResult.toolCallDeltas && anthropicResult.toolCallDeltas.length > 0) {
+				mergeToolCallDelta(message.tool_calls, anthropicResult.toolCallDeltas);
+			}
+		}
 		while (true) {
 			const readResult: any = await reader.read();
 			const done: any = readResult.done;
@@ -2424,7 +2575,10 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 				catch {
 					chunkObject = null;
 				}
-				if (isResponsesEndpoint) {
+				if (isAnthropicFormat) {
+					handleAnthropicChunk(chunkObject, eventType);
+				}
+				else if (isResponsesEndpoint) {
 					handleResponsesChunk(chunkObject, eventType);
 				}
 				else {
@@ -2440,7 +2594,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		if (message.content || message.reasoning_content || message.tool_calls.length > 0) {
 			return message;
 		}
-		if (!isResponsesEndpoint && responseTextBuffer.trim()) {
+		if (!isResponsesEndpoint && !isAnthropicFormat && responseTextBuffer.trim()) {
 			let data: any = null;
 			try {
 				data = JSON.parse(responseTextBuffer);
@@ -2663,6 +2817,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		config.apiUrl = endpoint;
 		config.apiKey = apiKey;
 		config.selectedModel = selectedModel;
+		config.apiFormat = resolveApiFormat(selectedModel);
 		const roundModelText: any = buildRoundModelText(modelName);
 		const sessionPrepareResult: any = sessionManager.ensureActiveChatSessionForUserMessage(userText);
 		if (sessionPrepareResult && (sessionPrepareResult.created || sessionPrepareResult.titleUpdated)) {

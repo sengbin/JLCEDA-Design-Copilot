@@ -1,5 +1,5 @@
 // 文件说明：封装聊天页模型配置、模型选择读写与模型能力相关通用逻辑。
-import { readFixedEndpointMapByPlatform, readImagePayloadModeMapByPlatform, readInitialModelMapByPlatform, readModelConfigMapByPlatform, readPlatformConfigs } from '../platform/platform';
+import { readApiFormatMapByPlatform, readFixedEndpointMapByPlatform, readImagePayloadModeMapByPlatform, readInitialModelMapByPlatform, readModelConfigMapByPlatform, readPlatformConfigs } from '../platform/platform';
 
 const THINKING_MODE_CONFIG_KEY_PREFIX: any = 'thinkingEnabled_';
 const THINKING_MODE_LEGACY_CONFIG_KEY: any = 'thinkingEnabled';
@@ -21,6 +21,7 @@ export const CHAT_MODEL_CONFIG_CONSTANTS: any = {
 	imageAttachmentLimit: 5,
 	modelConfigMap: readModelConfigMapByPlatform(),
 	modelImagePayloadMode: readImagePayloadModeMapByPlatform(),
+	modelApiFormatMap: readApiFormatMapByPlatform(),
 } as const;
 /**
  * 解析模型图片载荷模式。
@@ -38,6 +39,15 @@ export function resolveImagePayloadMode(modelValue: unknown): string {
  */
 export function isImageUploadEnabled(modelValue: unknown): boolean {
 	return !!resolveImagePayloadMode(modelValue);
+}
+/**
+ * 解析模型 API 格式。
+ * @param modelValue - 模型标识（平台 id）。
+ * @returns API 格式字符串，如 'anthropic'，未配置时返回空字符串。
+ */
+export function resolveApiFormat(modelValue: unknown): string {
+	const normalizedValue: any = String(modelValue || '').trim();
+	return CHAT_MODEL_CONFIG_CONSTANTS.modelApiFormatMap[normalizedValue] || '';
 }
 /**
  * 读取本地模型选择。

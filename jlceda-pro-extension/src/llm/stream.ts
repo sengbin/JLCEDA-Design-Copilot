@@ -229,3 +229,68 @@ export function mergeToolCallDelta(toolCalls?: any, deltaToolCalls?: any) {
 		}
 	}
 }
+/**
+ * 处理 Anthropic 流式 SSE 事件，提取文本增量与工具调用增量。
+ * @param chunkObject - SSE 事件数据对象。
+ * @param eventType - SSE 事件类型字符串。
+ * @param activeToolBlockMap - 活跃工具调用块信息映射（index → {id, name}）。
+ * @returns 文本增量与工具调用增量。
+ */
+export function processAnthropicStreamEvent(
+	chunkObject: any,
+	eventType: string,
+	activeToolBlockMap: Map<number, { id: string; name: string }>,
+): { textDelta: string; toolCallDeltas: any[] } {
+	let textDelta: any = '';
+	const toolCallDeltas: any[] = [];
+	if (!chunkObject || typeof chunkObject !== 'object') {
+		return { textDelta, toolCallDeltas };
+	}
+	const eventText: any = String(chunkObject.type || eventType || '').trim();
+	if (eventText === 'content_block_start') {
+		const block: any = chunkObject.content_block && typeof chunkObject.content_block === 'object'
+			? chunkObject.content_block
+			: null;
+		const blockIndex: any = Number(chunkObject.index);
+		if (block && String(block.type || '').trim() === 'tool_use') {
+			const toolId: any = String(block.id || '').trim();
+			const toolName: any = String(block.name || '').trim();
+			activeToolBlockMap.set(blockIndex, { id: toolId, name: toolName });
+			toolCallDeltas.push({
+				index: blockIndex,
+				id: toolId,
+				type: 'function',
+				function: { name: toolName, arguments: '' },
+			});
+		}
+		return { textDelta, toolCallDeltas };
+	}
+	if (eventText === 'content_block_delta') {
+		const delta: any = chunkObject.delta && typeof chunkObject.delta === 'object'
+			? chunkObject.delta
+			: null;
+		const blockIndex: any = Number(chunkObject.index);
+		if (!delta) {
+			return { textDelta, toolCallDeltas };
+		}
+		const deltaType: any = String(delta.type || '').trim();
+		if (deltaType === 'text_delta') {
+			textDelta = String(delta.text || '');
+			return { textDelta, toolCallDeltas };
+		}
+		if (deltaType === 'input_json_delta') {
+			const toolBlock: any = activeToolBlockMap.get(blockIndex);
+			toolCallDeltas.push({
+				index: blockIndex,
+				id: toolBlock ? toolBlock.id : '',
+				type: 'function',
+				function: {
+					name: toolBlock ? toolBlock.name : '',
+					arguments: String(delta.partial_json || ''),
+				},
+			});
+		}
+		return { textDelta, toolCallDeltas };
+	}
+	return { textDelta, toolCallDeltas };
+}

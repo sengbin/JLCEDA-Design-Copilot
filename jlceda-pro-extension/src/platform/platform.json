@@ -46,7 +46,7 @@
 		},
 		{
 			"id": "custom",
-			"label": "自定义",
+			"label": "OpenAI 自定义",
 			"entryUrl": "",
 			"endpoint": "",
 			"keyField": "customKey",
@@ -55,6 +55,19 @@
 			"model": "",
 			"imagePayloadMode": "image_url",
 			"isCustomEndpoint": true
+		},
+		{
+			"id": "custom-anthropic",
+			"label": "Anthropic 自定义",
+			"entryUrl": "",
+			"endpoint": "",
+			"keyField": "customAnthropicKey",
+			"endpointField": "customAnthropicUrl",
+			"modelField": "customAnthropicModel",
+			"model": "",
+			"imagePayloadMode": "image_url",
+			"isCustomEndpoint": true,
+			"apiFormat": "anthropic"
 		}
 	]
 }
