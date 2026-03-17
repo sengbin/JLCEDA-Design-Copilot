@@ -4,6 +4,8 @@ JLCEDA Design Copilot 是面向嘉立创 EDA 专业版的 AI 对话插件，让�
 
 项目地址：https://github.com/sengbin/JLCEDA-Design-Copilot
 
+讨论 QQ 群：9041389，欢迎你反馈更多的问题和建议。
+
 ## 整体架构
 
 ```text
@@ -22,11 +24,11 @@ EDA API 运行时（Extension iframe 内）
 
 ## 可用工具
 
-| 工具 | 说明 |
-|------|------|
-| `jlceda_api_search` | 离线查询 EDA API 文档，支持按名称、scope、owner 过滤 |
-| `jlceda_context_get` | 读取当前工程、文档、原理图/PCB 及选区上下文 |
-| `jlceda_api_invoke` | 执行指定 EDA API 并返回结果，支持自定义超时 |
+| 工具                   | 说明                                                 |
+| ---------------------- | ---------------------------------------------------- |
+| `jlceda_api_search`  | 离线查询 EDA API 文档，支持按名称、scope、owner 过滤 |
+| `jlceda_context_get` | 读取当前工程、文档、原理图/PCB 及选区上下文          |
+| `jlceda_api_invoke`  | 执行指定 EDA API 并返回结果，支持自定义超时          |
 
 ## 安装
 

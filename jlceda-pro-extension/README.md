@@ -10,6 +10,8 @@ B站教程视频：https://www.bilibili.com/video/BV1uwwXzSEpU/
 
 项目地址：https://github.com/sengbin/JLCEDA-Design-Copilot
 
+讨论 QQ 群：9041389，欢迎你反馈更多的问题和建议。
+
 ## 安装
 
 打开嘉立创 EDA，进入扩展管理器，搜索"AI 设计助手"并安装。
