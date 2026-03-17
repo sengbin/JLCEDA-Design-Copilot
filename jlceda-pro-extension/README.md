@@ -1,6 +1,6 @@
 # AI 设计助手
 
-B站教程视频：https://
+B站教程视频：https://www.bilibili.com/video/BV1uwwXzSEpU/
 
 你可以在 EDA 里直接和 AI 对话，描述需求、分析电路，或让 AI 帮你完成在 EDA 上的操作。
 
