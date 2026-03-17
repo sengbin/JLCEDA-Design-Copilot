@@ -833,11 +833,8 @@ body {
 :root[data-theme='dark'] .chat-message.ai.tool-exec .tool-exec-json-auto {
 	background: rgba(0, 0, 0, 0.18);
 }
-/* 接收数据 JSON 滚动容器：限制高度，由 OverlayScrollbars 接管滚动条 */
+/* 接收数据 JSON 滚动容器：仅提供背景，max-height/overflow 下移到内部 pre，由 OverlayScrollbars 接管 */
 .chat-message.ai.tool-exec .tool-exec-json-scroll {
-	max-height: 180px;
-	overflow-y: auto;
-	overflow-x: auto;
 	border-radius: 4px;
 	background: var(--tool-bg);
 }
@@ -853,6 +850,11 @@ body {
 	white-space: pre;
 	word-break: normal;
 	overflow-wrap: normal;
+}
+/* 接收数据 JSON 的 pre 限制高度，由 OverlayScrollbars 接管滚动；鼠标悬停时显示滚动条 */
+.chat-message.ai.tool-exec .tool-exec-json-scroll .tool-exec-json-pre {
+	max-height: 180px;
+	overflow: hidden;
 }
 .chat-message.ai.tool-exec .tool-exec-json-pre code {
 	font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
