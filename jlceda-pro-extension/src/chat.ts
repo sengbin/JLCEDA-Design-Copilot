@@ -1094,12 +1094,16 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 			return;
 		}
 		const platformList: any = readPlatformConfigs();
+		const savedConfig: any = readConfig(STORAGE_KEY);
 		modelSelect.innerHTML = '';
 		for (let index: any = 0; index < platformList.length; index += 1) {
 			const platformItem: any = platformList[index];
+			const configuredModel: any = savedConfig ? String(savedConfig[platformItem.modelField] || '').trim() : '';
+			const modelName: any = configuredModel || platformItem.model;
+			const displayLabel: any = modelName ? `${modelName}（${platformItem.label}）` : platformItem.label;
 			const optionElement: any = document.createElement('option');
 			optionElement.value = platformItem.id;
-			optionElement.text = platformItem.label;
+			optionElement.text = displayLabel;
 			modelSelect.appendChild(optionElement);
 		}
 	}
