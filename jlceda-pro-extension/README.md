@@ -2,7 +2,7 @@
 
 你可以在 EDA 里直接和 AI 对话，描述需求、分析电路，或让 AI 帮你完成在 EDA 上的操作。
 
-B站教程视频：https://www.bilibili.com/video/BV1uwwXzSEpU/
+B站演示视频：https://www.bilibili.com/video/BV1uwwXzSEpU/
 
 讨论 QQ 群：9041389，欢迎你反馈更多的问题和建议。
 
