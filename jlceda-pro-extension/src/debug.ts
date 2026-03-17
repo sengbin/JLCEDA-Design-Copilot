@@ -195,7 +195,7 @@ export function formatToolExecDisplayText(toolCall?: any, toolResult?: any, runn
  * @param value - 待检测对象。
  * @param outputList - 输出路径列表。
  */
-export function appendDebugApiPaths(value: unknown, outputList: string[]): void {
+function appendDebugApiPaths(value: unknown, outputList: string[]): void {
 	const sourceObject: any = value && typeof value === 'object' ? value : null;
 	if (!sourceObject || !Array.isArray(outputList)) {
 		return;
@@ -226,7 +226,7 @@ export function appendDebugApiPaths(value: unknown, outputList: string[]): void 
  * @param visitedObjects - 已访问对象列表。
  * @param depth - 当前深度。
  */
-export function collectApiPathsFromValue(value?: any, outputList?: any, visitedObjects?: any, depth?: any) {
+function collectApiPathsFromValue(value?: any, outputList?: any, visitedObjects?: any, depth?: any) {
 	const currentDepth: any = typeof depth === 'number' ? depth : 0;
 	if (currentDepth > 8) {
 		return;
@@ -263,7 +263,7 @@ export function collectApiPathsFromValue(value?: any, outputList?: any, visitedO
  * @param toolResult - 工具返回对象。
  * @returns 去重后的 API 路径列表。
  */
-export function extractToolCalledApiPaths(toolCall?: any, toolResult?: any) {
+function extractToolCalledApiPaths(toolCall?: any, toolResult?: any) {
 	const outputList: any = [];
 	const visitedObjects: any = [];
 	const callObject: any = toolCall && typeof toolCall === 'object' ? toolCall : {};

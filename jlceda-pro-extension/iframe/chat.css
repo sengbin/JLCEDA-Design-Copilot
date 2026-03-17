@@ -787,11 +787,6 @@ body {
 	border: none;
 	transition: background-color 0.2s ease;
 }
-.chat-message.ai.tool-exec .tool-exec-plain {
-	margin: 0;
-	white-space: pre-wrap;
-	word-break: break-word;
-}
 /* 工具调用详情区域整体容器 */
 .chat-message.ai.tool-exec .tool-exec-body {
 	display: flex;
