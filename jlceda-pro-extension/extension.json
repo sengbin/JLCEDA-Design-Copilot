@@ -3,7 +3,7 @@
 	"uuid": "4585803ac4eb41d19e17c601bfa15528",
 	"displayName": "AI 设计助手",
 	"description": "使用自然语言与AI大模型聊天辅助设计原理图和PCB。",
-	"version": "2.1.1",
+	"version": "2.0.0",
 	"publisher": "Lion",
 	"engines": {
 		"eda": "^3.0.0"

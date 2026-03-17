@@ -1,4 +1,4 @@
-# 2.1.1 (2026-03-17)
+# 2.2.0 (2026-03-17)
 
 - 用 argsJson 字符串字段解决 DeepSeek strict 模式下 JSON 格式问题。
   - jlceda_api_invoke 工具参数 schema 只保留 argsJson（字符串），完全兼容 strict 封闭要求。
