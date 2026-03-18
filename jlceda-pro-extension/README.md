@@ -32,8 +32,9 @@ B站演示视频：https://www.bilibili.com/video/BV1uwwXzSEpU/
 - DeepSeek
 - 智谱（GLM）
 - 阿里（通义）
-- 百度（文心）
-- 自定义（填写任意兼容 OpenAI 接口的 Endpoint）
+- OpenAI 兼容（自定义兼容 OpenAI 接口的模型，如 GPT 模型）
+- Anthropic 兼容（自定义兼容 Anthropic 接口的模型，如 Claude 模型）
+-
 
 ## 开始使用
 
