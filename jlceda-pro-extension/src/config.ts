@@ -711,6 +711,22 @@ import { messageType, showEdaToastMessage } from './utils';
 				: (`HTTP ${response.status}`);
 			return { ok: false, message: errorMessage };
 		}
+		// HTTP 200 时校验响应体是否包含合法 API 响应字段，防止终结点填写为 base URL 时误判通过。
+		if (isAnthropicFormat) {
+			if (!result || !Array.isArray(result.content)) {
+				return { ok: false, message: '响应格式异常，请确认终结点是否为完整的 Anthropic API 路径（如 https://api.anthropic.com/v1/messages）' };
+			}
+		}
+		else if (isResponsesEndpoint) {
+			if (!result || !Array.isArray(result.output)) {
+				return { ok: false, message: '响应格式异常，请确认终结点是否为完整的 Responses API 路径（如 .../v1/responses）' };
+			}
+		}
+		else {
+			if (!result || !Array.isArray(result.choices)) {
+				return { ok: false, message: '响应格式异常，请确认终结点是否为完整的 API 路径（如 https://api.example.com/v1/chat/completions）' };
+			}
+		}
 		return { ok: true, message: '验证成功' };
 	}
 	// 验证当前表单内全部已填写平台。

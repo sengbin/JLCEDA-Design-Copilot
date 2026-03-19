@@ -1,3 +1,8 @@
+
+# 2.2.3 (2026-03-19)
+
+- 修复：调整模型配置页“OpenAI 兼容 / Anthropic 兼容”自定义终结点验证逻辑，验证时在 HTTP 200 的情况下校验响应体结构（OpenAI 兼容检查 choices，Responses 检查 output，Anthropic 检查 content），避免填写 base URL 导致误判通过的问题（修改文件：src/config.ts）。
+
 # 2.2.2 (2026-03-19)
 
 - 新增文档上传功能：聊天输入区域图片上传按钮旁增加"添加文档"按钮，支持上传 `.txt`、`.md`、`.markdown`、`.csv`、`.rtf` 等纯文本文档格式，最多同时添加 10 个文档。
