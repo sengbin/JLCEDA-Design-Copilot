@@ -12,7 +12,6 @@ import { applyTheme, setupThemeSync } from './page/theme';
 import { buildUserMessageContentForApi, cloneImageEntries, collectClipboardImageFiles, convertImageFileToEntry, isGenericClipboardImageName, resolveImageEntryName } from './page/upload';
 import { readPlatformConfigs } from './platform/platform';
 import { createChatSessionManager } from './session/session';
-import { generateSessionTitleByModel } from './session/title';
 import { createAgentToolRuntime, executeToolWithTimeout } from './tools/executor';
 import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 
@@ -107,8 +106,6 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 	let imageAttachmentHoverPreviewImage: any = null;
 	let imageAttachmentHoverPreviewName: any = null;
 	let imageAttachmentHoverHideTimerId: any = 0;
-	const sessionTitleRefreshTaskMap: any = new Map();
-	let sessionTitleRefreshTaskSeed: any = 0;
 	const sessionManager: any = createChatSessionManager({
 		storageKey: CHAT_SESSION_STORAGE_KEY,
 		maxMessages: CHAT_SESSION_MAX_MESSAGES,
@@ -742,40 +739,6 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		const pad: any = (value: any) => String(value).padStart(2, '0');
 		return `${dateObject.getFullYear()}/${pad(dateObject.getMonth() + 1)}/${pad(dateObject.getDate())
 		} ${pad(dateObject.getHours())}:${pad(dateObject.getMinutes())}`;
-	}
-	// 按当前模型配置异步生成会话标题并回填到对应会话。
-	function requestAsyncSessionTitleRefresh(params?: any) {
-		const sessionId: any = String(params && params.sessionId ? params.sessionId : '').trim();
-		const userText: any = String(params && params.userText ? params.userText : '').trim();
-		const endpoint: any = String(params && params.endpoint ? params.endpoint : '').trim();
-		const apiKey: any = String(params && params.apiKey ? params.apiKey : '').trim();
-		const modelName: any = String(params && params.modelName ? params.modelName : '').trim();
-		if (!sessionId || !userText || !endpoint || !apiKey || !modelName) {
-			return;
-		}
-		sessionTitleRefreshTaskSeed += 1;
-		const taskId: any = sessionTitleRefreshTaskSeed;
-		sessionTitleRefreshTaskMap.set(sessionId, taskId);
-		generateSessionTitleByModel({
-			endpoint,
-			apiKey,
-			modelName,
-			userText,
-		}).then((titleText?: any) => {
-			if (sessionTitleRefreshTaskMap.get(sessionId) !== taskId) {
-				return;
-			}
-			if (!titleText) {
-				return;
-			}
-			const updated: any = sessionManager.updateChatSessionTitleById(sessionId, titleText);
-			if (!updated) {
-				return;
-			}
-			renderChatSessionDropdownOptions();
-		}).catch(() => {
-			// 标题优化失败不影响主对话流程。
-		});
 	}
 	// 创建单个会话下拉选项节点。
 	function createChatSessionOptionElement(sessionItem?: any, isActive?: any) {
@@ -2842,13 +2805,6 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		const sessionPrepareResult: any = sessionManager.ensureActiveChatSessionForUserMessage(userText);
 		if (sessionPrepareResult && (sessionPrepareResult.created || sessionPrepareResult.titleUpdated)) {
 			renderChatSessionDropdownOptions();
-			requestAsyncSessionTitleRefresh({
-				sessionId: sessionPrepareResult.sessionId,
-				userText,
-				endpoint,
-				apiKey,
-				modelName,
-			});
 		}
 		if (hasCompletedRound && chatDisplayMessages.length > 0) {
 			appendMessage('ai', 'round-separator', 'round-separator');
