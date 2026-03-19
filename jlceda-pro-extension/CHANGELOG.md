@@ -1,6 +1,7 @@
 # 2.2.2 (2026-03-19)
 
 - 移除会话标题自动生成功能：删除 `session/title.ts` 模块及 `chat.ts` 中全部相关逻辑（任务调度变量、`requestAsyncSessionTitleRefresh` 函数及其调用处）。
+- 移除思考模式相关的配置和逻辑。
 
 # 2.2.1 (2026-03-18)
 
