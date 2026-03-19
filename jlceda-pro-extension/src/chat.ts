@@ -9,7 +9,7 @@ import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock,
 import { CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveApiFormat, resolveImagePayloadMode, resolveModelConfig } from './page/model';
 import { closeIFramePageById, ensureSvgIconSpriteLoaded, escapeHtml, formatToolExecRawText, renderMarkdown, renderToolExecPlainText } from './page/render';
 import { applyTheme, setupThemeSync } from './page/theme';
-import { buildUserMessageContentForApi, cloneImageEntries, collectClipboardImageFiles, convertImageFileToEntry, isGenericClipboardImageName, resolveImageEntryName } from './page/upload';
+import { buildUserMessageContentForApi, cloneDocumentEntries, cloneImageEntries, collectClipboardImageFiles, convertDocumentFileToEntry, convertImageFileToEntry, DOCUMENT_ATTACHMENT_LIMIT, isGenericClipboardImageName, resolveImageEntryName } from './page/upload';
 import { readPlatformConfigs } from './platform/platform';
 import { createChatSessionManager } from './session/session';
 import { createAgentToolRuntime, executeToolWithTimeout } from './tools/executor';
@@ -36,6 +36,8 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 	const RUNNING_INDICATOR_TEXT: any = '执行中...';
 	const imageUploadButton: any = document.querySelector('.image-upload-button');
 	const imageUploadInput: any = document.querySelector('.image-upload-input');
+	const documentUploadButton: any = document.querySelector('.document-upload-button');
+	const documentUploadInput: any = document.querySelector('.document-upload-input');
 	const modelSelect: any = document.querySelector('.model-select');
 	// 获取当前选中的模型值。
 	function getSelectedModelValue() {
@@ -83,6 +85,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 	const agentMessages: any = [];
 	const chatDisplayMessages: any = [];
 	const pendingImageEntries: any = [];
+	const pendingDocumentEntries: any = [];
 	let hasCompletedRound: any = false;
 	let runningIndicatorNode: any = null;
 	let isSending: any = false;
@@ -1196,11 +1199,93 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 			itemNode.appendChild(nameNode);
 			imageAttachmentList.appendChild(itemNode);
 		}
+		for (let index: any = 0; index < pendingDocumentEntries.length; index += 1) {
+			const docEntry: any = pendingDocumentEntries[index];
+			const itemNode: any = document.createElement('div');
+			itemNode.className = 'image-attachment-item';
+			const removeButton: any = document.createElement('button');
+			removeButton.type = 'button';
+			removeButton.className = 'image-attachment-remove';
+			removeButton.setAttribute('aria-label', '删除文档');
+			removeButton.innerHTML = '<svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><use xlink:href="#icon-close-x"></use></svg>';
+			removeButton.addEventListener('click', () => {
+				const targetId: any = docEntry.id;
+				for (let entryIndex: any = 0; entryIndex < pendingDocumentEntries.length; entryIndex += 1) {
+					if (pendingDocumentEntries[entryIndex].id === targetId) {
+						pendingDocumentEntries.splice(entryIndex, 1);
+						break;
+					}
+				}
+				renderImageAttachmentList();
+			});
+			const nameNode: any = document.createElement('span');
+			nameNode.className = 'image-attachment-name';
+			nameNode.textContent = docEntry.name || '文档';
+			itemNode.appendChild(removeButton);
+			itemNode.appendChild(nameNode);
+			imageAttachmentList.appendChild(itemNode);
+		}
 	}
 	// 清空待发送图片。
 	function clearPendingImageEntries() {
 		pendingImageEntries.length = 0;
 		renderImageAttachmentList();
+	}
+	// 渲染待发送文档列表（文档条目与图片条目共用同一列表）。
+	function renderDocumentAttachmentList() {
+		renderImageAttachmentList();
+	}
+	// 清空待发送文档。
+	function clearPendingDocumentEntries() {
+		pendingDocumentEntries.length = 0;
+		renderDocumentAttachmentList();
+	}
+	// 批量添加待发送文档。
+	async function addPendingDocuments(fileList?: any) {
+		const sourceFiles: any = Array.isArray(fileList) ? fileList : [];
+		if (sourceFiles.length === 0) {
+			return;
+		}
+		const remaining: any = DOCUMENT_ATTACHMENT_LIMIT - pendingDocumentEntries.length;
+		if (remaining <= 0) {
+			showEdaToastMessage(window, `最多可添加${DOCUMENT_ATTACHMENT_LIMIT}个文档。`, messageType.warning);
+			return;
+		}
+		// 按文件名去重，跳过已存在的。
+		const existingNameSet: any = new Set();
+		for (let index: any = 0; index < pendingDocumentEntries.length; index += 1) {
+			const nameKey: any = String(pendingDocumentEntries[index] && pendingDocumentEntries[index].name ? pendingDocumentEntries[index].name : '').trim().toLowerCase();
+			if (nameKey) {
+				existingNameSet.add(nameKey);
+			}
+		}
+		let addedCount: any = 0;
+		for (let index: any = 0; index < sourceFiles.length; index += 1) {
+			if (addedCount >= remaining) {
+				break;
+			}
+			const fileObject: any = sourceFiles[index];
+			if (!fileObject) {
+				continue;
+			}
+			const nameKey: any = String(fileObject.name || '').trim().toLowerCase();
+			if (nameKey && existingNameSet.has(nameKey)) {
+				continue;
+			}
+			try {
+				const entry: any = await convertDocumentFileToEntry(fileObject);
+				pendingDocumentEntries.push(entry);
+				if (nameKey) {
+					existingNameSet.add(nameKey);
+				}
+				addedCount += 1;
+			}
+			catch { }
+		}
+		if (sourceFiles.length > remaining) {
+			showEdaToastMessage(window, `最多可添加${DOCUMENT_ATTACHMENT_LIMIT}个文档。`, messageType.warning);
+		}
+		renderDocumentAttachmentList();
 	}
 	// 规范化图片文件名用于去重比较。
 	function normalizeImageFileNameForDedup(fileName?: any) {
@@ -1395,6 +1480,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 			else {
 				const payloadText: any = String(text.text || '').trim();
 				const payloadImages: any = cloneImageEntries(text.images);
+				const payloadDocuments: any = cloneDocumentEntries(text.documents);
 				// 文本与图片分离渲染，保证用户消息显示稳定。
 				if (payloadText) {
 					const textNode: any = document.createElement('div');
@@ -1417,6 +1503,22 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 						imageLinkListNode.appendChild(rowNode);
 					}
 					messageNode.appendChild(imageLinkListNode);
+				}
+				// 文档附件使用与图片附件相同的渲染结构。
+				if (payloadDocuments.length > 0) {
+					const docLinkListNode: any = document.createElement('div');
+					docLinkListNode.className = 'chat-user-image-links';
+					for (let index: any = 0; index < payloadDocuments.length; index += 1) {
+						const docItem: any = payloadDocuments[index];
+						const rowNode: any = document.createElement('div');
+						rowNode.className = 'chat-user-image-link-row';
+						const linkNode: any = document.createElement('span');
+						linkNode.className = 'chat-user-image-link';
+						linkNode.textContent = docItem.name || (`文档${String(index + 1)}`);
+						rowNode.appendChild(linkNode);
+						docLinkListNode.appendChild(rowNode);
+					}
+					messageNode.appendChild(docLinkListNode);
 				}
 			}
 		}
@@ -2760,7 +2862,8 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		}
 		const userText: any = String(readChatInputText()).trim();
 		const selectedImages: any = cloneImageEntries(pendingImageEntries);
-		if (!userText && selectedImages.length === 0) {
+		const selectedDocuments: any = cloneDocumentEntries(pendingDocumentEntries);
+		if (!userText && selectedImages.length === 0 && selectedDocuments.length === 0) {
 			return;
 		}
 		const config: any = readConfig(STORAGE_KEY);
@@ -2813,13 +2916,15 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 		appendMessage('user', {
 			text: userText,
 			images: selectedImages,
+			documents: selectedDocuments,
 		});
 		forceScrollChatHistoryToBottom();
 		writeChatInputText('');
 		adjustChatInputHeight();
 		updateSendButtonState();
 		clearPendingImageEntries();
-		const userMessageContent: any = buildUserMessageContentForApi(userText, selectedImages, resolveImagePayloadMode(selectedModel));
+		clearPendingDocumentEntries();
+		const userMessageContent: any = buildUserMessageContentForApi(userText, selectedImages, resolveImagePayloadMode(selectedModel), selectedDocuments);
 		agentMessages.push({
 			role: 'user',
 			content: userMessageContent,
@@ -2959,6 +3064,17 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 			imageUploadInput.value = '';
 		});
 	}
+	if (documentUploadButton && documentUploadInput) {
+		documentUploadButton.addEventListener('click', () => {
+			documentUploadInput.click();
+		});
+		documentUploadInput.addEventListener('change', async (event?: any) => {
+			const target: any = event.target;
+			const fileList: any = target && target.files ? Array.from(target.files) : [];
+			await addPendingDocuments(fileList);
+			documentUploadInput.value = '';
+		});
+	}
 	if (chatSessionAddButton) {
 		chatSessionAddButton.addEventListener('click', () => {
 			if (isSending || isRestoringSession) {
@@ -2970,6 +3086,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 			sessionManager.createAndActivateChatSession(CHAT_SESSION_DEFAULT_TITLE);
 			hasCompletedRound = false;
 			clearPendingImageEntries();
+			clearPendingDocumentEntries();
 			writeChatInputText('');
 			adjustChatInputHeight();
 			renderChatSessionDropdownOptions();
@@ -2988,6 +3105,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 			isRestoringSession = sessionManager.deleteActiveChatSession();
 			hasCompletedRound = false;
 			clearPendingImageEntries();
+			clearPendingDocumentEntries();
 			writeChatInputText('');
 			adjustChatInputHeight();
 			renderChatSessionDropdownOptions();
@@ -3020,6 +3138,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 			isRestoringSession = sessionManager.switchActiveChatSession(sessionId);
 			hasCompletedRound = false;
 			clearPendingImageEntries();
+			clearPendingDocumentEntries();
 			writeChatInputText('');
 			adjustChatInputHeight();
 			renderChatSessionDropdownOptions();

@@ -23,6 +23,7 @@
 }
 
 .image-upload-button,
+.document-upload-button,
 .clear-history-button,
 .image-attachment-remove,
 .send-button {
@@ -36,6 +37,7 @@
 		opacity 0.15s ease;
 }
 .image-upload-button:hover:not(:disabled),
+.document-upload-button:hover:not(:disabled),
 .clear-history-button:hover:not(:disabled),
 .image-attachment-remove:hover:not(:disabled),
 .send-button:hover:not(:disabled) {
@@ -44,6 +46,7 @@
 }
 
 .image-upload-button:active:not(:disabled),
+.document-upload-button:active:not(:disabled),
 .clear-history-button:active:not(:disabled),
 .image-attachment-remove:active:not(:disabled),
 .send-button:active:not(:disabled) {
@@ -52,6 +55,7 @@
 }
 
 .image-upload-button:focus-visible,
+.document-upload-button:focus-visible,
 .clear-history-button:focus-visible,
 .image-attachment-remove:focus-visible,
 .send-button:focus-visible {
@@ -60,6 +64,7 @@
 }
 
 .image-upload-button:disabled,
+.document-upload-button:disabled,
 .clear-history-button:disabled,
 .image-attachment-remove:disabled,
 .send-button:disabled,

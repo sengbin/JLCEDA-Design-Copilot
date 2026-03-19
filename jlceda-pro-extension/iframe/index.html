@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-Hans">
 
 <head>
@@ -51,6 +51,12 @@
 					</svg>
 				</button>
 				<input class="image-upload-input" type="file" accept="image/*" multiple hidden />
+				<button class="document-upload-button" type="button" title="添加文档" aria-label="添加文档">
+					<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+						<use xlink:href="#icon-document-upload"></use>
+					</svg>
+				</button>
+				<input class="document-upload-input" type="file" accept=".txt,.md,.markdown,.csv,.rtf" multiple hidden />
 				<div class="image-attachment-list" aria-label="已添加图片" aria-live="polite"></div>
 			</div>
 			<div class="chat-textarea-scroll">

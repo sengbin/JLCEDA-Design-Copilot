@@ -1,4 +1,6 @@
-// 文件说明：封装图片上传相关的数据处理与消息内容组装逻辑。
+// 文件说明：封装图片与文档上传相关的数据处理与消息内容组装逻辑。
+// 文档附件数量上限。
+export const DOCUMENT_ATTACHMENT_LIMIT = 10;
 /**
  * 将 Blob 读取为 DataURL。
  * @param blob - 图片 Blob/File 对象。
@@ -138,11 +140,13 @@ export async function convertImageFileToEntry(fileObject?: any, index?: any, sou
  * @param userText - 用户输入文本。
  * @param imageEntries - 图片条目数组。
  * @param imagePayloadMode - 图片负载模式。
+ * @param documentEntries - 文档条目数组。
  * @returns 模型接口所需消息内容。
  */
-export function buildUserMessageContentForApi(userText?: any, imageEntries?: any, imagePayloadMode?: any) {
+export function buildUserMessageContentForApi(userText?: any, imageEntries?: any, imagePayloadMode?: any, documentEntries?: any) {
 	const normalizedText: any = String(userText || '').trim();
 	const normalizedImages: any = cloneImageEntries(imageEntries);
+	const normalizedDocs: any = cloneDocumentEntries(documentEntries);
 	const lines: any = [];
 	if (normalizedText) {
 		lines.push(normalizedText);
@@ -154,9 +158,26 @@ export function buildUserMessageContentForApi(userText?: any, imageEntries?: any
 			lines.push(`- ${imageEntry.name || (`图片${index + 1}`)}`);
 		}
 	}
+	// 将文档内容拼接到消息文本中，供所有 API 格式通用。
+	const docTextBlocks: any = [];
+	if (normalizedDocs.length > 0) {
+		lines.push('附加文档：');
+		for (let index: any = 0; index < normalizedDocs.length; index += 1) {
+			const docEntry: any = normalizedDocs[index];
+			lines.push(`- ${docEntry.name || (`文档${index + 1}`)}`);
+		}
+		for (let index: any = 0; index < normalizedDocs.length; index += 1) {
+			const docEntry: any = normalizedDocs[index];
+			const docName: any = docEntry.name || (`文档${index + 1}`);
+			docTextBlocks.push(`---\n文件: ${docName}\n---\n${docEntry.content}`);
+		}
+	}
 	const summaryText: any = lines.join('\n').trim();
+	const fullTextWithDocs: any = docTextBlocks.length > 0
+		? [summaryText, ...docTextBlocks].join('\n\n').trim()
+		: summaryText;
 	if (!imagePayloadMode || normalizedImages.length === 0) {
-		return summaryText;
+		return fullTextWithDocs;
 	}
 	const content: any = [];
 	for (let index: any = 0; index < normalizedImages.length; index += 1) {
@@ -187,19 +208,84 @@ export function buildUserMessageContentForApi(userText?: any, imageEntries?: any
 		}
 		content.push(imageContent);
 	}
-	if (summaryText) {
+	if (fullTextWithDocs) {
 		content.push({
 			type: imagePayloadMode === 'input_image' ? 'input_text' : 'text',
-			text: summaryText,
+			text: fullTextWithDocs,
 		});
 	}
 	if (content.length === 0) {
 		content.push({
 			type: imagePayloadMode === 'input_image' ? 'input_text' : 'text',
-			text: summaryText || '[图片]',
+			text: fullTextWithDocs || '[图片]',
 		});
 	}
 	return content;
+}
+/**
+ * 将 Blob 读取为文本。
+ * @param blob - 文件 Blob/File 对象。
+ * @returns UTF-8 文本字符串。
+ */
+export function readBlobAsText(blob?: any) {
+	return new Promise((resolve?: any, reject?: any) => {
+		const reader: any = new FileReader();
+		reader.onload = function () {
+			resolve(String(reader.result || ''));
+		};
+		reader.onerror = function () {
+			reject(reader.error || new Error('【诊断信息】读取文档失败'));
+		};
+		reader.readAsText(blob, 'utf-8');
+	});
+}
+/**
+ * 生成文档条目唯一标识。
+ * @returns 唯一标识字符串。
+ */
+export function createDocumentEntryId() {
+	return `document-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+/**
+ * 克隆并清洗文档条目。
+ * @param entries - 原始文档条目数组。
+ * @returns 清洗后的文档条目数组。
+ */
+export function cloneDocumentEntries(entries?: any) {
+	const sourceEntries: any = Array.isArray(entries) ? entries : [];
+	return sourceEntries
+		.filter((item?: any) => {
+			return item && typeof item === 'object' && typeof item.content === 'string';
+		})
+		.map((item?: any) => {
+			return {
+				id: String(item.id || ''),
+				name: String(item.name || '').trim(),
+				content: String(item.content || ''),
+				mimeType: String(item.mimeType || '').trim(),
+			};
+		});
+}
+/**
+ * 判断文档扩展名是否为纯文本可读格式。
+ * @param fileName - 文件名。
+ * @returns 是否为纯文本格式。
+ */
+/**
+ * 将上传文档文件转换为内部条目结构。
+ * @param fileObject - 上传文件对象。
+ * @returns 标准化文档条目。
+ */
+export async function convertDocumentFileToEntry(fileObject?: any) {
+	const mimeType: any = String(fileObject && fileObject.type ? fileObject.type : 'text/plain').toLowerCase();
+	const fileName: any = String(fileObject && fileObject.name ? fileObject.name : '').trim() || '文档';
+	const content: any = await readBlobAsText(fileObject);
+	return {
+		id: createDocumentEntryId(),
+		name: fileName,
+		content: String(content || ''),
+		mimeType: mimeType || 'text/plain',
+	};
 }
 /**
  * 收集剪贴板中的图片文件。

@@ -400,14 +400,21 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 		if (normalizedRole === 'user' && text && typeof text === 'object' && !Array.isArray(text)) {
 			const payloadText: any = String((text as Record<string, unknown>).text || '').trim();
 			const payloadImages: any = cloneImageEntries((text as Record<string, unknown>).images);
-			if (payloadImages.length === 0) {
+			const payloadDocs: any = Array.isArray((text as Record<string, unknown>).documents)
+				? ((text as Record<string, unknown>).documents as Array<Record<string, unknown>>).filter((item: any) => item && typeof item.name === 'string')
+				: [];
+			if (payloadImages.length === 0 && payloadDocs.length === 0) {
 				return payloadText;
 			}
 			const imageLines: any = payloadImages.map((item: any) => {
 				const imageName = String(item && item.name ? item.name : '').trim();
 				return `[图片]${imageName ? (` ${imageName}`) : ''}`;
 			});
-			return [payloadText].concat(imageLines).filter((lineText?: any) => {
+			const docLines: any = payloadDocs.map((item: any) => {
+				const docName = String(item && item.name ? item.name : '').trim();
+				return `[文档]${docName ? (` ${docName}`) : ''}`;
+			});
+			return [payloadText].concat(imageLines).concat(docLines).filter((lineText?: any) => {
 				return !!String(lineText || '').trim();
 			}).join('\n');
 		}

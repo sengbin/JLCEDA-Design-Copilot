@@ -1351,6 +1351,30 @@ body {
 	overflow-y: visible;
 	padding-bottom: 2px;
 }
+.document-upload-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border-radius: 6px;
+	flex: 0 0 auto;
+}
+.document-upload-button svg {
+	width: 18px;
+	height: 18px;
+}
+.document-attachment-list {
+	display: flex;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	gap: 6px;
+	min-width: 0;
+	overflow-x: hidden;
+	overflow-y: visible;
+	padding-bottom: 2px;
+}
 .image-attachment-item {
 	position: relative;
 	display: inline-flex;
