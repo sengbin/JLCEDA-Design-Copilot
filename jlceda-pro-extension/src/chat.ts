@@ -6,7 +6,7 @@ import { AI_AGENT_RUNTIME, getModelContextHistoryBudgetTokens, throwIfAgentAbort
 import tools from './llm/agent/tools.json';
 import { buildAnthropicRequestPayload, buildAnthropicTools, buildModelRequestPayload, buildResponsesTools, pickManualExposedTools, validateModelRequestConfig } from './llm/client';
 import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock, processAnthropicStreamEvent } from './llm/stream';
-import { buildThinkingModeConfigKey, CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveApiFormat, resolveImagePayloadMode, resolveModelConfig } from './page/model';
+import { CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveApiFormat, resolveImagePayloadMode, resolveModelConfig } from './page/model';
 import { closeIFramePageById, ensureSvgIconSpriteLoaded, escapeHtml, formatToolExecRawText, renderMarkdown, renderToolExecPlainText } from './page/render';
 import { applyTheme, setupThemeSync } from './page/theme';
 import { buildUserMessageContentForApi, cloneImageEntries, collectClipboardImageFiles, convertImageFileToEntry, isGenericClipboardImageName, resolveImageEntryName } from './page/upload';
@@ -27,7 +27,6 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 	const CHAT_SESSION_STORAGE_KEY: any = 'jlceda-design-copilot-chat-session-v2';
 	const CHAT_SESSION_MAX_MESSAGES: any = 120;
 	const CHAT_SESSION_DEFAULT_TITLE: any = '新对话';
-	const THINKING_MODE_LEGACY_CONFIG_KEY: any = 'thinkingEnabled';
 	const CHAT_EMPTY_STATE_TITLE_TEXT: any = 'AI 设计助手';
 	const CHAT_EMPTY_STATE_NOTICE_TEXT: any = '我是个辅助工具，也可能会出错，请注意核对结果。';
 	const CHAT_EMPTY_STATE_EXAMPLES: any = [
@@ -156,29 +155,6 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 			return;
 		}
 		chatEditor.textContent = normalizeChatInputText(value);
-	}
-	// 读取配置中的思考模式开关，默认开启。
-	function readThinkingModeEnabledFromConfig(configObject?: any, selectedModelValue?: any) {
-		if (!configObject || typeof configObject !== 'object') {
-			return true;
-		}
-		const modelValue: any = String(selectedModelValue || '').trim();
-		const thinkingModeConfigKey: any = buildThinkingModeConfigKey(modelValue);
-		const hasPlatformValue: any = Object.prototype.hasOwnProperty.call(configObject, thinkingModeConfigKey);
-		const rawValue: any = hasPlatformValue
-			? configObject[thinkingModeConfigKey]
-			: configObject[THINKING_MODE_LEGACY_CONFIG_KEY];
-		if (typeof rawValue === 'boolean') {
-			return rawValue;
-		}
-		const normalizedText: any = String(rawValue || '').trim().toLowerCase();
-		if (!normalizedText) {
-			return true;
-		}
-		if (normalizedText === '0' || normalizedText === 'false' || normalizedText === 'off') {
-			return false;
-		}
-		return true;
 	}
 	// 获取聊天输入滚动视口节点，优先使用 OverlayScrollbars 视口。
 	function getChatInputViewport() {
@@ -2431,7 +2407,6 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 					chatMessages: buildChatMessagesEntries(config.selectedModel, systemInstructionsText),
 					chatTools: exposedTools,
 					selectedModel: config.selectedModel,
-					thinkingEnabled: readThinkingModeEnabledFromConfig(config, config.selectedModel),
 					maxOutputTokens: MODEL_MAX_OUTPUT_TOKENS,
 				});
 		const requestHeaders: any = isAnthropicFormat

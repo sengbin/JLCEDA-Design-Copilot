@@ -15,33 +15,6 @@ export interface SessionTitleGenerateRequest {
 	abortSignal?: AbortSignal;
 }
 const SESSION_TITLE_MAX_LENGTH: any = 18;
-const SESSION_TITLE_THINKING_CONFIG: any = Object.freeze({
-	type: 'disabled',
-});
-const SESSION_TITLE_ENABLE_THINKING: any = false;
-// 归一化模型名称，便于前缀匹配。
-function normalizeModelNameForPrefixMatch(modelName: string): string {
-	return String(modelName || '').trim().toLowerCase();
-}
-// 判断是否使用非标准 enable_thinking 字段（千问、文心）。
-function shouldUseEnableThinkingField(modelName: string): boolean {
-	const normalizedModelName: any = normalizeModelNameForPrefixMatch(modelName);
-	if (!normalizedModelName) {
-		return false;
-	}
-	return normalizedModelName.startsWith('qwen') || normalizedModelName.startsWith('ernie');
-}
-// 根据模型前缀构建思考控制字段。
-function buildThinkingControlByModel(modelName: string): Record<string, unknown> {
-	if (shouldUseEnableThinkingField(modelName)) {
-		return {
-			enable_thinking: SESSION_TITLE_ENABLE_THINKING,
-		};
-	}
-	return {
-		thinking: SESSION_TITLE_THINKING_CONFIG,
-	};
-}
 // 构建标题生成用系统指令。
 function buildSessionTitleSystemInstructions(): string {
 	return [
@@ -126,7 +99,6 @@ function extractChatCompletionsText(resultObject: Record<string, unknown>): stri
 }
 // 构建 responses 接口请求体。
 function buildResponsesTitlePayload(modelName: string, userText: string): Record<string, unknown> {
-	const thinkingControlPayload: any = buildThinkingControlByModel(modelName);
 	return {
 		model: modelName,
 		input: [
@@ -149,7 +121,6 @@ function buildResponsesTitlePayload(modelName: string, userText: string): Record
 				],
 			},
 		],
-		...thinkingControlPayload,
 		temperature: 0,
 		max_output_tokens: 64,
 		stream: false,
@@ -157,7 +128,6 @@ function buildResponsesTitlePayload(modelName: string, userText: string): Record
 }
 // 构建 chat completions 接口请求体。
 function buildChatCompletionsTitlePayload(modelName: string, userText: string): Record<string, unknown> {
-	const thinkingControlPayload: any = buildThinkingControlByModel(modelName);
 	return {
 		model: modelName,
 		messages: [
@@ -170,7 +140,6 @@ function buildChatCompletionsTitlePayload(modelName: string, userText: string): 
 				content: userText,
 			},
 		],
-		...thinkingControlPayload,
 		temperature: 0,
 		max_tokens: 64,
 		stream: false,

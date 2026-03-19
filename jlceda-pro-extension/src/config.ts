@@ -28,14 +28,11 @@ import { messageType, showEdaToastMessage } from './utils';
 	const keyInputMap: any = {};
 	const modelInputMap: any = {};
 	const endpointInputMap: any = {};
-	const thinkingModeSwitchMap: any = {};
 	const MENU_MODEL_CONFIG: any = 'model-config';
 	const MENU_INSTRUCTIONS: any = 'instructions-config';
 	const VERIFY_TIMEOUT_MS: any = 15000;
 	const SCROLLBAR_AUTO_HIDE_DELAY: any = 1000;
 	const OVERLAY_SCROLLBAR_THEME_CLASS: any = 'os-theme-jlceda';
-	const THINKING_MODE_CONFIG_KEY_PREFIX: any = 'thinkingEnabled_';
-	const THINKING_MODE_LEGACY_CONFIG_KEY: any = 'thinkingEnabled';
 	const INSTRUCTIONS_IMPORT_MAX_FILE_SIZE: any = 1024 * 1024;
 	const overlayScrollbarInstanceMap: any = new WeakMap();
 	let hasPassedVerification: any = false;
@@ -47,10 +44,6 @@ import { messageType, showEdaToastMessage } from './utils';
 		const datePart: any = now.getFullYear() + formatNumber(now.getMonth() + 1) + formatNumber(now.getDate());
 		const timePart: any = formatNumber(now.getHours()) + formatNumber(now.getMinutes()) + formatNumber(now.getSeconds());
 		return `自定义指令_${datePart}_${timePart}.txt`;
-	}
-	// 生成平台独立的思考模式配置键。
-	function buildThinkingModeConfigKey(platformId?: any) {
-		return THINKING_MODE_CONFIG_KEY_PREFIX + String(platformId || '').trim();
 	}
 	// 规范化滚动条自动隐藏模式。
 	function normalizeScrollbarAutoHideMode(value?: any) {
@@ -223,22 +216,9 @@ import { messageType, showEdaToastMessage } from './utils';
 				'<label class="label">密钥（Key）</label>',
 				`<input id="${platformItem.keyField}" class="input" type="text" placeholder="请输入 API Key" />`,
 				'</div>',
-				'<div class="field model-thinking-row">',
-				'<div class="model-field-half">',
+				'<div class="field">',
 				'<label class="label">模型（Model）</label>',
-				`<input id="${platformItem.modelField}" class="input model-input-half" type="text" placeholder="请输入 Model" />`,
-				'</div>',
-				'<div class="thinking-switch-field">',
-				'<span class="label thinking-switch-label">思考模式</span>',
-				'<div class="thinking-switch-row">',
-				`<label class="thinking-switch" for="thinking-mode-switch-${platformItem.id}">`,
-				`<input id="thinking-mode-switch-${platformItem.id}" class="thinking-switch-input" type="checkbox" />`,
-				'<span class="thinking-switch-control" aria-hidden="true"><span class="thinking-switch-thumb"></span></span>',
-				'<span class="thinking-switch-state-text" aria-hidden="true"></span>',
-				'</label>',
-				'<span class="thinking-switch-tip" aria-hidden="true">非思考模型请勿打开此开关</span>',
-				'</div>',
-				'</div>',
+				`<input id="${platformItem.modelField}" class="input" type="text" placeholder="请输入 Model" />`,
 				'</div>',
 				modelHintHtml,
 			].join('');
@@ -251,19 +231,10 @@ import { messageType, showEdaToastMessage } from './utils';
 			const platformItem: any = PLATFORM_LIST[index];
 			keyInputMap[platformItem.id] = document.getElementById(platformItem.keyField);
 			modelInputMap[platformItem.id] = document.getElementById(platformItem.modelField);
-			thinkingModeSwitchMap[platformItem.id] = document.getElementById(`thinking-mode-switch-${platformItem.id}`);
 			if (platformItem.isCustomEndpoint) {
 				endpointInputMap[platformItem.id] = document.getElementById(platformItem.endpointField);
 			}
 		}
-	}
-	// 按平台读取思考模式开关状态。
-	function readThinkingModeEnabledByPlatform(platformId?: any) {
-		const switchInput: any = thinkingModeSwitchMap[String(platformId || '').trim()];
-		if (!switchInput) {
-			return true;
-		}
-		return Boolean(switchInput.checked);
 	}
 	// 根据当前激活标签更新平台面板左上角圆角状态。
 	function updatePlatformPanelCornerState() {
@@ -514,7 +485,6 @@ import { messageType, showEdaToastMessage } from './utils';
 			else {
 				payload[platformItem.endpointField] = String(platformItem.endpoint || '').trim();
 			}
-			payload[buildThinkingModeConfigKey(platformItem.id)] = readThinkingModeEnabledByPlatform(platformItem.id) ? '1' : '0';
 		}
 		return payload;
 	}
@@ -524,20 +494,13 @@ import { messageType, showEdaToastMessage } from './utils';
 			return null;
 		}
 		const normalized: any = {};
-		const legacyThinkingValue: any = String(saved[THINKING_MODE_LEGACY_CONFIG_KEY] || '').trim() === '0' ? '0' : '1';
 		for (let index: any = 0; index < PLATFORM_LIST.length; index += 1) {
 			const platformItem: any = PLATFORM_LIST[index];
-			const thinkingModeConfigKey: any = buildThinkingModeConfigKey(platformItem.id);
-			const hasOwnThinkingMode: any = Object.prototype.hasOwnProperty.call(saved, thinkingModeConfigKey);
-			const thinkingRawValue: any = hasOwnThinkingMode
-				? saved[thinkingModeConfigKey]
-				: legacyThinkingValue;
 			normalized[platformItem.keyField] = String(saved[platformItem.keyField] || '').trim();
 			normalized[platformItem.modelField] = String(saved[platformItem.modelField] || platformItem.model || '').trim();
 			normalized[platformItem.endpointField] = platformItem.isCustomEndpoint
 				? String(saved[platformItem.endpointField] || '').trim()
 				: String(platformItem.endpoint || '').trim();
-			normalized[thinkingModeConfigKey] = String(thinkingRawValue || '').trim() === '0' ? '0' : '1';
 		}
 		return normalized;
 	}
@@ -555,10 +518,6 @@ import { messageType, showEdaToastMessage } from './utils';
 				}
 				if (modelInput) {
 					modelInput.value = String(platformItem.model || '').trim();
-				}
-				const switchInput: any = thinkingModeSwitchMap[platformItem.id];
-				if (switchInput) {
-					switchInput.checked = true;
 				}
 				if (platformItem.isCustomEndpoint) {
 					const endpointInput: any = endpointInputMap[platformItem.id];
@@ -579,11 +538,6 @@ import { messageType, showEdaToastMessage } from './utils';
 			}
 			if (modelInput) {
 				modelInput.value = String(normalized[platformItem.modelField] || '').trim();
-			}
-			const switchInput: any = thinkingModeSwitchMap[platformItem.id];
-			if (switchInput) {
-				const thinkingModeConfigKey: any = buildThinkingModeConfigKey(platformItem.id);
-				switchInput.checked = String(normalized[thinkingModeConfigKey] || '1').trim() !== '0';
 			}
 			if (platformItem.isCustomEndpoint) {
 				const endpointInput: any = endpointInputMap[platformItem.id];
@@ -871,16 +825,6 @@ import { messageType, showEdaToastMessage } from './utils';
 				if (shouldStickToBottom) {
 					scheduleInstructionsViewportStickToBottom();
 				}
-			});
-		}
-		for (let index: any = 0; index < PLATFORM_LIST.length; index += 1) {
-			const platformItem: any = PLATFORM_LIST[index];
-			const switchInput: any = thinkingModeSwitchMap[platformItem.id];
-			if (!switchInput) {
-				continue;
-			}
-			switchInput.addEventListener('change', () => {
-				hasPassedVerification = false;
 			});
 		}
 		if (instructionsCancelBtn) {

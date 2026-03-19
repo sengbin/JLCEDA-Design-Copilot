@@ -1,16 +1,5 @@
 // 文件说明：封装聊天页模型配置、模型选择读写与模型能力相关通用逻辑。
 import { readApiFormatMapByPlatform, readFixedEndpointMapByPlatform, readImagePayloadModeMapByPlatform, readInitialModelMapByPlatform, readModelConfigMapByPlatform, readPlatformConfigs } from '../platform/platform';
-
-const THINKING_MODE_CONFIG_KEY_PREFIX: any = 'thinkingEnabled_';
-const THINKING_MODE_LEGACY_CONFIG_KEY: any = 'thinkingEnabled';
-/**
- * 生成平台独立的思考模式配置键。
- * @param platformId - 平台标识。
- * @returns 平台对应的思考模式配置键。
- */
-export function buildThinkingModeConfigKey(platformId: unknown): string {
-	return THINKING_MODE_CONFIG_KEY_PREFIX + String(platformId || '').trim();
-}
 /**
  * 聊天页模型配置常量。
  */
@@ -108,20 +97,13 @@ export function normalizeModelConfig(configObject: unknown): Record<string, stri
 	const initialModelMap: any = readInitialModelMapByPlatform();
 	const platformList: any = readPlatformConfigs();
 	const normalizedConfig: Record<string, string> = {};
-	const legacyThinkingValue: any = String(configObjectAny[THINKING_MODE_LEGACY_CONFIG_KEY] || '').trim() === '0' ? '0' : '1';
 	for (let index: any = 0; index < platformList.length; index += 1) {
 		const platformItem: any = platformList[index];
-		const thinkingModeConfigKey: any = buildThinkingModeConfigKey(platformItem.id);
-		const hasOwnThinkingMode: any = Object.prototype.hasOwnProperty.call(configObjectAny, thinkingModeConfigKey);
-		const thinkingRawValue: any = hasOwnThinkingMode
-			? configObjectAny[thinkingModeConfigKey]
-			: legacyThinkingValue;
 		normalizedConfig[platformItem.keyField] = String(configObjectAny[platformItem.keyField] || '').trim();
 		normalizedConfig[platformItem.modelField] = String(configObjectAny[platformItem.modelField] || initialModelMap[platformItem.id] || '').trim();
 		// 自定义平台的终结点由用户填写，不存在固定值，从已保存配置中读取。
 		const fixedEndpoint: any = String(fixedEndpointMap[platformItem.id] || '').trim();
 		normalizedConfig[platformItem.endpointField] = fixedEndpoint || String(configObjectAny[platformItem.endpointField] || '').trim();
-		normalizedConfig[thinkingModeConfigKey] = String(thinkingRawValue || '').trim() === '0' ? '0' : '1';
 	}
 	return normalizedConfig;
 }

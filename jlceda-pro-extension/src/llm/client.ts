@@ -5,50 +5,6 @@ const MANUAL_EXPOSED_TOOL_NAMES: any = [
 	'jlceda_context_get',
 	'jlceda_api_invoke',
 ];
-const THINKING_DISABLED_CONFIG: any = Object.freeze({
-	type: 'disabled',
-});
-// 归一化模型名称，便于前缀匹配。
-function normalizeModelNameForThinkingSwitch(modelName: unknown): string {
-	return String(modelName || '').trim().toLowerCase();
-}
-// 判断是否使用非标准 enable_thinking 字段（千问、文心）。
-function shouldUseEnableThinkingField(modelName: unknown): boolean {
-	const normalizedModelName: any = normalizeModelNameForThinkingSwitch(modelName);
-	if (!normalizedModelName) {
-		return false;
-	}
-	return normalizedModelName.startsWith('qwen') || normalizedModelName.startsWith('ernie');
-}
-// 将思考模式开关值归一化为布尔值。
-function normalizeThinkingEnabled(value: unknown): boolean {
-	if (typeof value === 'boolean') {
-		return value;
-	}
-	const normalizedText: any = String(value || '').trim().toLowerCase();
-	if (!normalizedText) {
-		return true;
-	}
-	if (normalizedText === '0' || normalizedText === 'false' || normalizedText === 'off') {
-		return false;
-	}
-	return true;
-}
-// 构建思考模式控制字段。
-function buildThinkingControlPayload(selectedModel: unknown, thinkingEnabled: unknown): Record<string, unknown> {
-	const enabled: any = normalizeThinkingEnabled(thinkingEnabled);
-	if (shouldUseEnableThinkingField(selectedModel)) {
-		return {
-			enable_thinking: enabled,
-		};
-	}
-	if (enabled) {
-		return {};
-	}
-	return {
-		thinking: THINKING_DISABLED_CONFIG,
-	};
-}
 /**
  * 判断是否为 DeepSeek 系列模型（按模型名称前缀匹配，不依赖平台标识）。
  * @param modelName - 模型名称。
@@ -164,7 +120,6 @@ export function validateModelRequestConfig(config: Record<string, unknown>, norm
  * @param params.chatMessages - Chat 消息列表。
  * @param params.chatTools - Chat 工具列表。
  * @param params.selectedModel - 当前选中模型。
- * @param params.thinkingEnabled - 思考模式开关。
  * @param params.maxOutputTokens - 最大输出 Token 数。
  * @returns 请求体对象。
  */
@@ -176,12 +131,10 @@ export function buildModelRequestPayload(params: {
 	chatMessages: unknown[];
 	chatTools: unknown[];
 	selectedModel: string;
-	thinkingEnabled?: boolean | string;
 	maxOutputTokens: number;
 }): Record<string, unknown> {
 	const manualResponsesTools: any = pickManualExposedTools(params.responsesTools);
 	const manualChatTools: any = pickManualExposedTools(params.chatTools);
-	const thinkingControlPayload: any = buildThinkingControlPayload(params.modelName || params.selectedModel, params.thinkingEnabled);
 	// DeepSeek 模型按名称前缀检测，匹配时对 chat 工具列表启用 strict Function Calling 模式。
 	const effectiveChatTools: any = isDeepSeekModel(params.modelName || params.selectedModel)
 		? applyStrictModeToTools(manualChatTools)
@@ -192,7 +145,6 @@ export function buildModelRequestPayload(params: {
 			input: params.responsesInput,
 			tools: manualResponsesTools,
 			tool_choice: 'auto',
-			...thinkingControlPayload,
 			max_output_tokens: params.maxOutputTokens,
 			stream: true,
 		};
@@ -202,7 +154,6 @@ export function buildModelRequestPayload(params: {
 		messages: params.chatMessages,
 		tools: effectiveChatTools,
 		tool_choice: 'auto',
-		...thinkingControlPayload,
 		temperature: 0.0,
 		max_tokens: params.maxOutputTokens,
 		stream: true,
