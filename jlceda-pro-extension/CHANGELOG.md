@@ -1,7 +1,10 @@
 
 # 2.2.3 (2026-03-19)
 
-- 修复：调整模型配置页“OpenAI 兼容 / Anthropic 兼容”自定义终结点验证逻辑，验证时在 HTTP 200 的情况下校验响应体结构（OpenAI 兼容检查 choices，Responses 检查 output，Anthropic 检查 content），避免填写 base URL 导致误判通过的问题（修改文件：src/config.ts）。
+- 修复：调整模型配置页"OpenAI 兼容 / Anthropic 兼容"自定义终结点验证逻辑，验证时在 HTTP 200 的情况下校验响应体结构（OpenAI 兼容检查 choices，Responses 检查 output，Anthropic 检查 content），避免填写 base URL 导致误判通过的问题（修改文件：src/config.ts）。
+- 原理图功能性审查改为优先调用 `sch_ManufactureData.getNetlistFile()` 获取网表作为核心数据源，一次调用即可取得所有元件、引脚-网络映射及网络拓扑，不再逐个调用 `getAll` / `getAllPinsByPrimitiveId` / `getAll 导线`；仅在需要引脚坐标时才补充调用 `getAllPinsByPrimitiveId`。
+- 明确 ERC/DRC 检查结果判断规则：`sch_Drc.check` / `pcb_Drc.check` 当前运行时只返回布尔值，返回 `true` 即代表检查通过，无需尝试其他方法获取"详情"；更新常见失败模式表格和连线验收清单相关条目。
+- 文件下载章节新增例外规则：功能性审查流程中调用 `getNetlistFile` 属于内部读取，不向用户输出下载链接。
 
 # 2.2.2 (2026-03-19)
 
