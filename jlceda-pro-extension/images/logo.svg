@@ -16,7 +16,7 @@
       <stop stop-color="white" stop-opacity="0.17"/>
       <stop offset="1" stop-color="white" stop-opacity="0"/>
     </linearGradient>
-    <!-- 中央光晕：多段更细腻 -->
+    <!-- 中心光晕：多段更细腻 -->
     <radialGradient id="halo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
                     gradientTransform="translate(512 512) rotate(90) scale(360)">
       <stop stop-color="white" stop-opacity="0.20"/>
@@ -40,7 +40,7 @@
   <!-- 白色描边高光，增加层次感 -->
   <rect x="113.5" y="113.5" width="797" height="797" rx="219" stroke="white" stroke-opacity="0.12" stroke-width="3" fill="none"/>
 
-  <!-- 中央径向光晕 -->
+  <!-- 中心径向光晕 -->
   <circle cx="512" cy="512" r="340" fill="url(#halo)"/>
 
   <!-- 角落星光：柔化底层 -->
