@@ -2,8 +2,8 @@
 	"name": "jlceda-design-copilot",
 	"uuid": "4585803ac4eb41d19e17c601bfa15528",
 	"displayName": "AI 设计助手",
-	"description": "使用自然语言与AI大模型聊天辅助设计原理图和PCB。",
-	"version": "2.2.3",
+	"description": "用自然语言对话，让 AI 帮你设计电路。",
+	"version": "2.2.4",
 	"publisher": "Lion",
 	"engines": {
 		"eda": "^3.0.0"
