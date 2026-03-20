@@ -1,5 +1,4 @@
 // 文件说明：API 文档检索工具 —— 从离线 API 文档 JSON 中按关键词、范围、命名空间检索 API 条目。
-import { readExtensionTextFileByCandidates } from '../utils';
 
 interface ApiProjectionItem {
 	id: number;
@@ -33,13 +32,7 @@ interface ApiCache {
 }
 
 const API_SEARCH_MAX_LIMIT = 50;
-const API_DOCUMENT_URI_CANDIDATES = [
-	'/iframe/jlceda-pro-api-doc.json',
-	'iframe/jlceda-pro-api-doc.json',
-	'./iframe/jlceda-pro-api-doc.json',
-	'./jlceda-pro-api-doc.json',
-	'jlceda-pro-api-doc.json',
-] as const;
+const API_DOCUMENT_URI = '/iframe/jlceda-pro-api-doc.json';
 
 // 解析带边界的整数参数。
 function parseBoundedIntegerValue(value: unknown, defaultValue: number, min: number, max: number): number {
@@ -137,11 +130,16 @@ export function createApiSearchHandler(runtimeWindow: Window): {
 		if (apiCache) {
 			return apiCache;
 		}
-		const readResult: any = await readExtensionTextFileByCandidates(runtimeWindow, API_DOCUMENT_URI_CANDIDATES);
-		if (!readResult || !readResult.ok) {
-			throw new Error(`离线 API 文档读取失败: ${String(readResult && readResult.error ? readResult.error : 'unknown')}`);
+		const apiRoot: any = runtimeWindow && (runtimeWindow as any).eda ? (runtimeWindow as any).eda : null;
+		const extensionFileSystem: any = apiRoot && apiRoot.sys_FileSystem ? apiRoot.sys_FileSystem : null;
+		if (!extensionFileSystem || typeof extensionFileSystem.getExtensionFile !== 'function') {
+			throw new Error('离线 API 文档读取失败: 当前环境未检测到可用的扩展文件系统。');
 		}
-		const text: any = String(readResult.text || '');
+		const extensionFile: any = await extensionFileSystem.getExtensionFile(API_DOCUMENT_URI);
+		if (!extensionFile || typeof extensionFile.text !== 'function') {
+			throw new Error(`离线 API 文档读取失败: 未找到离线 API 文档文件: ${API_DOCUMENT_URI}`);
+		}
+		const text: any = String((await extensionFile.text()) || '');
 		const parsed: any = JSON.parse(text || '{}');
 		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
 			throw new Error('离线 API 文档格式非法：根节点必须是对象。');

@@ -48,9 +48,6 @@ function resolveApiCallable(runtimeWindow: Window, apiFullName: string): {
 	if (segments.length < 3 || segments.some(item => !item)) {
 		throw new Error(`apiFullName 格式非法: "${apiFullName}"。正确格式为 eda.模块名.方法名（以"."分隔的至少三段路径）。`);
 	}
-	if (segments[0] !== 'eda') {
-		throw new Error(`apiFullName 必须以 "eda." 开头，当前第一段为: "${segments[0]}"。`);
-	}
 	if (segments.some(segment => FORBIDDEN_SEGMENT_NAMES.has(segment))) {
 		throw new Error('apiFullName 包含非法属性名。');
 	}
