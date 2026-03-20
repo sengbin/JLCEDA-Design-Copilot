@@ -10,7 +10,11 @@
 	<link rel="stylesheet" href="/iframe/common.css" />
 </head>
 
-<body>
+<body class="page-loading">
+	<div class="page-loading-mask" role="status" aria-live="polite" aria-label="页面加载中">
+		<span class="page-loading-spinner" aria-hidden="true"></span>
+		<span class="page-loading-text">载入中...</span>
+	</div>
 	<div class="chat-page">
 		<div class="chat-sesson-toolbar" aria-label="对话切换栏">
 			<details class="chat-sesson-dropdown">

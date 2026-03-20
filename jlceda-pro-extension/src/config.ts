@@ -3,7 +3,7 @@ import { persistAgentSystemInstructions, readAgentSystemInstructions } from './l
 import { closeIFramePageById } from './page/render';
 import { applyTheme, setupThemeSync } from './page/theme';
 import { readInitialPlatformId, readPlatformConfigs } from './platform/platform';
-import { messageType, showEdaToastMessage } from './utils';
+import { hidePageLoadingMask, messageType, showEdaToastMessage } from './utils';
 
 (function () {
 	const STORAGE_KEY: any = 'jlceda-design-copilot-ai-model-config';
@@ -910,6 +910,7 @@ import { messageType, showEdaToastMessage } from './utils';
 		setNotes('配置错误：未检测到任何平台配置，请检查平台配置 JSON 文件。', 'error');
 		verifyBtn.disabled = true;
 		saveBtn.disabled = true;
+		hidePageLoadingMask();
 		return;
 	}
 	renderPlatformUi();
@@ -920,4 +921,5 @@ import { messageType, showEdaToastMessage } from './utils';
 	switchMainMenu(MENU_MODEL_CONFIG);
 	switchPlatformTabUi(readInitialPlatformId());
 	loadConfigToForm();
+	hidePageLoadingMask();
 })();

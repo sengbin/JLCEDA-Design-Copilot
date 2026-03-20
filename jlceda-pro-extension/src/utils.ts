@@ -202,3 +202,21 @@ export function safeJsonStringify(value?: any) {
 		return JSON.stringify(makeJsonSafe(value, 4));
 	}
 }
+/**
+ * 隐藏页面初始加载遮罩，过渡结束后从 DOM 中移除节点。
+ */
+export function hidePageLoadingMask() {
+	const pageLoadingMask: any = document.querySelector('.page-loading-mask');
+	if (document.body) {
+		document.body.classList.remove('page-loading');
+	}
+	if (!pageLoadingMask || !(pageLoadingMask instanceof HTMLElement)) {
+		return;
+	}
+	pageLoadingMask.classList.add('is-hidden');
+	window.setTimeout(() => {
+		if (pageLoadingMask.parentNode) {
+			pageLoadingMask.parentNode.removeChild(pageLoadingMask);
+		}
+	}, 220);
+}

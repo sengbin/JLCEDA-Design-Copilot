@@ -10,6 +10,10 @@
 	--common-button-active-text: #1f1f1f;
 	--common-button-disabled-text: #9a9a9a;
 	--common-button-focus-shadow: rgba(130, 130, 130, 0.26);
+	--page-loading-bg: rgba(255, 255, 255, 0.92);
+	--page-loading-spinner-track: rgba(130, 130, 130, 0.26);
+	--page-loading-spinner-active: #6a6a6a;
+	--page-loading-text-color: #4a4a4a;
 }
 
 :root[data-theme='dark'] {
@@ -20,6 +24,58 @@
 	--common-button-active-text: #ffffff;
 	--common-button-disabled-text: #8f8f8f;
 	--common-button-focus-shadow: rgba(170, 170, 170, 0.35);
+	--page-loading-bg: rgba(48, 48, 48, 0.9);
+	--page-loading-spinner-track: rgba(190, 190, 190, 0.28);
+	--page-loading-spinner-active: #c9c9c9;
+	--page-loading-text-color: #dddddd;
+}
+
+.page-loading-mask {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	background: var(--page-loading-bg);
+	opacity: 1;
+	visibility: visible;
+	transition:
+		opacity 0.18s ease,
+		visibility 0.18s ease;
+}
+
+.page-loading-mask.is-hidden {
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+}
+
+.page-loading-spinner {
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	border: 3px solid var(--page-loading-spinner-track);
+	border-top-color: var(--page-loading-spinner-active);
+	animation: page-loading-spin 0.82s linear infinite;
+}
+
+.page-loading-text {
+	font-size: 12px;
+	line-height: 1;
+	color: var(--page-loading-text-color);
+	user-select: none;
+}
+
+@keyframes page-loading-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 .image-upload-button,

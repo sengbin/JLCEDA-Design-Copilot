@@ -13,7 +13,7 @@ import { buildUserMessageContentForApi, cloneDocumentEntries, cloneImageEntries,
 import { readPlatformConfigs } from './platform/platform';
 import { createChatSessionManager } from './session/session';
 import { createAgentToolRuntime, executeToolWithTimeout } from './tools/executor';
-import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
+import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 
 (function () {
 	ensureSvgIconSpriteLoaded();
@@ -3253,6 +3253,7 @@ import { messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 	hasCompletedRound = false;
 	updateSendButtonState();
 	updateChatSessionActionButtonState();
+	hidePageLoadingMask();
 	if (chatEditor) {
 		window.setTimeout(() => {
 			if (chatEditor) {
