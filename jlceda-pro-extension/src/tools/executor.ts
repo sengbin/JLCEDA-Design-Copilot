@@ -3,6 +3,7 @@ import { makeJsonSafe } from '../utils';
 import { createApiInvokeHandler } from './api-invoke';
 import { createApiSearchHandler } from './api-search';
 import { createContextGetHandler } from './context-get';
+import { createSchematicCheckHandler } from './schematic-check';
 
 // 当前会话中有效的 blob URL 集合，页面关闭后自动失效，不会持久化。
 export const activeBlobUrls: Set<string> = new Set();
@@ -156,6 +157,9 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 	if (toolName === 'jlceda_api_invoke') {
 		return '{"apiFullName":"eda.sch_Drc.check","args":"[false,false,true]"}';
 	}
+	if (toolName === 'jlceda_schematic_check') {
+		return '{}';
+	}
 	return '{"参数1":"值1","参数2":"值2"}';
 }
 
@@ -276,6 +280,12 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 			}
 			return await runtimeObject.handleInvokeTask(handlerArgs);
 		},
+		async jlceda_schematic_check(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleSchematicCheckTask !== 'function') {
+				return { ok: false, error: 'jlceda_schematic_check 处理器未初始化。' };
+			}
+			return await runtimeObject.handleSchematicCheckTask(handlerArgs);
+		},
 	};
 
 	const handler: any = handlerMap[normalizedToolName];
@@ -337,6 +347,7 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 	const { handleApiSearchTask } = createApiSearchHandler(runtimeWindow || window);
 	const { handleContextTask } = createContextGetHandler(runtimeWindow || window, deps);
 	const { handleInvokeTask, resolveApiMemberInAnyRoot } = createApiInvokeHandler(runtimeWindow || window, deps);
+	const { handleSchematicCheckTask } = createSchematicCheckHandler(runtimeWindow || window, deps);
 
 	return {
 		resolveApiMemberInAnyRoot,
@@ -359,6 +370,14 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 		handleInvokeTask: async (payload?: unknown) => {
 			try {
 				return await handleInvokeTask(payload);
+			}
+			catch (error: unknown) {
+				return { ok: false, error: toSafeErrorMessage(error) };
+			}
+		},
+		handleSchematicCheckTask: async (payload?: unknown) => {
+			try {
+				return await handleSchematicCheckTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };

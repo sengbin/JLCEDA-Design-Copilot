@@ -67,5 +67,17 @@
 				"additionalProperties": false
 			}
 		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "jlceda_schematic_check",
+			"description": "执行原理图完整检查。内部自动完成：① ERC 电气规则检查；② 获取原理图网表；③ 网表结构化预处理（元件清单、网络拓扑、极性器件识别、单节点网络检测、电源域归组）。无需任何参数。当用户要求检查原理图、分析电路或查看是否有问题时，必须调用此工具，禁止手动分步拼凑检查流程。",
+			"parameters": {
+				"type": "object",
+				"properties": {},
+				"additionalProperties": false
+			}
+		}
 	}
 ]

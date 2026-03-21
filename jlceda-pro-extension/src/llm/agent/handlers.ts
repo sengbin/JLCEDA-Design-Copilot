@@ -13,7 +13,7 @@ async function runHandler(handler: unknown, args: unknown, toolName: string): Pr
 
 /**
  * 构建工具处理器映射。
- * @param deps - 依赖：handleApiSearchTask、handleContextTask、handleInvokeTask。
+ * @param deps - 依赖：handleApiSearchTask、handleContextTask、handleInvokeTask、handleSchematicCheckTask。
  * @returns 工具名到处理器的映射表。
  */
 export function buildToolHandlers(deps: any): Record<string, (args: any) => Promise<any>> {
@@ -21,6 +21,7 @@ export function buildToolHandlers(deps: any): Record<string, (args: any) => Prom
 	const handleApiSearchTask: any = dependencyObject.handleApiSearchTask;
 	const handleContextTask: any = dependencyObject.handleContextTask;
 	const handleInvokeTask: any = dependencyObject.handleInvokeTask;
+	const handleSchematicCheckTask: any = dependencyObject.handleSchematicCheckTask;
 
 	return {
 		// 工具：jlceda_api_search；功能：检索离线 API 文档。
@@ -34,6 +35,10 @@ export function buildToolHandlers(deps: any): Record<string, (args: any) => Prom
 		// 工具：jlceda_api_invoke；功能：按 apiFullName 与参数执行 EDA API。
 		async jlceda_api_invoke(args?: any) {
 			return await runHandler(handleInvokeTask, args, 'jlceda_api_invoke');
+		},
+		// 工具：jlceda_schematic_check；功能：执行完整原理图检查（ERC + 网表解析）。
+		async jlceda_schematic_check(args?: any) {
+			return await runHandler(handleSchematicCheckTask, args, 'jlceda_schematic_check');
 		},
 	};
 }
