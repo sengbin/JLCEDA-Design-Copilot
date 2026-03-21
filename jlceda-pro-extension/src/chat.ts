@@ -2678,7 +2678,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	async function runAgent(config?: any, abortSignal?: any) {
 		const processFoldGroupController: any = createProcessFoldGroupController();
 		try {
-			// 循环检测：记录上一次助手回复+工具调用的复合指纹与连续相同次数。
+			// 循环检测：记录上一次助手回复文本指纹与连续相同次数。
 			let lastLoopFingerprint: any = '';
 			let sameLoopCount: any = 0;
 			for (let step: any = 0; step < MAX_AGENT_STEPS; step += 1) {
@@ -2755,30 +2755,35 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 					processFoldGroupController.appendProcessNode(reasoningMessageNode);
 					collapseReasoningDetails(reasoningMessageNode);
 				}
-				if (Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
-					if (abortSignal && abortSignal.aborted) {
-						throw new DOMException('【诊断信息】用户已停止', 'AbortError');
-					}
-					// 循环检测：仅取正文（或推理内容）前 200 字符作为指纹，避免因工具名相同导致误判。
-					const currentTextBody: any = String(assistantContent || rawAssistantContent || reasoningContent || '').trim().slice(0, 200);
-					const currentLoopFingerprint: any = currentTextBody;
-					if (currentLoopFingerprint === lastLoopFingerprint) {
+				// 循环检测：仅按回复文本判定，工具调用不参与限制。
+				const currentTextBody: any = String(assistantContent || rawAssistantContent || reasoningContent || '').trim().slice(0, 200);
+				if (currentTextBody) {
+					if (currentTextBody === lastLoopFingerprint) {
 						sameLoopCount += 1;
 						if (sameLoopCount > 2) {
 							throw Object.assign(
 								new Error(
 									'**检测到模型陷入死循环，已为你自动终止本次对话。**\n\n'
-									+ '当前模型连续 3 次输出了相同的回复并重复调用相同工具，但始终无法推进任务。\n\n'
+									+ '当前模型连续 3 次输出了相同的回复，但始终无法推进任务。\n\n'
 									+ '这通常是由于模型丢失了上下文状态，或者该模型对工具调用的支持存在缺陷。\n\n'
-									+ '**这不是你的问题，是模型的缺陷。** 建议切换至其他模型（如 DeepSeek、通义千问等）后重新发起对话。',
+									+ '**这不是你的问题，是模型的缺陷。** 建议切换至其他模型后重新发起对话。',
 								),
 								{ name: 'ToolCallLoopError' },
 							);
 						}
 					}
 					else {
-						lastLoopFingerprint = currentLoopFingerprint;
+						lastLoopFingerprint = currentTextBody;
 						sameLoopCount = 1;
+					}
+				}
+				else {
+					lastLoopFingerprint = '';
+					sameLoopCount = 0;
+				}
+				if (Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
+					if (abortSignal && abortSignal.aborted) {
+						throw new DOMException('【诊断信息】用户已停止', 'AbortError');
 					}
 					agentMessages.push({
 						role: 'assistant',
