@@ -13,6 +13,7 @@ import { buildUserMessageContentForApi, cloneDocumentEntries, cloneImageEntries,
 import { readPlatformConfigs } from './platform/platform';
 import { createChatSessionManager } from './session/session';
 import { createAgentToolRuntime, executeToolWithTimeout } from './tools/executor';
+import { parseToolParameterConfirmRequest, requestToolParameterConfirmPanel } from './tools/tool-parameter-confirm';
 import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 
 (function () {
@@ -2799,19 +2800,63 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						}
 						const toolCall: any = message.tool_calls[index];
 						const toolName: any = toolCall && toolCall.function ? toolCall.function.name : '';
-						const toolArgs: any = toolCall && toolCall.function ? toolCall.function.arguments : '';
+						let toolArgs: any = toolCall && toolCall.function ? toolCall.function.arguments : '';
 						const toolCallId: any = toolCall && toolCall.id ? toolCall.id : (`tool-call-${Date.now()}-${index}`);
 						const toolMessageNode: any = appendMessage('ai', formatToolExecRawText(toolCall, undefined, true), 'tool-exec');
 						processFoldGroupController.appendProcessNode(toolMessageNode);
-						setFoldLoadingState(toolMessageNode, true);
 						let result: any = null;
-						try {
-							result = await executeToolWithTimeout(toolRuntime, toolName, toolArgs, TOOL_CALL_TIMEOUT_SECONDS);
+						let displayToolCall: any = toolCall;
+						let confirmRoundCount: any = 0;
+						while (true) {
+							setFoldLoadingState(toolMessageNode, true);
+							try {
+								result = await executeToolWithTimeout(toolRuntime, toolName, toolArgs, TOOL_CALL_TIMEOUT_SECONDS);
+							}
+							finally {
+								setFoldLoadingState(toolMessageNode, false);
+							}
+							const confirmRequest: any = parseToolParameterConfirmRequest(result);
+							if (!confirmRequest) {
+								break;
+							}
+							setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, result, false), 'tool-exec');
+							setMessageFoldOpen(toolMessageNode, true);
+							const confirmResult: any = await requestToolParameterConfirmPanel({
+								messageNode: toolMessageNode,
+								confirmRequest,
+								rawToolArguments: toolArgs,
+								abortSignal,
+							});
+							if (abortSignal && abortSignal.aborted) {
+								throw new DOMException('【诊断信息】用户已停止', 'AbortError');
+							}
+							if (!confirmResult.confirmed || !String(confirmResult.mergedArgumentsText || '').trim()) {
+								result = {
+									ok: false,
+									error: '用户取消参数确认，工具执行已终止。',
+									errorCode: 'TOOL_PARAMETER_CONFIRM_CANCELLED',
+								};
+								break;
+							}
+							toolArgs = String(confirmResult.mergedArgumentsText || '').trim();
+							displayToolCall = {
+								...displayToolCall,
+								function: {
+									...(displayToolCall && displayToolCall.function ? displayToolCall.function : {}),
+									arguments: toolArgs,
+								},
+							};
+							confirmRoundCount += 1;
+							if (confirmRoundCount >= 3) {
+								result = {
+									ok: false,
+									error: '参数确认轮次超过上限，请重新发起任务。',
+									errorCode: 'TOOL_PARAMETER_CONFIRM_TOO_MANY_TIMES',
+								};
+								break;
+							}
 						}
-						finally {
-							setFoldLoadingState(toolMessageNode, false);
-						}
-						setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(toolCall, result, false), 'tool-exec');
+						setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, result, false), 'tool-exec');
 						const hasOkFlag: any = result && typeof result === 'object' && Object.prototype.hasOwnProperty.call(result, 'ok');
 						const errorText: any = String(result && result.error ? result.error : '无');
 						const hasBooleanBusinessResult: any = result && typeof result === 'object' && typeof result.result === 'boolean';
