@@ -11,7 +11,7 @@ JLCEDA Design Copilot 是面向嘉立创 EDA 专业版的 AI 对话插件，让�
 ```text
 用户（嘉立创 EDA）
     ↕ 聊天 UI
-AI 大模型（DeepSeek / 智谱 / 阿里 / 百度 / 自定义）
+AI 大模型（DeepSeek / 智谱 / 阿里 / 自定义）
     ↕ 工具调用
 EDA API 运行时（Extension iframe 内）
 ```
@@ -26,9 +26,11 @@ EDA API 运行时（Extension iframe 内）
 
 | 工具                   | 说明                                                 |
 | ---------------------- | ---------------------------------------------------- |
-| `jlceda_api_search`  | 离线查询 EDA API 文档，支持按名称、scope、owner 过滤 |
-| `jlceda_context_get` | 读取当前工程、文档、原理图/PCB 及选区上下文          |
-| `jlceda_api_invoke`  | 执行指定 EDA API 并返回结果，支持自定义超时          |
+| `jlceda_api_search`    | 离线查询 EDA API 文档，支持按名称、scope、owner 过滤 |
+| `jlceda_context_get`   | 读取当前工程、文档、原理图/PCB 及选区上下文          |
+| `jlceda_api_invoke`    | 执行指定 EDA API 并返回结果，支持自定义超时          |
+| `jlceda_schematic_check` | 一键执行原理图完整检查，返回 ERC 结果与网表信息      |
+| `todo_list`            | 更新结构化任务列表，在输入框上方独立展示待办项       |
 
 ## 安装
 
