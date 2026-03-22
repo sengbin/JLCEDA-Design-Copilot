@@ -1,7 +1,7 @@
 // 文件说明：提供调试信息提取与工具调用展示相关辅助函数。
 
 // 总开关：开启时显示可展开的详情，关闭时仅显示标题。
-export const DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE: any = false;
+export const DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE: any = true;
 
 // 折叠标题开关：控制标题栏中各字段是否显示。
 export const DEBUG_TOOL_EXEC_SHOW_TOOL_NAME: any = true; // 标题中显示工具名

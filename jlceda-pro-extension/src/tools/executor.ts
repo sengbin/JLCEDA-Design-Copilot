@@ -4,6 +4,7 @@ import { createApiInvokeHandler } from './api-invoke';
 import { createApiSearchHandler } from './api-search';
 import { createContextGetHandler } from './context-get';
 import { createSchematicCheckHandler } from './schematic-check';
+import { createTodoListHandler } from './todo_list';
 
 // 当前会话中有效的 blob URL 集合，页面关闭后自动失效，不会持久化。
 export const activeBlobUrls: Set<string> = new Set();
@@ -160,6 +161,9 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 	if (toolName === 'jlceda_schematic_check') {
 		return '{}';
 	}
+	if (toolName === 'todo_list') {
+		return '{"todoList":"[{\\"id\\":1,\\"title\\":\\"任务标题\\",\\"status\\":\\"in-progress\\"}]","explanation":"可选说明"}';
+	}
 	return '{"参数1":"值1","参数2":"值2"}';
 }
 
@@ -286,6 +290,12 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 			}
 			return await runtimeObject.handleSchematicCheckTask(handlerArgs);
 		},
+		async todo_list(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleTodoListTask !== 'function') {
+				return { ok: false, error: 'todo_list 处理器未初始化。' };
+			}
+			return await runtimeObject.handleTodoListTask(handlerArgs);
+		},
 	};
 
 	const handler: any = handlerMap[normalizedToolName];
@@ -348,6 +358,7 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 	const { handleContextTask } = createContextGetHandler(runtimeWindow || window, deps);
 	const { handleInvokeTask, resolveApiMemberInAnyRoot } = createApiInvokeHandler(runtimeWindow || window, deps);
 	const { handleSchematicCheckTask } = createSchematicCheckHandler(runtimeWindow || window, deps);
+	const { handleTodoListTask } = createTodoListHandler();
 
 	return {
 		resolveApiMemberInAnyRoot,
@@ -378,6 +389,14 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 		handleSchematicCheckTask: async (payload?: unknown) => {
 			try {
 				return await handleSchematicCheckTask(payload);
+			}
+			catch (error: unknown) {
+				return { ok: false, error: toSafeErrorMessage(error) };
+			}
+		},
+		handleTodoListTask: async (payload?: unknown) => {
+			try {
+				return await handleTodoListTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };

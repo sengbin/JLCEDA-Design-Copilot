@@ -72,6 +72,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	const chatHistory: any = document.querySelector('.chat-history');
 	const chatTextareaScroll: any = document.querySelector('.chat-textarea-scroll');
 	const chatEditor: any = document.querySelector('.chat-textarea');
+	const chatTodoPanel: any = document.querySelector('.chat-todo-panel');
 	const chatInputBox: any = document.querySelector('.chat-input-box');
 	const sendButton: any = document.querySelector('.send-button');
 	const imageAttachmentList: any = document.querySelector('.image-attachment-list');
@@ -100,6 +101,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	const SCROLLBAR_AUTO_HIDE_DELAY: any = 1000;
 	const IMAGE_ATTACHMENT_HOVER_HIDE_DEBOUNCE_MS: any = 180;
 	const OVERLAY_SCROLLBAR_THEME_CLASS: any = 'os-theme-jlceda';
+	const TODO_PANEL_DEFAULT_TITLE_TEXT: any = '任务列表';
 	const chatHistoryMessageContainer: any = createChatHistoryMessageContainer(chatHistory);
 	const chatEmptyStateNode: any = createChatEmptyStateNode(chatHistory);
 	const overlayScrollControllerMap: any = new WeakMap();
@@ -110,6 +112,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	let imageAttachmentHoverPreviewImage: any = null;
 	let imageAttachmentHoverPreviewName: any = null;
 	let imageAttachmentHoverHideTimerId: any = 0;
+	let todoPanelStateSignature: any = '';
+	let todoPanelCollapsed: any = true;
 	const sessionManager: any = createChatSessionManager({
 		storageKey: CHAT_SESSION_STORAGE_KEY,
 		maxMessages: CHAT_SESSION_MAX_MESSAGES,
@@ -128,6 +132,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			applyFoldStateAfterSessionRestore();
 			rebuildProcessFoldGroupsAfterSessionRestore();
 			clearFoldLoadingIndicators();
+			clearTodoPanel();
 			isRestoringSession = false;
 			syncChatEmptyStateVisibility();
 			if (chatHistoryScrollController) {
@@ -156,6 +161,178 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			return;
 		}
 		chatEditor.textContent = normalizeChatInputText(value);
+	}
+	// 从工具结果中读取并校验结构化任务列表。
+	function readTodoListFromToolResult(result?: any) {
+		if (!result || typeof result !== 'object' || !Array.isArray(result.todoList)) {
+			return [];
+		}
+		const normalizedList: any = [];
+		for (let index: any = 0; index < result.todoList.length; index += 1) {
+			const item: any = result.todoList[index];
+			if (!item || typeof item !== 'object') {
+				continue;
+			}
+			const titleText: any = String(item.title || '').trim();
+			const statusText: any = String(item.status || '').trim();
+			if (!titleText) {
+				continue;
+			}
+			if (statusText !== 'not-started' && statusText !== 'in-progress' && statusText !== 'completed') {
+				continue;
+			}
+			normalizedList.push({
+				id: Number(item.id),
+				title: titleText,
+				status: statusText,
+			});
+		}
+		return normalizedList;
+	}
+	// 构建任务面板标题文本。
+	function buildTodoPanelTitle(todoItems?: any, summary?: any) {
+		const totalCount: any = Array.isArray(todoItems) ? todoItems.length : 0;
+		const completedCountFromSummary: any = summary && typeof summary === 'object'
+			? Number(summary.completed)
+			: Number.NaN;
+		const completedCountFromItems: any = Array.isArray(todoItems)
+			? todoItems.filter((item?: any) => item && item.status === 'completed').length
+			: 0;
+		const completedCount: any = Number.isFinite(completedCountFromSummary)
+			? Math.max(0, Math.min(totalCount, completedCountFromSummary))
+			: completedCountFromItems;
+		return `${TODO_PANEL_DEFAULT_TITLE_TEXT} (${String(completedCount)}/${String(totalCount)})`;
+	}
+	// 将折叠状态同步到任务面板 DOM。
+	function syncTodoPanelCollapsedState() {
+		if (!chatTodoPanel || !(chatTodoPanel instanceof HTMLElement)) {
+			return;
+		}
+		const headerButton: any = chatTodoPanel.querySelector('.chat-todo-panel-header');
+		const listNode: any = chatTodoPanel.querySelector('.chat-todo-list');
+		if (headerButton && headerButton instanceof HTMLElement) {
+			headerButton.setAttribute('aria-expanded', todoPanelCollapsed ? 'false' : 'true');
+		}
+		if (listNode && listNode instanceof HTMLElement) {
+			listNode.classList.toggle('is-collapsed', Boolean(todoPanelCollapsed));
+		}
+	}
+	// 渲染输入框上方任务列表面板。
+	function renderTodoPanel(todoItems?: any, summary?: any) {
+		if (!chatTodoPanel || !(chatTodoPanel instanceof HTMLElement)) {
+			return;
+		}
+		const normalizedItems: any = Array.isArray(todoItems)
+			? todoItems.filter((item?: any) => item && typeof item === 'object' && String(item.title || '').trim())
+			: [];
+		if (normalizedItems.length === 0) {
+			if (!todoPanelStateSignature) {
+				return;
+			}
+			todoPanelStateSignature = '';
+			todoPanelCollapsed = true;
+			chatTodoPanel.classList.remove('is-visible');
+			chatTodoPanel.innerHTML = '';
+			return;
+		}
+		if (!todoPanelStateSignature) {
+			todoPanelCollapsed = true;
+		}
+		const titleText: any = buildTodoPanelTitle(normalizedItems, summary);
+		const signature: any = `${titleText}::${normalizedItems.map((item?: any) => `${String(item.status || '')}:${String(item.title || '')}`).join('|')}`;
+		if (signature === todoPanelStateSignature) {
+			syncTodoPanelCollapsedState();
+			return;
+		}
+		todoPanelStateSignature = signature;
+		const itemHtml: any = normalizedItems.map((item?: any) => {
+			const statusText: any = String(item && item.status ? item.status : 'not-started');
+			const statusClass: any = statusText === 'completed'
+				? 'is-completed'
+				: (statusText === 'in-progress' ? 'is-in-progress' : 'is-not-started');
+			const statusGlyph: any = statusText === 'completed'
+				? '✓'
+				: (statusText === 'in-progress' ? '…' : '○');
+			return `<li class="chat-todo-item ${statusClass}"><span class="chat-todo-item-status" aria-hidden="true">${statusGlyph}</span><span class="chat-todo-item-text">${escapeHtml(item.title)}</span></li>`;
+		}).join('');
+		chatTodoPanel.innerHTML = `<button type="button" class="chat-todo-panel-header" aria-expanded="false"><svg class="chat-todo-panel-chevron" viewBox="0 0 20 20" focusable="false" aria-hidden="true"><use xlink:href="#icon-chevron-down"></use></svg><span class="chat-todo-panel-header-text">${escapeHtml(titleText)}</span></button><ul class="chat-todo-list">${itemHtml}</ul>`;
+		chatTodoPanel.classList.add('is-visible');
+		syncTodoPanelCollapsedState();
+	}
+	// 清空任务列表面板。
+	function clearTodoPanel() {
+		renderTodoPanel([], null);
+	}
+	// 切换任务面板折叠状态。
+	function toggleTodoPanelCollapsed() {
+		if (!chatTodoPanel || !(chatTodoPanel instanceof HTMLElement)) {
+			return;
+		}
+		if (!todoPanelStateSignature) {
+			return;
+		}
+		todoPanelCollapsed = !todoPanelCollapsed;
+		syncTodoPanelCollapsedState();
+	}
+	if (chatTodoPanel && chatTodoPanel instanceof HTMLElement) {
+		chatTodoPanel.addEventListener('click', event => {
+			const targetNode: any = event.target;
+			if (!(targetNode instanceof Element)) {
+				return;
+			}
+			const headerNode: any = targetNode.closest('.chat-todo-panel-header');
+			if (!headerNode) {
+				return;
+			}
+			event.preventDefault();
+			toggleTodoPanelCollapsed();
+		});
+	}
+	// todo_list 的工具结果以摘要形式展示，避免在聊天正文内重复展开完整待办列表。
+	function buildToolExecDisplayResult(toolName?: any, result?: any) {
+		const normalizedToolName: any = String(toolName || '').trim();
+		if (normalizedToolName !== 'todo_list') {
+			return result;
+		}
+		if (!result || typeof result !== 'object') {
+			return result;
+		}
+		const summary: any = result.summary && typeof result.summary === 'object'
+			? result.summary
+			: null;
+		const todoItems: any = readTodoListFromToolResult(result);
+		const displayResult: any = {
+			ok: Boolean(result.ok),
+			message: result.ok ? '任务列表已更新。' : String(result.error || '任务列表更新失败。'),
+		};
+		if (summary) {
+			displayResult.summary = summary;
+		}
+		if (todoItems.length > 0) {
+			displayResult.count = todoItems.length;
+		}
+		if (!result.ok && String(result.error || '').trim()) {
+			displayResult.error = String(result.error || '').trim();
+		}
+		if (!result.ok && String(result.errorCode || '').trim()) {
+			displayResult.errorCode = String(result.errorCode || '').trim();
+		}
+		return displayResult;
+	}
+	// 根据 todo_list 工具结果刷新任务面板。
+	function applyTodoPanelByToolResult(toolName?: any, result?: any) {
+		const normalizedToolName: any = String(toolName || '').trim();
+		if (normalizedToolName !== 'todo_list') {
+			return;
+		}
+		if (!result || typeof result !== 'object' || !result.ok) {
+			return;
+		}
+		const todoItems: any = readTodoListFromToolResult(result);
+		if (todoItems.length === 0) {
+			return;
+		}
+		renderTodoPanel(todoItems, result.summary);
 	}
 	// 获取聊天输入滚动视口节点，优先使用 OverlayScrollbars 视口。
 	function getChatInputViewport() {
@@ -2819,7 +2996,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 							if (!confirmRequest) {
 								break;
 							}
-							setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, result, false), 'tool-exec');
+							const displayToolResult: any = buildToolExecDisplayResult(toolName, result);
+							setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displayToolResult, false), 'tool-exec');
 							setMessageFoldOpen(toolMessageNode, true);
 							const confirmResult: any = await requestToolParameterConfirmPanel({
 								messageNode: toolMessageNode,
@@ -2856,7 +3034,9 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 								break;
 							}
 						}
-						setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, result, false), 'tool-exec');
+						const displayToolResult: any = buildToolExecDisplayResult(toolName, result);
+						setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displayToolResult, false), 'tool-exec');
+						applyTodoPanelByToolResult(toolName, result);
 						const hasOkFlag: any = result && typeof result === 'object' && Object.prototype.hasOwnProperty.call(result, 'ok');
 						const errorText: any = String(result && result.error ? result.error : '无');
 						const hasBooleanBusinessResult: any = result && typeof result === 'object' && typeof result.result === 'boolean';
@@ -3134,6 +3314,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				return;
 			}
 			sessionManager.createAndActivateChatSession(CHAT_SESSION_DEFAULT_TITLE);
+			clearTodoPanel();
 			hasCompletedRound = false;
 			clearPendingImageEntries();
 			clearPendingDocumentEntries();
@@ -3153,6 +3334,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				return;
 			}
 			isRestoringSession = sessionManager.deleteActiveChatSession();
+			clearTodoPanel();
 			hasCompletedRound = false;
 			clearPendingImageEntries();
 			clearPendingDocumentEntries();
@@ -3186,6 +3368,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				return;
 			}
 			isRestoringSession = sessionManager.switchActiveChatSession(sessionId);
+			clearTodoPanel();
 			hasCompletedRound = false;
 			clearPendingImageEntries();
 			clearPendingDocumentEntries();
@@ -3298,6 +3481,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		if (chatHistoryMessageContainer) {
 			chatHistoryMessageContainer.innerHTML = '';
 		}
+		clearTodoPanel();
 		syncChatEmptyStateVisibility();
 	}
 	hasCompletedRound = false;

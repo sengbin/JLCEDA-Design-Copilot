@@ -79,5 +79,27 @@
 				"additionalProperties": false
 			}
 		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "todo_list",
+			"description": "更新结构化任务列表。用于把任务项展示到聊天输入框上方的独立待办面板，禁止在正文中输出待办列表。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"todoList": {
+						"type": "string",
+						"description": "任务列表 JSON 字符串，解析后必须是数组。示例：[{\"id\":1,\"title\":\"任务标题\",\"status\":\"in-progress\"}]"
+					},
+					"explanation": {
+						"type": "string",
+						"description": "可选说明文本。"
+					}
+				},
+				"required": ["todoList"],
+				"additionalProperties": false
+			}
+		}
 	}
 ]
