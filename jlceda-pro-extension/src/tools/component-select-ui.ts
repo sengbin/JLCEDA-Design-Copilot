@@ -47,23 +47,15 @@ const COMPONENT_SELECT_STYLE_TEXT: string = [
 	`.component-select-table-wrap {`,
 	`\tdisplay: block;`,
 	`\twidth: 100%;`,
-	`\toverflow-x: auto;`,
-	`\t-webkit-overflow-scrolling: touch;`,
+	`\toverflow-x: hidden;`,
 	`\tborder: 1px solid var(--input-border, #d0d0d0);`,
 	`\tborder-radius: 6px;`,
 	`}`,
 	`.component-select-table {`,
 	`\ttable-layout: fixed;`,
-	`\twidth: 550px;`,
+	`\twidth: 100%;`,
 	`\tborder-collapse: collapse;`,
-	`\tfont-size: 12px;`,
-	`}`,
-	`.component-select-table-wrap::-webkit-scrollbar {`,
-	`\theight: 6px;`,
-	`}`,
-	`.component-select-table-wrap::-webkit-scrollbar-thumb {`,
-	`\tbackground: var(--input-border, #c0c0c0);`,
-	`\tborder-radius: 3px;`,
+	`\tfont-size: 11px;`,
 	`}`,
 	`.component-select-table th {`,
 	`\ttext-align: left;`,
@@ -286,12 +278,12 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		// 表头。
 		const thead: HTMLTableSectionElement = document.createElement('thead');
 		const headerRow: HTMLTableRowElement = document.createElement('tr');
-		// 每列名称及宽度，宽度和为 550px，与 .component-select-table width 保持一致。
+		// 每列名称及宽度，使用百分比以适配任意容器宽度，table-layout:fixed 下按比例分配。
 		const headers: Array<{ label: string; width: string }> = [
-			{ label: '型号', width: '130px' },
-			{ label: '封装', width: '120px' },
-			{ label: '描述', width: '180px' },
-			{ label: '品牌', width: '120px' },
+			{ label: '型号', width: '24%' },
+			{ label: '封装', width: '22%' },
+			{ label: '描述', width: '32%' },
+			{ label: '品牌', width: '22%' },
 		];
 		for (let hi = 0; hi < headers.length; hi += 1) {
 			const th: HTMLTableCellElement = document.createElement('th');
@@ -347,24 +339,29 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 					e.stopPropagation();
 				});
 				tdPartNum.appendChild(linkEl);
-			} else {
+			}
+			else {
 				tdPartNum.textContent = manufacturerPartNumber;
 			}
 			row.appendChild(tdPartNum);
 
 			// 其余固定列：封装 → 描述 → 品牌
+			// 描述 tooltip：将分号/换行分隔的参数拆开，每条占一行。
+			const rawDesc: string = candidate.description || '';
+			const descTooltip: string | undefined = rawDesc
+				? rawDesc.split(/[;；\n]/).map((s: string) => s.trim()).filter((s: string) => s.length > 0).join('\n')
+				: undefined;
 			const restCells: Array<{ text: string; title?: string }> = [
 				{ text: candidate.footprintName || '—' },
-				{ text: candidate.description || '—', title: candidate.description || undefined },
+				{ text: rawDesc || '—', title: descTooltip },
 				{ text: candidate.manufacturer || candidate.supplier || '—' },
 			];
 			for (let ci = 0; ci < restCells.length; ci += 1) {
 				const td: HTMLTableCellElement = document.createElement('td');
 				const cellDef = restCells[ci];
 				td.textContent = cellDef.text;
-				if (cellDef.title) {
-					td.title = cellDef.title;
-				}
+				// 有显式 title 用 title，否则用单元格文本作为悬停提示。
+				td.title = cellDef.title !== undefined ? cellDef.title : cellDef.text;
 				row.appendChild(td);
 			}
 
