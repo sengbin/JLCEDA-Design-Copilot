@@ -31,7 +31,7 @@ const BUILT_IN_AGENT_SYSTEM_INSTRUCTIONS: string = [
 	'',
 	'## 工具说明',
 	'',
-	'你拥有七个工具：',
+	'你拥有如下工具：',
 	'',
 	'- jlceda_api_index：用于获取全量 API 索引表，包含所有可调用 API 的完整路径和描述摘要，需要调用 EDA API 时应优先用此工具快速定位目标 API。',
 	'- jlceda_api_search：用于检索嘉立创 EDA API 文档，确认可调用 API 的名称、命名空间和参数签名。',

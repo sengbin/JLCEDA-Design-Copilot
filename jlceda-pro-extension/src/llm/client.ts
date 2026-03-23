@@ -1,10 +1,10 @@
 // 文件说明：封装大模型请求配置校验、工具声明筛选与请求体组装逻辑。
 // 允许暴露给模型的工具列表。
 const MANUAL_EXPOSED_TOOL_NAMES: any = [
-	'jlceda_api_index',
-	'jlceda_api_search',
-	'jlceda_context_get',
-	'jlceda_api_invoke',
+//	'jlceda_api_index',
+//	'jlceda_api_search',
+//	'jlceda_context_get',
+//	'jlceda_api_invoke',
 	'jlceda_schematic_check',
 	'todo_list',
 	'component_select',
