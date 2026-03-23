@@ -2,6 +2,23 @@
 	{
 		"type": "function",
 		"function": {
+			"name": "jlceda_api_index",
+			"description": "获取全量可调用 API 索引表，每项包含完整路径（fullName）和功能描述（summary）。需要调用 EDA API 时，应优先调用此工具获取索引，快速锁定目标 API 路径，再通过 jlceda_api_search 获取完整签名。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"owner": {
+						"type": "string",
+						"description": "命名空间过滤（可选），例如 sch/pcb/lib/dmt，不填则返回全部。"
+					}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
 			"name": "jlceda_api_search",
 			"description": "在扩展离线 API 文档中检索可调用 API。建议先使用 scope=callable，并结合 owner 缩小范围。",
 			"parameters": {

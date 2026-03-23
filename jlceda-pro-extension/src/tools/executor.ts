@@ -1,5 +1,6 @@
 // 文件说明：工具运行时调度层 —— 管理序列化工具、参数解析规范化、超时执行与工具运行时创建。
 import { makeJsonSafe } from '../utils';
+import { createApiIndexHandler } from './api-index';
 import { createApiInvokeHandler } from './api-invoke';
 import { createApiSearchHandler } from './api-search';
 import { createComponentSelectHandler } from './component-select';
@@ -150,6 +151,9 @@ function normalizeRawToolArgumentsText(rawArguments?: any): string {
 
 // 根据工具名返回参数格式提示。
 function buildExpectedArgumentsFormat(toolName: string): string {
+	if (toolName === 'jlceda_api_index') {
+		return '{"owner":"sch"}';
+	}
 	if (toolName === 'jlceda_api_search') {
 		return '{"query":"bom","scope":"callable","owner":"sch","limit":10}';
 	}
@@ -270,6 +274,12 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 
 	const runtimeObject: any = toolRuntime && typeof toolRuntime === 'object' ? toolRuntime : {};
 	const handlerMap: Record<string, (args?: unknown) => Promise<unknown>> = {
+		async jlceda_api_index(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleApiIndexTask !== 'function') {
+				return { ok: false, error: 'jlceda_api_index 处理器未初始化。' };
+			}
+			return await runtimeObject.handleApiIndexTask(handlerArgs);
+		},
 		async jlceda_api_search(handlerArgs?: unknown): Promise<unknown> {
 			if (typeof runtimeObject.handleApiSearchTask !== 'function') {
 				return { ok: false, error: 'jlceda_api_search 处理器未初始化。' };
@@ -365,6 +375,7 @@ export async function executeToolWithTimeout(toolRuntime?: any, toolName?: any, 
  */
 export function createAgentToolRuntime(runtimeWindow?: any) {
 	const deps = { safeCall, toSerializableAsync, activeBlobUrls };
+	const { handleApiIndexTask } = createApiIndexHandler();
 	const { handleApiSearchTask } = createApiSearchHandler(runtimeWindow || window);
 	const { handleContextTask } = createContextGetHandler(runtimeWindow || window, deps);
 	const { handleInvokeTask, resolveApiMemberInAnyRoot } = createApiInvokeHandler(runtimeWindow || window, deps);
@@ -374,6 +385,14 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 
 	return {
 		resolveApiMemberInAnyRoot,
+		handleApiIndexTask: async (payload?: unknown) => {
+			try {
+				return await handleApiIndexTask(payload);
+			}
+			catch (error: unknown) {
+				return { ok: false, error: toSafeErrorMessage(error) };
+			}
+		},
 		handleApiSearchTask: async (payload?: unknown) => {
 			try {
 				return await handleApiSearchTask(payload);
