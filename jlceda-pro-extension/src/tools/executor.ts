@@ -170,7 +170,7 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 		return '{"todoList":"[{\\"id\\":1,\\"title\\":\\"任务标题\\",\\"status\\":\\"in-progress\\"}]","explanation":"可选说明"}';
 	}
 	if (toolName === 'component_select') {
-		return '{"keyword":"器件关键词","limit":8}';
+		return '{"keyword":"器件关键词"}';
 	}
 	return '{"参数1":"值1","参数2":"值2"}';
 }

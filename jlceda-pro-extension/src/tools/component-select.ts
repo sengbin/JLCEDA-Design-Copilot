@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------------
 // 名称：器件选型工具处理器
-// 说明：接收 AI 描述的器件关键词，调用 EDA 系统库 API 搜索候选器件，
+// 说明：接收 AI 描述的器件关键词，调用 EDA 立创商城 API 搜索候选器件，
 //       返回选型交互协议数据，供前端面板渲染交互选择。
 // 作者：Lion
 // 邮箱：chengbin@3578.cn
@@ -34,6 +34,8 @@ export interface ComponentSelectRequest {
 	title: string;
 	description: string;
 	candidates: ComponentSelectCandidate[];
+	pageSize: number;
+	currentPage: number;
 }
 
 // 将 EDA lib_Device.search 原始返回项映射为候选器件结构。
@@ -71,11 +73,11 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 			return { ok: false, error: '缺少器件搜索关键词，请提供 keyword 参数。' };
 		}
 
-		// 限制最大返回数量，最少 2 个，最多 20 个，默认 8 个。
+		// 限制每页显示数量，最少 2 个，最多 20 个，默认 20 个。
 		const limitRaw: number = Number(args.limit);
-		const limit: number = Number.isFinite(limitRaw) && limitRaw > 0
+		const pageSize: number = Number.isFinite(limitRaw) && limitRaw > 0
 			? Math.min(Math.max(Math.round(limitRaw), 2), 20)
-			: 8;
+			: 20;
 
 		const root: unknown = getEdaApiRoot(runtimeWindow);
 		if (root === null || typeof root !== 'object') {
@@ -93,11 +95,14 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 			};
 		}
 
+		// 调用 API 获取指定页数据。
+		async function fetchApiPage(page: number): Promise<unknown[]> {
+			return await libDevice!.search(keyword, undefined, undefined, undefined, pageSize, page);
+		}
+
 		let rawResults: unknown[];
 		try {
-			// 请求更多结果用于客户端过滤，最多取 limit*4 条，上限 60
-			const fetchCount: number = Math.min(limit * 4, 60);
-			rawResults = await libDevice.search(keyword, undefined, undefined, undefined, fetchCount, 1);
+			rawResults = await fetchApiPage(1);
 		}
 		catch (error: unknown) {
 			const message: string = error instanceof Error ? error.message : String(error ?? '');
@@ -107,29 +112,13 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 		if (!Array.isArray(rawResults) || rawResults.length === 0) {
 			return {
 				ok: false,
-				error: `未在系统库中找到匹配"${keyword}"的器件，请尝试修改关键词重新搜索。`,
+				error: `未在立创商城中找到匹配"${keyword}"的器件，请尝试修改关键词重新搜索。`,
 			};
 		}
 
-		const allMapped: ComponentSelectCandidate[] = rawResults
+		const candidates: ComponentSelectCandidate[] = rawResults
 			.map(mapDeviceSearchItem)
 			.filter(item => Boolean(item.uuid) && Boolean(item.libraryUuid));
-
-		// 优先取名称或符号名包含关键词的结果，不足时再补充其余结果。
-		const keywordLower: string = keyword.toLowerCase();
-		const nameMatched: ComponentSelectCandidate[] = allMapped.filter(
-			item =>
-				item.name.toLowerCase().includes(keywordLower)
-				|| item.symbolName.toLowerCase().includes(keywordLower),
-		);
-		const rest: ComponentSelectCandidate[] = allMapped.filter(
-			item =>
-				!item.name.toLowerCase().includes(keywordLower)
-				&& !item.symbolName.toLowerCase().includes(keywordLower),
-		);
-		const merged: ComponentSelectCandidate[] = [...nameMatched, ...rest];
-		// 返回全部候选，由前端面板滚动展示，不在此处裁剪。
-		const candidates: ComponentSelectCandidate[] = merged;
 
 		if (candidates.length === 0) {
 			return {
@@ -138,16 +127,26 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 			};
 		}
 
-		// 返回选型交互协议，前端检测到此协议后渲染交互面板。
-		return {
+		// 构建返回结果，附加翻页回调（运行时函数，不参与 JSON 序列化）。
+		const resultObj: Record<string, unknown> = {
 			ok: true,
 			selection: {
 				protocol: COMPONENT_SELECT_PROTOCOL,
 				title: `器件选型：${keyword}`,
-				description: `以下是在系统库中搜索到的 ${String(candidates.length)} 个候选器件，请选择合适的一个：`,
+				description: `以下是立创商城中"${keyword}"的搜索结果，每页 ${String(pageSize)} 个，请选择合适的一个：`,
 				candidates,
+				pageSize,
+				currentPage: 1,
 			} satisfies ComponentSelectRequest,
 		};
+		// 翻页回调：由 UI 层在用户点击上一页/下一页时调用，返回指定页候选器件列表。
+		resultObj._fetchPage = async (page: number): Promise<ComponentSelectCandidate[]> => {
+			const pageRaw: unknown[] = await fetchApiPage(page);
+			return Array.isArray(pageRaw)
+				? pageRaw.map(mapDeviceSearchItem).filter(item => Boolean(item.uuid) && Boolean(item.libraryUuid))
+				: [];
+		};
+		return resultObj;
 	}
 
 	return { handleComponentSelectTask };

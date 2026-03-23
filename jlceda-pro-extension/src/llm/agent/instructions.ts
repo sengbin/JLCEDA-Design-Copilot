@@ -217,7 +217,7 @@ const BUILT_IN_AGENT_SYSTEM_INSTRUCTIONS: string = [
 	'',
 	'参数规则：',
 	'- `keyword`：器件搜索关键词，必填。',
-	'- `limit`：返回候选数量上限，可选，默认 8。',
+	'- `limit`：返回候选数量上限，可选，默认 20。',
 	'',
 	'结果处理：',
 	'- ok=true 时：selectedCandidate 包含 uuid、libraryUuid、name、footprintName 等字段。',

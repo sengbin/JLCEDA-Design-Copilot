@@ -14,6 +14,7 @@ import { COMPONENT_SELECT_PROTOCOL } from './component-select';
 interface RequestSelectPanelOptions {
 	messageNode: HTMLElement;
 	selectRequest: ComponentSelectRequest;
+	fetchPage?: (page: number) => Promise<ComponentSelectCandidate[]>;
 	abortSignal?: AbortSignal | null;
 	onMounted?: () => void;
 }
@@ -131,10 +132,11 @@ const COMPONENT_SELECT_STYLE_TEXT: string = [
 	`\t}`,
 	`}`,
 	`.component-select-actions {`,
-	`\tmargin-top: 4px;`,
 	`\tdisplay: flex;`,
 	`\tgap: 8px;`,
-	`\tjustify-content: flex-end;`,
+	`\talign-items: center;`,
+	`\tjustify-content: space-between;`,
+	`\tpadding: 4px 0;`,
 	`}`,
 	`.component-select-button {`,
 	`\theight: 26px;`,
@@ -191,6 +193,118 @@ const COMPONENT_SELECT_STYLE_TEXT: string = [
 	`\t\tbackground: #4b4b4b;`,
 	`\t\tcolor: #9a9a9a;`,
 	`\t}`,
+	`}`,
+	`.component-select-pagination-nav {`,
+	`\tdisplay: flex;`,
+	`\talign-items: baseline;`,
+	`\tgap: 8px;`,
+	`}`,
+	`.component-select-page-link {`,
+	`\tfont-size: 12px;`,
+	`\tline-height: 22px;`,
+	`\tcolor: var(--link-color, #0078d4);`,
+	`\tcursor: pointer;`,
+	`\ttext-decoration: none;`,
+	`\tbackground: none;`,
+	`\tborder: none;`,
+	`\tpadding: 0;`,
+	`\tuser-select: none;`,
+	`}`,
+	`.component-select-page-link:hover:not(:disabled) {`,
+	`\ttext-decoration: underline;`,
+	`}`,
+	`.component-select-page-link:disabled {`,
+	`\tcolor: var(--text-secondary, #9a9a9a);`,
+	`\tcursor: default;`,
+	`}`,
+	`.component-select-page-dropdown {`,
+	`\tposition: relative;`,
+	`\tdisplay: inline-flex;`,
+	`\talign-items: center;`,
+	`}`,
+	`.component-select-page-trigger {`,
+	`\tdisplay: flex;`,
+	`\talign-items: center;`,
+	`\tgap: 4px;`,
+	`\theight: 22px;`,
+	`\tpadding: 0 4px;`,
+	`\tbackground: transparent;`,
+	`\tcolor: var(--text-primary, #2f2f2f);`,
+	`\tfont-size: 12px;`,
+	`\tline-height: 22px;`,
+	`\tborder: none;`,
+	`\tborder-radius: 4px;`,
+	`\twhite-space: nowrap;`,
+	`\toutline: none;`,
+	`\tcursor: pointer;`,
+	`}`,
+	`.component-select-page-trigger:hover {`,
+	`\tbackground: var(--control-hover-bg, rgba(0,0,0,0.06));`,
+	`}`,
+	`.component-select-page-trigger svg {`,
+	`\twidth: 10px;`,
+	`\theight: 10px;`,
+	`\tflex-shrink: 0;`,
+	`}`,
+	`.component-select-page-chevron {`,
+	`\ttransition: transform 0.2s ease;`,
+	`}`,
+	`.component-select-page-dropdown.open .component-select-page-chevron {`,
+	`\ttransform: rotateX(180deg);`,
+	`}`,
+	`.component-select-page-spinner {`,
+	`\tdisplay: none;`,
+	`}`,
+	`.component-select-page-dropdown.loading .component-select-page-chevron {`,
+	`\tdisplay: none;`,
+	`}`,
+	`.component-select-page-dropdown.loading .component-select-page-spinner {`,
+	`\tdisplay: block;`,
+	`\tanimation: component-select-spin 0.9s linear infinite;`,
+	`}`,
+	`@keyframes component-select-spin {`,
+	`\tfrom { transform: rotate(0deg); }`,
+	`\tto { transform: rotate(360deg); }`,
+	`}`,
+	`.component-select-page-menu {`,
+	`\tdisplay: none;`,
+	`\tposition: absolute;`,
+	`\tleft: 0;`,
+	`\tbottom: calc(100% + 4px);`,
+	`\tz-index: 20;`,
+	`\tmin-width: 100%;`,
+	`\tmax-height: 180px;`,
+	`\toverflow-y: auto;`,
+	`\tpadding: 4px 0;`,
+	`\tbackground: var(--model-dropdown-bg, #f2f2f2);`,
+	`\tborder: 1px solid var(--model-dropdown-border, #c5c5c5);`,
+	`\tborder-radius: 6px;`,
+	`}`,
+	`.component-select-page-dropdown.open .component-select-page-menu {`,
+	`\tdisplay: block;`,
+	`}`,
+	`.component-select-page-option {`,
+	`\tdisplay: block;`,
+	`\twidth: calc(100% - 12px);`,
+	`\tpadding: 4px 12px;`,
+	`\tborder: none;`,
+	`\tbackground: transparent;`,
+	`\tcolor: var(--model-dropdown-text, var(--text-primary, #2f2f2f));`,
+	`\tfont-size: 12px;`,
+	`\tline-height: 1.4;`,
+	`\twhite-space: nowrap;`,
+	`\tborder-radius: 4px;`,
+	`\tmargin: 1px 6px;`,
+	`\ttext-align: left;`,
+	`\tcursor: pointer;`,
+	`}`,
+	`.component-select-page-option:hover {`,
+	`\tbackground: var(--dropdown-option-hover, rgba(0,0,0,0.08));`,
+	`\tcolor: var(--dropdown-option-hover-text, var(--text-primary, #2f2f2f));`,
+	`}`,
+	`.component-select-page-option.is-active {`,
+	`\tbackground: transparent;`,
+	`\tfont-weight: 600;`,
 	`}`,
 ].join('\n');
 
@@ -266,6 +380,12 @@ export function parseComponentSelectRequest(toolResult?: unknown): ComponentSele
 		title: String(selectionObject.title ?? '').trim() || '器件选型',
 		description: String(selectionObject.description ?? '').trim() || '请从以下候选器件中选择一个：',
 		candidates,
+		pageSize: typeof selectionObject.pageSize === 'number' && selectionObject.pageSize > 0
+			? selectionObject.pageSize
+			: candidates.length,
+		currentPage: typeof selectionObject.currentPage === 'number' && selectionObject.currentPage > 0
+			? selectionObject.currentPage
+			: 1,
 	};
 }
 
@@ -286,6 +406,12 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		let resolved: boolean = false;
 		let selectedIndex: number = 0;
 		let rowElements: HTMLTableRowElement[] = [];
+		let currentPage: number = selectRequest.currentPage;
+		let currentCandidates: ComponentSelectCandidate[] = selectRequest.candidates;
+		const pageSize: number = selectRequest.pageSize;
+		const hasFetchPage: boolean = typeof options.fetchPage === 'function';
+		let isPageLoading: boolean = false;
+		let tableOsInstance: any = null;
 
 		// 创建面板根节点。
 		const panelElement: HTMLDivElement = document.createElement('div');
@@ -340,81 +466,140 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 			}
 		}
 
-		// 表体。
+		// 表体容器。
 		const tbody: HTMLTableSectionElement = document.createElement('tbody');
-		rowElements = [];
-		for (let ri = 0; ri < selectRequest.candidates.length; ri += 1) {
-			const candidate: ComponentSelectCandidate = selectRequest.candidates[ri];
-			const row: HTMLTableRowElement = document.createElement('tr');
-			row.className = 'component-select-row';
-			if (ri === 0) {
-				row.classList.add('selected');
+
+		// 构建指定候选列表的表体行，清空并重新填充 tbody。
+		const buildTbodyRows = (candidates: ComponentSelectCandidate[]): void => {
+			while (tbody.firstChild) {
+				tbody.removeChild(tbody.firstChild);
 			}
-			rowElements.push(row);
+			rowElements = [];
+			selectedIndex = 0;
+			for (let ri = 0; ri < candidates.length; ri += 1) {
+				const candidate: ComponentSelectCandidate = candidates[ri];
+				const row: HTMLTableRowElement = document.createElement('tr');
+				row.className = 'component-select-row';
+				rowElements.push(row);
 
-			// 型号列：manufacturerId 无值则显示"—"，不回退到 name。
-			const manufacturerPartNumber: string = candidate.manufacturerId || '—';
-			const supplierId: string = candidate.supplierId || '';
-			const detailUrl: string = supplierId
-				? `https://item.szlcsc.com/${supplierId.replace(/^C/i, '')}.html`
-				: '';
+				// 型号列：manufacturerId 无值则显示"—"，不回退到 name。
+				const manufacturerPartNumber: string = candidate.manufacturerId || '—';
+				const supplierId: string = candidate.supplierId || '';
+				const detailUrl: string = supplierId
+					? `https://item.szlcsc.com/${supplierId.replace(/^C/i, '')}.html`
+					: '';
 
-			// 型号 td
-			const tdPartNum: HTMLTableCellElement = document.createElement('td');
-			tdPartNum.title = manufacturerPartNumber;
-			if (detailUrl) {
-				const linkEl: HTMLAnchorElement = document.createElement('a');
-				linkEl.className = 'component-select-col-link';
-				linkEl.textContent = manufacturerPartNumber;
-				linkEl.href = detailUrl;
-				linkEl.target = '_blank';
-				linkEl.rel = 'noopener noreferrer';
-				// 防止链接点击触发行选中逆转。
-				linkEl.addEventListener('click', (e: MouseEvent) => {
-					e.stopPropagation();
+				// 型号 td
+				const tdPartNum: HTMLTableCellElement = document.createElement('td');
+				tdPartNum.title = manufacturerPartNumber;
+				if (detailUrl) {
+					const linkEl: HTMLAnchorElement = document.createElement('a');
+					linkEl.className = 'component-select-col-link';
+					linkEl.textContent = manufacturerPartNumber;
+					linkEl.href = detailUrl;
+					linkEl.target = '_blank';
+					linkEl.rel = 'noopener noreferrer';
+					// 防止链接点击触发行选中逆转。
+					linkEl.addEventListener('click', (e: MouseEvent) => {
+						e.stopPropagation();
+					});
+					tdPartNum.appendChild(linkEl);
+				}
+				else {
+					tdPartNum.textContent = manufacturerPartNumber;
+				}
+				row.appendChild(tdPartNum);
+
+				// 其余固定列：封装 → 描述 → 品牌
+				// 描述 tooltip：将分号/换行分隔的参数拆开，每条占一行。
+				const rawDesc: string = candidate.description || '';
+				const descTooltip: string | undefined = rawDesc
+					? rawDesc.split(/[;；\n]/).map((s: string) => s.trim()).filter((s: string) => s.length > 0).join('\n')
+					: undefined;
+				const restCells: Array<{ text: string; title?: string }> = [
+					{ text: candidate.footprintName || '—' },
+					{ text: rawDesc || '—', title: descTooltip },
+					{ text: candidate.manufacturer || candidate.supplier || '—' },
+				];
+				for (let ci = 0; ci < restCells.length; ci += 1) {
+					const td: HTMLTableCellElement = document.createElement('td');
+					const cellDef = restCells[ci];
+					td.textContent = cellDef.text;
+					// 有显式 title 用 title，否则用单元格文本作为悬停提示。
+					td.title = cellDef.title !== undefined ? cellDef.title : cellDef.text;
+					row.appendChild(td);
+				}
+
+				// 点击行更新选中状态。
+				const capturedIndex: number = ri;
+				row.addEventListener('click', () => {
+					updateRowHighlight(capturedIndex);
 				});
-				tdPartNum.appendChild(linkEl);
-			}
-			else {
-				tdPartNum.textContent = manufacturerPartNumber;
-			}
-			row.appendChild(tdPartNum);
 
-			// 其余固定列：封装 → 描述 → 品牌
-			// 描述 tooltip：将分号/换行分隔的参数拆开，每条占一行。
-			const rawDesc: string = candidate.description || '';
-			const descTooltip: string | undefined = rawDesc
-				? rawDesc.split(/[;；\n]/).map((s: string) => s.trim()).filter((s: string) => s.length > 0).join('\n')
-				: undefined;
-			const restCells: Array<{ text: string; title?: string }> = [
-				{ text: candidate.footprintName || '—' },
-				{ text: rawDesc || '—', title: descTooltip },
-				{ text: candidate.manufacturer || candidate.supplier || '—' },
-			];
-			for (let ci = 0; ci < restCells.length; ci += 1) {
-				const td: HTMLTableCellElement = document.createElement('td');
-				const cellDef = restCells[ci];
-				td.textContent = cellDef.text;
-				// 有显式 title 用 title，否则用单元格文本作为悬停提示。
-				td.title = cellDef.title !== undefined ? cellDef.title : cellDef.text;
-				row.appendChild(td);
+				tbody.appendChild(row);
 			}
+			if (rowElements[0]) {
+				rowElements[0].classList.add('selected');
+			}
+		};
 
-			// 点击行更新选中状态。
-			const capturedIndex: number = ri;
-			row.addEventListener('click', () => {
-				updateRowHighlight(capturedIndex);
-			});
-
-			tbody.appendChild(row);
-		}
+		buildTbodyRows(currentCandidates);
 		table.appendChild(tbody);
 		tableWrap.appendChild(table);
 		panelElement.appendChild(tableWrap);
 
-		// 操作按钮区。
+		// 操作栏：左侧翻页控件，右侧取消/确定按钮。
 		const actionsElement: HTMLDivElement = document.createElement('div');
 		actionsElement.className = 'component-select-actions';
+
+		let prevPageButton: HTMLButtonElement | null = null;
+		let nextPageButton: HTMLButtonElement | null = null;
+		let pageDropdown: HTMLDivElement | null = null;
+		let pageDropdownTrigger: HTMLButtonElement | null = null;
+		let pageDropdownMenu: HTMLDivElement | null = null;
+		// 已知最大页码（用于动态生成下拉列表项）。
+		let knownMaxPage: number = currentPage;
+		if (hasFetchPage) {
+			const navGroup: HTMLDivElement = document.createElement('div');
+			navGroup.className = 'component-select-pagination-nav';
+
+			prevPageButton = document.createElement('button');
+			prevPageButton.className = 'component-select-page-link';
+			prevPageButton.type = 'button';
+			prevPageButton.textContent = '上一页';
+			prevPageButton.disabled = (currentPage <= 1);
+
+			nextPageButton = document.createElement('button');
+			nextPageButton.className = 'component-select-page-link';
+			nextPageButton.type = 'button';
+			nextPageButton.textContent = '下一页';
+			nextPageButton.disabled = (currentCandidates.length < pageSize);
+
+			// 自定义页码下拉框。
+			pageDropdown = document.createElement('div');
+			pageDropdown.className = 'component-select-page-dropdown';
+
+			pageDropdownTrigger = document.createElement('button');
+			pageDropdownTrigger.className = 'component-select-page-trigger';
+			pageDropdownTrigger.type = 'button';
+			pageDropdownTrigger.innerHTML = `第 ${currentPage} 页<svg class="component-select-page-chevron" viewBox="0 0 20 20" focusable="false" aria-hidden="true"><use xlink:href="#icon-chevron-down"></use></svg><svg class="component-select-page-spinner" viewBox="0 0 12 12" focusable="false" aria-hidden="true"><use xlink:href="#icon-spinner-half"></use></svg>`;
+
+			pageDropdownMenu = document.createElement('div');
+			pageDropdownMenu.className = 'component-select-page-menu';
+			pageDropdownMenu.setAttribute('role', 'listbox');
+
+			pageDropdown.appendChild(pageDropdownTrigger);
+			pageDropdown.appendChild(pageDropdownMenu);
+
+			navGroup.appendChild(prevPageButton);
+			navGroup.appendChild(nextPageButton);
+			navGroup.appendChild(pageDropdown);
+
+			actionsElement.appendChild(navGroup);
+		}
+
+		const buttonsGroup: HTMLDivElement = document.createElement('div');
+		buttonsGroup.className = 'component-select-pagination-nav';
 
 		const cancelButton: HTMLButtonElement = document.createElement('button');
 		cancelButton.className = 'component-select-button cancel';
@@ -426,13 +611,14 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		confirmButton.type = 'button';
 		confirmButton.textContent = '确定';
 
-		actionsElement.appendChild(cancelButton);
-		actionsElement.appendChild(confirmButton);
+		buttonsGroup.appendChild(cancelButton);
+		buttonsGroup.appendChild(confirmButton);
+		actionsElement.appendChild(buttonsGroup);
 		panelElement.appendChild(actionsElement);
 
 		targetContainer.appendChild(panelElement);
 		// 面板挂载到 DOM 后初始化 OverlayScrollbars。
-		const tableOsInstance: any = OverlayScrollbars(tableWrap, {
+		tableOsInstance = OverlayScrollbars(tableWrap, {
 			overflow: {
 				x: 'hidden',
 				y: 'scroll',
@@ -484,8 +670,129 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 				}, 1000);
 			}, { passive: true });
 		}
+		// 分页按钮和下拉框事件处理（在 OverlayScrollbars 初始化后绑定，翻页后可滚动到顶部）。
+		if (hasFetchPage && prevPageButton !== null && nextPageButton !== null
+			&& pageDropdown !== null && pageDropdownTrigger !== null && pageDropdownMenu !== null) {
+			const prevBtn: HTMLButtonElement = prevPageButton;
+			const nextBtn: HTMLButtonElement = nextPageButton;
+			const dropdown: HTMLDivElement = pageDropdown;
+			const dropdownTrigger: HTMLButtonElement = pageDropdownTrigger;
+			const dropdownMenu: HTMLDivElement = pageDropdownMenu;
+			const doFetchPage = options.fetchPage as (page: number) => Promise<ComponentSelectCandidate[]>;
+
+			// 更新下拉框触发器文字。
+			function updateTriggerText(): void {
+				dropdownTrigger.innerHTML = `第 ${currentPage} 页<svg class="component-select-page-chevron" viewBox="0 0 20 20" focusable="false" aria-hidden="true"><use xlink:href="#icon-chevron-down"></use></svg><svg class="component-select-page-spinner" viewBox="0 0 12 12" focusable="false" aria-hidden="true"><use xlink:href="#icon-spinner-half"></use></svg>`;
+			}
+
+			// 渲染下拉菜单页码列表。
+			function renderDropdownOptions(): void {
+				dropdownMenu.innerHTML = '';
+				for (let p: number = 1; p <= knownMaxPage; p++) {
+					const optBtn: HTMLButtonElement = document.createElement('button');
+					optBtn.className = `component-select-page-option${p === currentPage ? ' is-active' : ''}`;
+					optBtn.type = 'button';
+					optBtn.textContent = `第 ${p} 页`;
+					const targetPage: number = p;
+					optBtn.addEventListener('click', () => {
+						if (isPageLoading || targetPage === currentPage) {
+							dropdown.classList.remove('open');
+							return;
+						}
+						dropdown.classList.remove('open');
+						goToPage(targetPage);
+					});
+					dropdownMenu.appendChild(optBtn);
+				}
+			}
+
+			// 跳转到指定页。
+			function goToPage(targetPage: number): void {
+				isPageLoading = true;
+				prevBtn.disabled = true;
+				nextBtn.disabled = true;
+				dropdown.classList.add('loading');
+				updateTriggerText();
+				void doFetchPage(targetPage).then((newCandidates: ComponentSelectCandidate[]) => {
+					if (newCandidates.length > 0) {
+						currentPage = targetPage;
+						currentCandidates = newCandidates;
+						buildTbodyRows(newCandidates);
+						if (tableOsInstance) {
+							tableOsInstance.elements().viewport.scrollTop = 0;
+						}
+						if (currentPage > knownMaxPage) {
+							knownMaxPage = currentPage;
+						}
+						// 当前页满载时，预设下一页可达。
+						if (currentCandidates.length >= pageSize && currentPage >= knownMaxPage) {
+							knownMaxPage = currentPage + 1;
+						}
+					}
+				}).catch(() => {
+					// 翻页失败则保留当前页。
+				}).finally(() => {
+					isPageLoading = false;
+					dropdown.classList.remove('loading');
+					updateTriggerText();
+					prevBtn.disabled = (currentPage <= 1);
+					nextBtn.disabled = (currentCandidates.length < pageSize);
+					renderDropdownOptions();
+				});
+			}
+
+			// 初始化已知页码（第一页满载时至少有第2页）。
+			if (currentCandidates.length >= pageSize && knownMaxPage < currentPage + 1) {
+				knownMaxPage = currentPage + 1;
+			}
+			renderDropdownOptions();
+
+			// 下拉框开关。
+			dropdownTrigger.addEventListener('click', (ev: Event) => {
+				ev.stopPropagation();
+				if (dropdown.classList.contains('open')) {
+					dropdown.classList.remove('open');
+				}
+				else {
+					renderDropdownOptions();
+					dropdown.classList.add('open');
+				}
+			});
+
+			// 点击下拉菜单内容时阻止冒泡。
+			dropdownMenu.addEventListener('click', (ev: Event) => {
+				ev.stopPropagation();
+			});
+
+			// 点击外部关闭下拉框。
+			document.addEventListener('click', (ev: Event) => {
+				if (!dropdown.contains(ev.target as Node)) {
+					dropdown.classList.remove('open');
+				}
+			});
+
+			prevBtn.addEventListener('click', () => {
+				if (isPageLoading || currentPage <= 1) {
+					return;
+				}
+				goToPage(currentPage - 1);
+			});
+
+			nextBtn.addEventListener('click', () => {
+				if (isPageLoading || currentCandidates.length < pageSize) {
+					return;
+				}
+				goToPage(currentPage + 1);
+			});
+		}
 		if (options.onMounted) {
 			options.onMounted();
+			// 面板高度渲染完成后再次滚动到底部，确保完全可见。
+			window.setTimeout(() => {
+				if (options.onMounted) {
+					options.onMounted();
+				}
+			}, 50);
 		}
 
 		// 统一收尾：移除面板并 resolve。
@@ -511,7 +818,7 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		});
 
 		confirmButton.addEventListener('click', () => {
-			const selected: ComponentSelectCandidate | undefined = selectRequest.candidates[selectedIndex];
+			const selected: ComponentSelectCandidate | undefined = currentCandidates[selectedIndex];
 			finalize({ confirmed: true, candidate: selected });
 		});
 
@@ -529,6 +836,7 @@ export interface ApplyComponentSelectOptions {
 	toolResult: unknown;
 	messageNode: HTMLElement;
 	abortSignal?: AbortSignal | null;
+	fetchPage?: (page: number) => Promise<ComponentSelectCandidate[]>;
 	// 面板显示前回调，用于更新消息区显示内容。
 	onBeforeShow?: () => void;
 	// 面板挂载到 DOM 后回调，用于触发滚动等操作。
@@ -548,9 +856,19 @@ export async function applyComponentSelectInteraction(options: ApplyComponentSel
 	if (options.onBeforeShow) {
 		options.onBeforeShow();
 	}
+	// 从工具返回值中提取翻页回调（运行时函数，不参与 JSON 序列化）。
+	const toolResultObj: unknown = options.toolResult;
+	const rawFetchPage: unknown = options.fetchPage
+		?? (isObjectRecord(toolResultObj) ? (toolResultObj as Record<string, unknown>)._fetchPage : undefined);
+	const fetchPage: ((page: number) => Promise<ComponentSelectCandidate[]>) | undefined
+		= typeof rawFetchPage === 'function'
+			? rawFetchPage as (page: number) => Promise<ComponentSelectCandidate[]>
+			: undefined;
+
 	const selectResult: RequestSelectPanelResult = await requestComponentSelectPanel({
 		messageNode: options.messageNode,
 		selectRequest,
+		fetchPage,
 		abortSignal: options.abortSignal,
 		onMounted: options.onMounted,
 	});
