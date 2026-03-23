@@ -202,7 +202,24 @@ export function extractResponsesToolCallDeltas(chunkObject?: any, normalizedEven
 export function mergeToolCallDelta(toolCalls?: any, deltaToolCalls?: any) {
 	for (let index: any = 0; index < deltaToolCalls.length; index += 1) {
 		const deltaCall: any = deltaToolCalls[index] || {};
-		const targetIndex: any = typeof deltaCall.index === 'number' ? deltaCall.index : index;
+		// 优先使用显式 index；其次按 id 反查已有槽位（支持 Gemini 等不带 index 的并行工具调用）；最后用循环变量。
+		let targetIndex: any;
+		if (typeof deltaCall.index === 'number') {
+			targetIndex = deltaCall.index;
+		}
+		else if (deltaCall.id) {
+			let foundIndex: any = -1;
+			for (let si: any = 0; si < toolCalls.length; si += 1) {
+				if (toolCalls[si] && toolCalls[si].id === deltaCall.id) {
+					foundIndex = si;
+					break;
+				}
+			}
+			targetIndex = foundIndex >= 0 ? foundIndex : toolCalls.length;
+		}
+		else {
+			targetIndex = index;
+		}
 		if (!toolCalls[targetIndex]) {
 			toolCalls[targetIndex] = {
 				id: '',
