@@ -2,6 +2,7 @@
 import { makeJsonSafe } from '../utils';
 import { createApiInvokeHandler } from './api-invoke';
 import { createApiSearchHandler } from './api-search';
+import { createComponentSelectHandler } from './component-select';
 import { createContextGetHandler } from './context-get';
 import { createSchematicCheckHandler } from './schematic-check';
 import { createTodoListHandler } from './todo_list';
@@ -164,6 +165,9 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 	if (toolName === 'todo_list') {
 		return '{"todoList":"[{\\"id\\":1,\\"title\\":\\"任务标题\\",\\"status\\":\\"in-progress\\"}]","explanation":"可选说明"}';
 	}
+	if (toolName === 'component_select') {
+		return '{"keyword":"器件关键词","limit":8}';
+	}
 	return '{"参数1":"值1","参数2":"值2"}';
 }
 
@@ -296,6 +300,13 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 			}
 			return await runtimeObject.handleTodoListTask(handlerArgs);
 		},
+		// 工具：component_select；功能：调用 EDA 系统库搜索候选器件，返回选型交互协议。
+		async component_select(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleComponentSelectTask !== 'function') {
+				return { ok: false, error: 'component_select 处理器未初始化。' };
+			}
+			return await runtimeObject.handleComponentSelectTask(handlerArgs);
+		},
 	};
 
 	const handler: any = handlerMap[normalizedToolName];
@@ -359,6 +370,7 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 	const { handleInvokeTask, resolveApiMemberInAnyRoot } = createApiInvokeHandler(runtimeWindow || window, deps);
 	const { handleSchematicCheckTask } = createSchematicCheckHandler(runtimeWindow || window, deps);
 	const { handleTodoListTask } = createTodoListHandler();
+	const { handleComponentSelectTask } = createComponentSelectHandler(runtimeWindow || window);
 
 	return {
 		resolveApiMemberInAnyRoot,
@@ -397,6 +409,14 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 		handleTodoListTask: async (payload?: unknown) => {
 			try {
 				return await handleTodoListTask(payload);
+			}
+			catch (error: unknown) {
+				return { ok: false, error: toSafeErrorMessage(error) };
+			}
+		},
+		handleComponentSelectTask: async (payload?: unknown) => {
+			try {
+				return await handleComponentSelectTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };

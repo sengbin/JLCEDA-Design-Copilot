@@ -12,6 +12,7 @@ import { applyTheme, setupThemeSync } from './page/theme';
 import { buildUserMessageContentForApi, cloneDocumentEntries, cloneImageEntries, collectClipboardImageFiles, convertDocumentFileToEntry, convertImageFileToEntry, DOCUMENT_ATTACHMENT_LIMIT, isGenericClipboardImageName, resolveImageEntryName } from './page/upload';
 import { readPlatformConfigs } from './platform/platform';
 import { createChatSessionManager } from './session/session';
+import { parseComponentSelectRequest, requestComponentSelectPanel } from './tools/component-select-ui';
 import { createAgentToolRuntime, executeToolWithTimeout } from './tools/executor';
 import { parseToolParameterConfirmRequest, requestToolParameterConfirmPanel } from './tools/tool-parameter-confirm';
 import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessage } from './utils';
@@ -2994,6 +2995,36 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 							}
 							const confirmRequest: any = parseToolParameterConfirmRequest(result);
 							if (!confirmRequest) {
+								// 检测器件选型交互协议。
+								const componentSelectRequest: any = parseComponentSelectRequest(result);
+								if (componentSelectRequest) {
+									const displaySelectResult: any = buildToolExecDisplayResult(toolName, result);
+									setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displaySelectResult, false), 'tool-exec');
+									setMessageFoldOpen(toolMessageNode, true);
+									const selectResult: any = await requestComponentSelectPanel({
+										messageNode: toolMessageNode,
+										selectRequest: componentSelectRequest,
+										abortSignal,
+										onMounted: () => forceScrollChatHistoryToBottom(),
+									});
+									if (abortSignal && abortSignal.aborted) {
+										throw new DOMException('【诊断信息】用户已停止', 'AbortError');
+									}
+									if (!selectResult.confirmed || !selectResult.candidate) {
+										result = {
+											ok: false,
+											error: '用户取消器件选型，工具执行已终止。',
+											errorCode: 'COMPONENT_SELECT_CANCELLED',
+										};
+									}
+									else {
+										result = {
+											ok: true,
+											selectedCandidate: selectResult.candidate,
+											message: `用户已选择器件：${String(selectResult.candidate.name || '')}`,
+										};
+									}
+								}
 								break;
 							}
 							const displayToolResult: any = buildToolExecDisplayResult(toolName, result);

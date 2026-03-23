@@ -101,5 +101,27 @@
 				"additionalProperties": false
 			}
 		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "component_select",
+			"description": "在 EDA 系统库中搜索候选器件并发起用户交互选型。当用户要求在原理图上放置某类器件时，必须先调用此工具让用户从候选列表中确认具体的器件型号，再凭返回的 uuid 和 libraryUuid 调用 eda.sch_PrimitiveComponent.placeComponentWithMouse 放置。禁止跳过此工具直接放置。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"keyword": {
+						"type": "string",
+						"description": "器件搜索关键词（必填），例如：\"10k电阻 0402\"、\"100nF电容\"、\"NPN三极管\"、\"LDO 3.3V\"。"
+					},
+					"limit": {
+						"type": "number",
+						"description": "返回候选数量上限（可选），范围 2~20，默认 8。"
+					}
+				},
+				"required": ["keyword"],
+				"additionalProperties": false
+			}
+		}
 	}
 ]

@@ -6,6 +6,7 @@ const MANUAL_EXPOSED_TOOL_NAMES: any = [
 	'jlceda_api_invoke',
 	'jlceda_schematic_check',
 	'todo_list',
+	'component_select',
 ];
 /**
  * 判断是否为 DeepSeek 系列模型（按模型名称前缀匹配，不依赖平台标识）。
