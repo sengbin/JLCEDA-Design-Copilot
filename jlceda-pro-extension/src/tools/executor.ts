@@ -9,6 +9,18 @@ import { createContextGetHandler } from './context-get';
 import { createSchematicCheckHandler } from './schematic-check';
 import { createTodoListHandler } from './todo_list';
 
+// 允许暴露给模型并允许执行的工具白名单。
+export const MANUAL_EXPOSED_TOOL_NAMES: string[] = [
+//	'jlceda_api_index',
+//	'jlceda_api_search',
+//	'jlceda_context_get',
+//	'jlceda_api_invoke',
+	'jlceda_schematic_check',
+	'todo_list',
+	'component_select',
+	'component_place',
+];
+
 // 当前会话中有效的 blob URL 集合，页面关闭后自动失效，不会持久化。
 export const activeBlobUrls: Set<string> = new Set();
 
@@ -329,6 +341,11 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 			return await runtimeObject.handleComponentPlaceTask(handlerArgs);
 		},
 	};
+
+	// 白名单校验：不在 MANUAL_EXPOSED_TOOL_NAMES 中的工具直接拒绝。
+	if (!MANUAL_EXPOSED_TOOL_NAMES.includes(normalizedToolName)) {
+		return { ok: false, error: `工具未启用：${normalizedToolName}` };
+	}
 
 	const handler: any = handlerMap[normalizedToolName];
 	if (!handler) {

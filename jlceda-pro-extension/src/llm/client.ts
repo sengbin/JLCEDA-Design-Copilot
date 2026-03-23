@@ -1,14 +1,5 @@
 // 文件说明：封装大模型请求配置校验、工具声明筛选与请求体组装逻辑。
-// 允许暴露给模型的工具列表。
-const MANUAL_EXPOSED_TOOL_NAMES: any = [
-//	'jlceda_api_index',
-//	'jlceda_api_search',
-//	'jlceda_context_get',
-//	'jlceda_api_invoke',
-	'jlceda_schematic_check',
-	'todo_list',
-	'component_select',
-];
+import { MANUAL_EXPOSED_TOOL_NAMES } from '../tools/executor';
 /**
  * 判断是否为 DeepSeek 系列模型（按模型名称前缀匹配，不依赖平台标识）。
  * @param modelName - 模型名称。

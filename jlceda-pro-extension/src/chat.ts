@@ -3,7 +3,7 @@ import scrollIntoView from 'scroll-into-view-if-needed';
 import { DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE, DEBUG_TOOL_EXEC_SHOW_CALLED_API, DEBUG_TOOL_EXEC_SHOW_TOOL_NAME } from './debug';
 import { readAgentSystemInstructions } from './llm/agent/instructions';
 import { AI_AGENT_RUNTIME, getModelContextHistoryBudgetTokens, throwIfAgentAborted } from './llm/agent/runtime';
-import tools from './llm/agent/tools.json';
+import tools from './tools/tools.json';
 import { buildAnthropicRequestPayload, buildAnthropicTools, buildModelRequestPayload, buildResponsesTools, pickManualExposedTools, validateModelRequestConfig } from './llm/client';
 import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock, processAnthropicStreamEvent } from './llm/stream';
 import { CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveApiFormat, resolveImagePayloadMode, resolveModelConfig } from './page/model';
