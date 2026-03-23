@@ -17,9 +17,8 @@ export function activate(status?: 'onStartupFinished', arg?: string): void { }
 
 export function about(): void {
 	const aboutContent = eda.sys_I18n.text('EDA Design Copilot About Content', undefined, undefined, extensionConfig.version);
-	const buildTime = eda.sys_I18n.text('Build Time');
 	eda.sys_Dialog.showInformationMessage(
-		`${aboutContent}\n${buildTime}`,
+		aboutContent,
 		eda.sys_I18n.text('About'),
 	);
 }

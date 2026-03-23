@@ -13,7 +13,7 @@
 		"compile": "rimraf ./dist/ && ts-node ./config/esbuild.prod.ts",
 		"lint": "eslint",
 		"fix": "eslint --fix",
-		"build": "npm run update-build-time && npm run compile && ts-node ./build/packaged.ts"
+		"build": "npm run compile && ts-node ./build/packaged.ts"
 	},
 	"dependencies": {
 		"overlayscrollbars": "^2.14.0",
