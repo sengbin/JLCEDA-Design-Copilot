@@ -45,14 +45,25 @@ const COMPONENT_SELECT_STYLE_TEXT: string = [
 	`\tmargin-bottom: 8px;`,
 	`}`,
 	`.component-select-table-wrap {`,
+	`\tdisplay: block;`,
+	`\twidth: 100%;`,
 	`\toverflow-x: auto;`,
+	`\t-webkit-overflow-scrolling: touch;`,
 	`\tborder: 1px solid var(--input-border, #d0d0d0);`,
 	`\tborder-radius: 6px;`,
 	`}`,
 	`.component-select-table {`,
-	`\twidth: 100%;`,
+	`\ttable-layout: fixed;`,
+	`\twidth: 550px;`,
 	`\tborder-collapse: collapse;`,
 	`\tfont-size: 12px;`,
+	`}`,
+	`.component-select-table-wrap::-webkit-scrollbar {`,
+	`\theight: 6px;`,
+	`}`,
+	`.component-select-table-wrap::-webkit-scrollbar-thumb {`,
+	`\tbackground: var(--input-border, #c0c0c0);`,
+	`\tborder-radius: 3px;`,
 	`}`,
 	`.component-select-table th {`,
 	`\ttext-align: left;`,
@@ -68,26 +79,60 @@ const COMPONENT_SELECT_STYLE_TEXT: string = [
 	`\tcolor: var(--text-primary, #2f2f2f);`,
 	`\tborder-bottom: 1px solid var(--tool-border, #ebebeb);`,
 	`\twhite-space: nowrap;`,
-	`\tmax-width: 220px;`,
 	`\toverflow: hidden;`,
 	`\ttext-overflow: ellipsis;`,
+	`}`,
+	`.component-select-col-link {`,
+	`\tcolor: var(--chat-input-box-focus-border, #1890ff);`,
+	`\ttext-decoration: none;`,
+	`\tcursor: pointer;`,
+	`}`,
+	`.component-select-col-link:hover {`,
+	`\ttext-decoration: underline;`,
+	`}`,
+	`.component-select-col-params {`,
+	`\tmax-width: 200px;`,
+	`\toverflow: hidden;`,
+	`\ttext-overflow: ellipsis;`,
+	`}`,
+	`.component-select-col-monospace {`,
+	`\tfont-family: monospace;`,
+	`\tfont-size: 11px;`,
 	`}`,
 	`.component-select-table tr:last-child td {`,
 	`\tborder-bottom: none;`,
 	`}`,
 	`.component-select-row {`,
 	`\tcursor: pointer;`,
-	`\ttransition: background 0.1s;`,
+	`\ttransition: background 0.12s, box-shadow 0.12s;`,
 	`}`,
+	`/* 浅色主题：悬停 */`,
 	`.component-select-row:hover {`,
-	`\tbackground: var(--item-hover-bg, #f0f4ff);`,
+	`\tbackground: #e8f0fe;`,
 	`}`,
+	`/* 浅色主题：选中 */`,
 	`.component-select-row.selected {`,
-	`\tbackground: var(--item-selected-bg, #e6f0ff);`,
+	`\tbackground: #d0e4ff;`,
+	`\tbox-shadow: inset 3px 0 0 #1890ff;`,
 	`}`,
 	`.component-select-row.selected td {`,
-	`\tcolor: var(--chat-input-box-focus-border, #1890ff);`,
-	`\tfont-weight: 500;`,
+	`\tcolor: #0958d9;`,
+	`\tfont-weight: 600;`,
+	`}`,
+	`/* 深色主题：悬停 */`,
+	`@media (prefers-color-scheme: dark) {`,
+	`\t.component-select-row:hover {`,
+	`\t\tbackground: rgba(255, 255, 255, 0.10);`,
+	`\t}`,
+	`\t/* 深色主题：选中 */`,
+	`\t.component-select-row.selected {`,
+	`\t\tbackground: rgba(24, 144, 255, 0.22);`,
+	`\t\tbox-shadow: inset 3px 0 0 #40a9ff;`,
+	`\t}`,
+	`\t.component-select-row.selected td {`,
+	`\t\tcolor: #69c0ff;`,
+	`\t\tfont-weight: 600;`,
+	`\t}`,
 	`}`,
 	`.component-select-actions {`,
 	`\tmargin-top: 8px;`,
@@ -136,21 +181,6 @@ function ensureComponentSelectStyleMounted(): void {
 // 判断值是否为普通对象。
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-// 格式化库存/价格展示文本。
-function formatInventoryText(inventory: number, price: number): string {
-	if (inventory <= 0 && price <= 0) {
-		return '—';
-	}
-	const parts: string[] = [];
-	if (inventory > 0) {
-		parts.push(`库存 ${String(inventory)}`);
-	}
-	if (price > 0) {
-		parts.push(`¥${price.toFixed(4)}`);
-	}
-	return parts.join(' / ');
 }
 
 /**
@@ -256,10 +286,17 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		// 表头。
 		const thead: HTMLTableSectionElement = document.createElement('thead');
 		const headerRow: HTMLTableRowElement = document.createElement('tr');
-		const headers: string[] = ['名称', '封装', '描述', '厂商', '立创库存/价格'];
+		// 每列名称及宽度，宽度和为 550px，与 .component-select-table width 保持一致。
+		const headers: Array<{ label: string; width: string }> = [
+			{ label: '型号', width: '130px' },
+			{ label: '封装', width: '120px' },
+			{ label: '描述', width: '180px' },
+			{ label: '品牌', width: '120px' },
+		];
 		for (let hi = 0; hi < headers.length; hi += 1) {
 			const th: HTMLTableCellElement = document.createElement('th');
-			th.textContent = headers[hi];
+			th.textContent = headers[hi].label;
+			th.style.width = headers[hi].width;
 			headerRow.appendChild(th);
 		}
 		thead.appendChild(headerRow);
@@ -288,19 +325,45 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 			}
 			rowElements.push(row);
 
-			const cells: string[] = [
-				candidate.name || '—',
-				candidate.footprintName || '—',
-				candidate.description || '—',
-				candidate.manufacturer || (candidate.supplier || '—'),
-				formatInventoryText(candidate.lcscInventory, candidate.lcscPrice),
+			// 型号列：manufacturerId 无值则显示"—"，不回退到 name。
+			const manufacturerPartNumber: string = candidate.manufacturerId || '—';
+			const supplierId: string = candidate.supplierId || '';
+			const detailUrl: string = supplierId
+				? `https://item.szlcsc.com/${supplierId.replace(/^C/i, '')}.html`
+				: '';
+
+			// 型号 td
+			const tdPartNum: HTMLTableCellElement = document.createElement('td');
+			tdPartNum.title = manufacturerPartNumber;
+			if (detailUrl) {
+				const linkEl: HTMLAnchorElement = document.createElement('a');
+				linkEl.className = 'component-select-col-link';
+				linkEl.textContent = manufacturerPartNumber;
+				linkEl.href = detailUrl;
+				linkEl.target = '_blank';
+				linkEl.rel = 'noopener noreferrer';
+				// 防止链接点击触发行选中逆转。
+				linkEl.addEventListener('click', (e: MouseEvent) => {
+					e.stopPropagation();
+				});
+				tdPartNum.appendChild(linkEl);
+			} else {
+				tdPartNum.textContent = manufacturerPartNumber;
+			}
+			row.appendChild(tdPartNum);
+
+			// 其余固定列：封装 → 描述 → 品牌
+			const restCells: Array<{ text: string; title?: string }> = [
+				{ text: candidate.footprintName || '—' },
+				{ text: candidate.description || '—', title: candidate.description || undefined },
+				{ text: candidate.manufacturer || candidate.supplier || '—' },
 			];
-			for (let ci = 0; ci < cells.length; ci += 1) {
+			for (let ci = 0; ci < restCells.length; ci += 1) {
 				const td: HTMLTableCellElement = document.createElement('td');
-				td.textContent = cells[ci];
-				if (ci === 2) {
-					// 描述列允许自动换行，截断过长文本。
-					td.title = cells[ci];
+				const cellDef = restCells[ci];
+				td.textContent = cellDef.text;
+				if (cellDef.title) {
+					td.title = cellDef.title;
 				}
 				row.appendChild(td);
 			}
