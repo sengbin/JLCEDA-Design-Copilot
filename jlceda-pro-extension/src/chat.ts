@@ -113,7 +113,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	let imageAttachmentHoverPreviewName: any = null;
 	let imageAttachmentHoverHideTimerId: any = 0;
 	let todoPanelStateSignature: any = '';
-	let todoPanelCollapsed: any = true;
+	let todoPanelCollapsed: any = false;
 	const sessionManager: any = createChatSessionManager({
 		storageKey: CHAT_SESSION_STORAGE_KEY,
 		maxMessages: CHAT_SESSION_MAX_MESSAGES,
@@ -236,7 +236,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			return;
 		}
 		if (!todoPanelStateSignature) {
-			todoPanelCollapsed = true;
+			todoPanelCollapsed = false;
 		}
 		const titleText: any = buildTodoPanelTitle(normalizedItems, summary);
 		const signature: any = `${titleText}::${normalizedItems.map((item?: any) => `${String(item.status || '')}:${String(item.title || '')}`).join('|')}`;
@@ -275,7 +275,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		syncTodoPanelCollapsedState();
 	}
 	if (chatTodoPanel && chatTodoPanel instanceof HTMLElement) {
-		chatTodoPanel.addEventListener('click', event => {
+		chatTodoPanel.addEventListener('click', (event) => {
 			const targetNode: any = event.target;
 			if (!(targetNode instanceof Element)) {
 				return;
