@@ -342,12 +342,9 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 		},
 	};
 
-	// 白名单校验：不在 MANUAL_EXPOSED_TOOL_NAMES 中的工具直接拒绝。
-	if (!MANUAL_EXPOSED_TOOL_NAMES.includes(normalizedToolName)) {
-		return { ok: false, error: `工具未启用：${normalizedToolName}` };
-	}
-
-	const handler: any = handlerMap[normalizedToolName];
+	const handler: any = MANUAL_EXPOSED_TOOL_NAMES.includes(normalizedToolName)
+		? handlerMap[normalizedToolName]
+		: undefined;
 	if (!handler) {
 		return { ok: false, error: `不支持的工具：${toolName}` };
 	}
