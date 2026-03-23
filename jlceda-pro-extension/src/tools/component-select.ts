@@ -95,8 +95,9 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 
 		let rawResults: unknown[];
 		try {
-			// 调用系统库搜索：key=关键词, itemsOfPage=最大返回数, page=1
-			rawResults = await libDevice.search(keyword, undefined, undefined, undefined, limit, 1);
+			// 请求更多结果用于客户端过滤，最多取 limit*4 条，上限 60
+			const fetchCount: number = Math.min(limit * 4, 60);
+			rawResults = await libDevice.search(keyword, undefined, undefined, undefined, fetchCount, 1);
 		}
 		catch (error: unknown) {
 			const message: string = error instanceof Error ? error.message : String(error ?? '');
@@ -110,10 +111,25 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 			};
 		}
 
-		const candidates: ComponentSelectCandidate[] = rawResults
-			.slice(0, limit)
+		const allMapped: ComponentSelectCandidate[] = rawResults
 			.map(mapDeviceSearchItem)
 			.filter(item => Boolean(item.uuid) && Boolean(item.libraryUuid));
+
+		// 优先取名称或符号名包含关键词的结果，不足时再补充其余结果。
+		const keywordLower: string = keyword.toLowerCase();
+		const nameMatched: ComponentSelectCandidate[] = allMapped.filter(
+			item =>
+				item.name.toLowerCase().includes(keywordLower)
+				|| item.symbolName.toLowerCase().includes(keywordLower),
+		);
+		const rest: ComponentSelectCandidate[] = allMapped.filter(
+			item =>
+				!item.name.toLowerCase().includes(keywordLower)
+				&& !item.symbolName.toLowerCase().includes(keywordLower),
+		);
+		const merged: ComponentSelectCandidate[] = [...nameMatched, ...rest];
+		// 返回全部候选，由前端面板滚动展示，不在此处裁剪。
+		const candidates: ComponentSelectCandidate[] = merged;
 
 		if (candidates.length === 0) {
 			return {
