@@ -46,7 +46,7 @@ const COMPONENT_SELECT_STYLE_TEXT: string = [
 	`\tmargin-bottom: 8px;`,
 	`}`,
 	`.component-select-table-wrap {`,
-	`\tdisplay: block;`,
+
 	`\twidth: 100%;`,
 	`\tmax-height: calc(8 * 33px);`,
 	`\tborder: 1px solid var(--input-border, #d0d0d0);`,
@@ -431,19 +431,59 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		panelElement.appendChild(actionsElement);
 
 		targetContainer.appendChild(panelElement);
-		// 面板挂载到 DOM 后初始化 OverlayScrollbars，鼠标悬停显示滚动条。
-		OverlayScrollbars(tableWrap, {
+		// 面板挂载到 DOM 后初始化 OverlayScrollbars。
+		const tableOsInstance: any = OverlayScrollbars(tableWrap, {
 			overflow: {
 				x: 'hidden',
 				y: 'scroll',
 			},
 			scrollbars: {
 				theme: 'os-theme-jlceda',
-				autoHide: 'leave',
+				autoHide: 'scroll',
 				autoHideDelay: 1000,
 				clickScroll: true,
 			},
 		});
+		// 手动监听 viewport 鼠标进出，实现悬停时显示滚动条、离开后延迟隐藏。
+		if (tableOsInstance) {
+			const tableOsViewport: HTMLElement = tableOsInstance.elements().viewport;
+			let tableHoverTimerId: number = 0;
+			let tableIsHovering: boolean = false;
+			tableOsViewport.addEventListener('pointerenter', () => {
+				tableIsHovering = true;
+				if (tableHoverTimerId) {
+					window.clearTimeout(tableHoverTimerId);
+					tableHoverTimerId = 0;
+				}
+				tableOsInstance.options({
+					scrollbars: {
+						theme: 'os-theme-jlceda',
+						autoHide: 'never',
+						autoHideDelay: 1000,
+						clickScroll: true,
+					},
+				});
+			}, { passive: true });
+			tableOsViewport.addEventListener('pointerleave', () => {
+				tableIsHovering = false;
+				if (tableHoverTimerId) {
+					window.clearTimeout(tableHoverTimerId);
+				}
+				tableHoverTimerId = window.setTimeout(() => {
+					tableHoverTimerId = 0;
+					if (!tableIsHovering) {
+						tableOsInstance.options({
+							scrollbars: {
+								theme: 'os-theme-jlceda',
+								autoHide: 'scroll',
+								autoHideDelay: 1000,
+								clickScroll: true,
+							},
+						});
+					}
+				}, 1000);
+			}, { passive: true });
+		}
 		if (options.onMounted) {
 			options.onMounted();
 		}
