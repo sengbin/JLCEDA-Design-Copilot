@@ -101,7 +101,6 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	const SCROLLBAR_AUTO_HIDE_DELAY: any = 1000;
 	const IMAGE_ATTACHMENT_HOVER_HIDE_DEBOUNCE_MS: any = 180;
 	const OVERLAY_SCROLLBAR_THEME_CLASS: any = 'os-theme-jlceda';
-	const TODO_PANEL_DEFAULT_TITLE_TEXT: any = '任务列表';
 	const chatHistoryMessageContainer: any = createChatHistoryMessageContainer(chatHistory);
 	const chatEmptyStateNode: any = createChatEmptyStateNode(chatHistory);
 	const overlayScrollControllerMap: any = new WeakMap();
@@ -114,6 +113,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	let imageAttachmentHoverHideTimerId: any = 0;
 	let todoPanelStateSignature: any = '';
 	let todoPanelCollapsed: any = false;
+	let todoPanelCurrentTaskTitle: any = '';
+	let todoPanelProgressText: any = '';
 	const sessionManager: any = createChatSessionManager({
 		storageKey: CHAT_SESSION_STORAGE_KEY,
 		maxMessages: CHAT_SESSION_MAX_MESSAGES,
@@ -189,19 +190,31 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		return normalizedList;
 	}
-	// 构建任务面板标题文本。
-	function buildTodoPanelTitle(todoItems?: any, summary?: any) {
-		const totalCount: any = Array.isArray(todoItems) ? todoItems.length : 0;
-		const completedCountFromSummary: any = summary && typeof summary === 'object'
-			? Number(summary.completed)
-			: Number.NaN;
-		const completedCountFromItems: any = Array.isArray(todoItems)
-			? todoItems.filter((item?: any) => item && item.status === 'completed').length
-			: 0;
-		const completedCount: any = Number.isFinite(completedCountFromSummary)
-			? Math.max(0, Math.min(totalCount, completedCountFromSummary))
-			: completedCountFromItems;
-		return `${TODO_PANEL_DEFAULT_TITLE_TEXT} (${String(completedCount)}/${String(totalCount)})`;
+	// 取当前进行中任务的标题。
+	function findInProgressTaskTitle(todoItems?: any) {
+		if (!Array.isArray(todoItems)) {
+			return '';
+		}
+		for (let index: any = 0; index < todoItems.length; index += 1) {
+			const item: any = todoItems[index];
+			if (item && item.status === 'in-progress') {
+				return String(item.title || '');
+			}
+		}
+		return '';
+	}
+	// 更新正在加载的执行过程分组标题。
+	function updateActiveProcessGroupTitle() {
+		if (!chatHistoryMessageContainer) {
+			return;
+		}
+		const loadingTitles: any = chatHistoryMessageContainer.querySelectorAll('.process-group-fold.is-loading .process-group-title');
+		for (let index: any = 0; index < loadingTitles.length; index += 1) {
+			const titleElement: any = loadingTitles[index];
+			if (titleElement instanceof HTMLElement) {
+				titleElement.textContent = todoPanelCurrentTaskTitle || '执行过程';
+			}
+		}
 	}
 	// 将折叠状态同步到任务面板 DOM。
 	function syncTodoPanelCollapsedState() {
@@ -210,15 +223,29 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		const headerButton: any = chatTodoPanel.querySelector('.chat-todo-panel-header');
 		const listNode: any = chatTodoPanel.querySelector('.chat-todo-list');
+		const headerText: any = chatTodoPanel.querySelector('.chat-todo-panel-header-text');
+		const deleteButton: any = chatTodoPanel.querySelector('.chat-todo-panel-delete');
 		if (headerButton && headerButton instanceof HTMLElement) {
 			headerButton.setAttribute('aria-expanded', todoPanelCollapsed ? 'false' : 'true');
 		}
 		if (listNode && listNode instanceof HTMLElement) {
 			listNode.classList.toggle('is-collapsed', Boolean(todoPanelCollapsed));
 		}
+		if (headerText && headerText instanceof HTMLElement) {
+			const baseText: any = todoPanelCollapsed && todoPanelCurrentTaskTitle
+				? todoPanelCurrentTaskTitle
+				: '待办事项';
+			headerText.textContent = todoPanelProgressText ? `${baseText} ${todoPanelProgressText}` : baseText;
+		}
+		if (deleteButton && deleteButton instanceof HTMLElement) {
+			const disabled: any = isSending;
+			deleteButton.classList.toggle('is-disabled', disabled);
+			deleteButton.title = disabled ? '任务进行中，无法删除' : '删除任务列表';
+			deleteButton.setAttribute('aria-label', deleteButton.title);
+		}
 	}
 	// 渲染输入框上方任务列表面板。
-	function renderTodoPanel(todoItems?: any, summary?: any) {
+	function renderTodoPanel(todoItems?: any, _summary?: any) {
 		if (!chatTodoPanel || !(chatTodoPanel instanceof HTMLElement)) {
 			return;
 		}
@@ -231,6 +258,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			}
 			todoPanelStateSignature = '';
 			todoPanelCollapsed = true;
+			todoPanelCurrentTaskTitle = '';
+			todoPanelProgressText = '';
 			chatTodoPanel.classList.remove('is-visible');
 			chatTodoPanel.innerHTML = '';
 			return;
@@ -238,10 +267,14 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		if (!todoPanelStateSignature) {
 			todoPanelCollapsed = true;
 		}
-		const titleText: any = buildTodoPanelTitle(normalizedItems, summary);
-		const signature: any = `${titleText}::${normalizedItems.map((item?: any) => `${String(item.status || '')}:${String(item.title || '')}`).join('|')}`;
+		todoPanelCurrentTaskTitle = findInProgressTaskTitle(normalizedItems);
+		const totalCount: any = normalizedItems.length;
+		const completedCount: any = normalizedItems.filter((item?: any) => item && item.status === 'completed').length;
+		todoPanelProgressText = `(${String(completedCount)}/${String(totalCount)})`;
+		const signature: any = normalizedItems.map((item?: any) => `${String(item.status || '')}:${String(item.title || '')}`).join('|');
 		if (signature === todoPanelStateSignature) {
 			syncTodoPanelCollapsedState();
+			updateActiveProcessGroupTitle();
 			return;
 		}
 		todoPanelStateSignature = signature;
@@ -255,9 +288,10 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				: (statusText === 'in-progress' ? '…' : '○');
 			return `<li class="chat-todo-item ${statusClass}"><span class="chat-todo-item-status" aria-hidden="true">${statusGlyph}</span><span class="chat-todo-item-text">${escapeHtml(item.title)}</span></li>`;
 		}).join('');
-		chatTodoPanel.innerHTML = `<button type="button" class="chat-todo-panel-header" aria-expanded="false"><svg class="chat-todo-panel-chevron" viewBox="0 0 20 20" focusable="false" aria-hidden="true"><use xlink:href="#icon-chevron-down"></use></svg><span class="chat-todo-panel-header-text">${escapeHtml(titleText)}</span></button><ul class="chat-todo-list">${itemHtml}</ul>`;
+		chatTodoPanel.innerHTML = `<div class="chat-todo-panel-header-row"><button type="button" class="chat-todo-panel-header" aria-expanded="false"><svg class="chat-todo-panel-chevron" viewBox="0 0 20 20" focusable="false" aria-hidden="true"><use xlink:href="#icon-chevron-down"></use></svg><span class="chat-todo-panel-header-text">待办事项</span></button><button type="button" class="chat-todo-panel-delete" title="删除任务列表" aria-label="删除任务列表"><svg viewBox="0 0 20 20" focusable="false" aria-hidden="true"><use xlink:href="#icon-close-x"></use></svg></button></div><ul class="chat-todo-list">${itemHtml}</ul>`;
 		chatTodoPanel.classList.add('is-visible');
 		syncTodoPanelCollapsedState();
+		updateActiveProcessGroupTitle();
 	}
 	// 清空任务列表面板。
 	function clearTodoPanel() {
@@ -278,6 +312,15 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		chatTodoPanel.addEventListener('click', (event) => {
 			const targetNode: any = event.target;
 			if (!(targetNode instanceof Element)) {
+				return;
+			}
+			const deleteNode: any = targetNode.closest('.chat-todo-panel-delete');
+			if (deleteNode) {
+				event.preventDefault();
+				event.stopPropagation();
+				if (!deleteNode.classList.contains('is-disabled') && !isSending) {
+					clearTodoPanel();
+				}
 				return;
 			}
 			const headerNode: any = targetNode.closest('.chat-todo-panel-header');
@@ -481,7 +524,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		iconWrapNode.appendChild(chevronIconNode);
 		const titleNode: any = document.createElement('span');
 		titleNode.className = 'process-group-title';
-		titleNode.textContent = '执行过程';
+		titleNode.textContent = todoPanelCurrentTaskTitle || '执行过程';
 		const loadingNode: any = document.createElement('span');
 		loadingNode.className = 'process-group-loading-indicator';
 		loadingNode.setAttribute('aria-hidden', 'true');

@@ -587,15 +587,26 @@ body {
 .chat-todo-panel {
 	display: none;
 	flex-direction: column;
-	gap: 8px;
+	gap: 6px;
 	margin: 0 8px;
-	padding: 8px 10px;
-	border: 1px solid var(--todo-panel-border);
-	border-radius: 8px;
+	padding: 7px 8px;
+	border: 1px solid var(--chat-input-box-border);
+	border-radius: 6px 6px 0 0;
+	border-bottom: none;
 	background: var(--todo-panel-bg);
 }
 .chat-todo-panel.is-visible {
 	display: flex;
+}
+.chat-todo-panel.is-visible + .chat-input-box {
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+	margin-top: 0;
+}
+.chat-todo-panel-header-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
 }
 .chat-todo-panel-header {
 	width: 100%;
@@ -616,6 +627,33 @@ body {
 .chat-todo-panel-header-text {
 	flex: 1;
 	min-width: 0;
+}
+.chat-todo-panel-delete {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: auto;
+	height: auto;
+	padding: 2px 4px;
+	border: 0;
+	border-radius: 4px;
+	background: var(--control-hover-bg);
+	color: var(--todo-panel-title);
+	cursor: pointer;
+	opacity: 0.55;
+	transition: opacity 0.15s ease, background 0.15s ease;
+}
+.chat-todo-panel-delete:hover {
+	opacity: 1;
+	background: var(--control-hover-bg);
+}
+.chat-todo-panel-delete.is-disabled {
+	opacity: 0.25;
+}
+.chat-todo-panel-delete svg {
+	width: 11px;
+	height: 11px;
 }
 .chat-todo-panel-chevron {
 	flex: 0 0 auto;
