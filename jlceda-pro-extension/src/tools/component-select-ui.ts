@@ -376,3 +376,49 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		}
 	});
 }
+
+export interface ApplyComponentSelectOptions {
+	toolResult: unknown;
+	messageNode: HTMLElement;
+	abortSignal?: AbortSignal | null;
+	// 面板显示前回调，用于更新消息区显示内容。
+	onBeforeShow?: () => void;
+	// 面板挂载到 DOM 后回调，用于触发滚动等操作。
+	onMounted?: () => void;
+}
+
+/**
+ * 检测工具返回结果是否包含器件选型协议，若是则展示交互面板并返回最终结果。
+ * @param options - 交互选项。
+ * @returns 若不含选型协议返回 null；否则返回转换后的工具结果对象。
+ */
+export async function applyComponentSelectInteraction(options: ApplyComponentSelectOptions): Promise<unknown> {
+	const selectRequest: ComponentSelectRequest | null = parseComponentSelectRequest(options.toolResult);
+	if (!selectRequest) {
+		return null;
+	}
+	if (options.onBeforeShow) {
+		options.onBeforeShow();
+	}
+	const selectResult: RequestSelectPanelResult = await requestComponentSelectPanel({
+		messageNode: options.messageNode,
+		selectRequest,
+		abortSignal: options.abortSignal,
+		onMounted: options.onMounted,
+	});
+	if (options.abortSignal && options.abortSignal.aborted) {
+		throw new DOMException('【诊断信息】用户已停止', 'AbortError');
+	}
+	if (!selectResult.confirmed || !selectResult.candidate) {
+		return {
+			ok: false,
+			error: '用户取消器件选型，工具执行已终止。',
+			errorCode: 'COMPONENT_SELECT_CANCELLED',
+		};
+	}
+	return {
+		ok: true,
+		selectedCandidate: selectResult.candidate,
+		message: `用户已选择器件：${String(selectResult.candidate.name || '')}`,
+	};
+}

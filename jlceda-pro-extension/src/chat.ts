@@ -12,9 +12,8 @@ import { applyTheme, setupThemeSync } from './page/theme';
 import { buildUserMessageContentForApi, cloneDocumentEntries, cloneImageEntries, collectClipboardImageFiles, convertDocumentFileToEntry, convertImageFileToEntry, DOCUMENT_ATTACHMENT_LIMIT, isGenericClipboardImageName, resolveImageEntryName } from './page/upload';
 import { readPlatformConfigs } from './platform/platform';
 import { createChatSessionManager } from './session/session';
-import { parseComponentSelectRequest, requestComponentSelectPanel } from './tools/component-select-ui';
+import { applyComponentSelectInteraction } from './tools/component-select-ui';
 import { createAgentToolRuntime, executeToolWithTimeout } from './tools/executor';
-import { parseToolParameterConfirmRequest, requestToolParameterConfirmPanel } from './tools/tool-parameter-confirm';
 import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 
 (function () {
@@ -2978,92 +2977,33 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						}
 						const toolCall: any = message.tool_calls[index];
 						const toolName: any = toolCall && toolCall.function ? toolCall.function.name : '';
-						let toolArgs: any = toolCall && toolCall.function ? toolCall.function.arguments : '';
+						const toolArgs: any = toolCall && toolCall.function ? toolCall.function.arguments : '';
 						const toolCallId: any = toolCall && toolCall.id ? toolCall.id : (`tool-call-${Date.now()}-${index}`);
 						const toolMessageNode: any = appendMessage('ai', formatToolExecRawText(toolCall, undefined, true), 'tool-exec');
 						processFoldGroupController.appendProcessNode(toolMessageNode);
 						let result: any = null;
-						let displayToolCall: any = toolCall;
-						let confirmRoundCount: any = 0;
-						while (true) {
-							setFoldLoadingState(toolMessageNode, true);
-							try {
-								result = await executeToolWithTimeout(toolRuntime, toolName, toolArgs, TOOL_CALL_TIMEOUT_SECONDS);
-							}
-							finally {
-								setFoldLoadingState(toolMessageNode, false);
-							}
-							const confirmRequest: any = parseToolParameterConfirmRequest(result);
-							if (!confirmRequest) {
-								// 检测器件选型交互协议。
-								const componentSelectRequest: any = parseComponentSelectRequest(result);
-								if (componentSelectRequest) {
-									const displaySelectResult: any = buildToolExecDisplayResult(toolName, result);
-									setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displaySelectResult, false), 'tool-exec');
-									setMessageFoldOpen(toolMessageNode, true);
-									const selectResult: any = await requestComponentSelectPanel({
-										messageNode: toolMessageNode,
-										selectRequest: componentSelectRequest,
-										abortSignal,
-										onMounted: () => forceScrollChatHistoryToBottom(),
-									});
-									if (abortSignal && abortSignal.aborted) {
-										throw new DOMException('【诊断信息】用户已停止', 'AbortError');
-									}
-									if (!selectResult.confirmed || !selectResult.candidate) {
-										result = {
-											ok: false,
-											error: '用户取消器件选型，工具执行已终止。',
-											errorCode: 'COMPONENT_SELECT_CANCELLED',
-										};
-									}
-									else {
-										result = {
-											ok: true,
-											selectedCandidate: selectResult.candidate,
-											message: `用户已选择器件：${String(selectResult.candidate.name || '')}`,
-										};
-									}
-								}
-								break;
-							}
-							const displayToolResult: any = buildToolExecDisplayResult(toolName, result);
-							setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displayToolResult, false), 'tool-exec');
-							setMessageFoldOpen(toolMessageNode, true);
-							const confirmResult: any = await requestToolParameterConfirmPanel({
-								messageNode: toolMessageNode,
-								confirmRequest,
-								rawToolArguments: toolArgs,
-								abortSignal,
-							});
-							if (abortSignal && abortSignal.aborted) {
-								throw new DOMException('【诊断信息】用户已停止', 'AbortError');
-							}
-							if (!confirmResult.confirmed || !String(confirmResult.mergedArgumentsText || '').trim()) {
-								result = {
-									ok: false,
-									error: '用户取消参数确认，工具执行已终止。',
-									errorCode: 'TOOL_PARAMETER_CONFIRM_CANCELLED',
-								};
-								break;
-							}
-							toolArgs = String(confirmResult.mergedArgumentsText || '').trim();
-							displayToolCall = {
-								...displayToolCall,
-								function: {
-									...(displayToolCall && displayToolCall.function ? displayToolCall.function : {}),
-									arguments: toolArgs,
-								},
-							};
-							confirmRoundCount += 1;
-							if (confirmRoundCount >= 3) {
-								result = {
-									ok: false,
-									error: '参数确认轮次超过上限，请重新发起任务。',
-									errorCode: 'TOOL_PARAMETER_CONFIRM_TOO_MANY_TIMES',
-								};
-								break;
-							}
+						const displayToolCall: any = toolCall;
+						setFoldLoadingState(toolMessageNode, true);
+						try {
+							result = await executeToolWithTimeout(toolRuntime, toolName, toolArgs, TOOL_CALL_TIMEOUT_SECONDS);
+						}
+						finally {
+							setFoldLoadingState(toolMessageNode, false);
+						}
+						// 检测器件选型交互协议，若命中则委托选型模块处理并拿回最终结果。
+						const componentSelectFinalResult: any = await applyComponentSelectInteraction({
+							toolResult: result,
+							messageNode: toolMessageNode,
+							abortSignal,
+							onBeforeShow: () => {
+								const displaySelectResult: any = buildToolExecDisplayResult(toolName, result);
+								setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displaySelectResult, false), 'tool-exec');
+								setMessageFoldOpen(toolMessageNode, true);
+							},
+							onMounted: () => forceScrollChatHistoryToBottom(),
+						});
+						if (componentSelectFinalResult !== null) {
+							result = componentSelectFinalResult;
 						}
 						const displayToolResult: any = buildToolExecDisplayResult(toolName, result);
 						setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displayToolResult, false), 'tool-exec');
