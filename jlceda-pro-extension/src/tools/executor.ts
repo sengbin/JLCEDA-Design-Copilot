@@ -3,6 +3,7 @@ import { makeJsonSafe } from '../utils';
 import { createApiIndexHandler } from './api-index';
 import { createApiInvokeHandler } from './api-invoke';
 import { createApiSearchHandler } from './api-search';
+import { createComponentPlaceHandler } from './component-place';
 import { createComponentSelectHandler } from './component-select';
 import { createContextGetHandler } from './context-get';
 import { createSchematicCheckHandler } from './schematic-check';
@@ -172,6 +173,9 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 	if (toolName === 'component_select') {
 		return '{"keyword":"器件关键词"}';
 	}
+	if (toolName === 'component_place') {
+		return '{"components":[{"uuid":"器件UUID","libraryUuid":"库UUID","name":"器件名称","footprintName":"封装名称","subPartName":""}],"timeoutSeconds":60}';
+	}
 	return '{"参数1":"值1","参数2":"值2"}';
 }
 
@@ -317,6 +321,13 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 			}
 			return await runtimeObject.handleComponentSelectTask(handlerArgs);
 		},
+		// 工具：component_place；功能：逐个引导用户在原理图中交互放置已选定器件。
+		async component_place(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleComponentPlaceTask !== 'function') {
+				return { ok: false, error: 'component_place 处理器未初始化。' };
+			}
+			return await runtimeObject.handleComponentPlaceTask(handlerArgs);
+		},
 	};
 
 	const handler: any = handlerMap[normalizedToolName];
@@ -382,6 +393,7 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 	const { handleSchematicCheckTask } = createSchematicCheckHandler(runtimeWindow || window, deps);
 	const { handleTodoListTask } = createTodoListHandler();
 	const { handleComponentSelectTask } = createComponentSelectHandler(runtimeWindow || window);
+	const { handleComponentPlaceTask } = createComponentPlaceHandler();
 
 	return {
 		resolveApiMemberInAnyRoot,
@@ -436,6 +448,14 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 		handleComponentSelectTask: async (payload?: unknown) => {
 			try {
 				return await handleComponentSelectTask(payload);
+			}
+			catch (error: unknown) {
+				return { ok: false, error: toSafeErrorMessage(error) };
+			}
+		},
+		handleComponentPlaceTask: async (payload?: unknown) => {
+			try {
+				return await handleComponentPlaceTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };

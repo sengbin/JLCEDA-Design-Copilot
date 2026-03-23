@@ -140,5 +140,54 @@
 				"additionalProperties": false
 			}
 		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "component_place",
+			"description": "在原理图中逐个引导用户交互放置已选定器件。必须传入已经确定好的器件列表，工具会按顺序调用交互式放置 API，并在单个器件放置超时后于当前尝试结束后自动重试 1 次。禁止让模型自己循环调用 jlceda_api_invoke 逐个放置。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"components": {
+						"type": "array",
+						"description": "待放置器件数组（必填），按最终放置顺序排列。每项必须提供 uuid 和 libraryUuid，可附带 name、footprintName、subPartName 用于界面提示。",
+						"items": {
+							"type": "object",
+							"properties": {
+								"uuid": {
+									"type": "string",
+									"description": "器件 UUID。"
+								},
+								"libraryUuid": {
+									"type": "string",
+									"description": "器件所属库 UUID。"
+								},
+								"name": {
+									"type": "string",
+									"description": "器件名称（可选）。"
+								},
+								"footprintName": {
+									"type": "string",
+									"description": "封装名称（可选）。"
+								},
+								"subPartName": {
+									"type": "string",
+									"description": "多子部件器件的子部件名称（可选）。"
+								}
+							},
+							"required": ["uuid", "libraryUuid"],
+							"additionalProperties": false
+						}
+					},
+					"timeoutSeconds": {
+						"type": "number",
+						"description": "单个器件放置超时时间（可选），单位秒，范围 30~180，默认 60。"
+					}
+				},
+				"required": ["components"],
+				"additionalProperties": false
+			}
+		}
 	}
 ]

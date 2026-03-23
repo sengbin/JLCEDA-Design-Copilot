@@ -12,6 +12,7 @@ import { applyTheme, setupThemeSync } from './page/theme';
 import { buildUserMessageContentForApi, cloneDocumentEntries, cloneImageEntries, collectClipboardImageFiles, convertDocumentFileToEntry, convertImageFileToEntry, DOCUMENT_ATTACHMENT_LIMIT, isGenericClipboardImageName, resolveImageEntryName } from './page/upload';
 import { readPlatformConfigs } from './platform/platform';
 import { createChatSessionManager } from './session/session';
+import { applyComponentPlaceInteraction } from './tools/component-place-ui';
 import { applyComponentSelectInteraction } from './tools/component-select-ui';
 import { createAgentToolRuntime, executeToolWithTimeout } from './tools/executor';
 import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessage } from './utils';
@@ -3047,6 +3048,20 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						});
 						if (componentSelectFinalResult !== null) {
 							result = componentSelectFinalResult;
+						}
+						const componentPlaceFinalResult: any = await applyComponentPlaceInteraction({
+							toolResult: result,
+							messageNode: toolMessageNode,
+							abortSignal,
+							onBeforeShow: () => {
+								const displayPlaceResult: any = buildToolExecDisplayResult(toolName, result);
+								setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displayPlaceResult, false), 'tool-exec');
+								setMessageFoldOpen(toolMessageNode, true);
+							},
+							onMounted: () => forceScrollChatHistoryToBottom(),
+						});
+						if (componentPlaceFinalResult !== null) {
+							result = componentPlaceFinalResult;
 						}
 						const displayToolResult: any = buildToolExecDisplayResult(toolName, result);
 						setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displayToolResult, false), 'tool-exec');
