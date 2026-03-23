@@ -8,6 +8,7 @@
 // 备注：工具处理器逻辑见 component-select.ts
 // ------------------------------------------------------------------------
 import type { ComponentSelectCandidate, ComponentSelectRequest } from './component-select';
+import { OverlayScrollbars } from 'overlayscrollbars';
 import { COMPONENT_SELECT_PROTOCOL } from './component-select';
 
 interface RequestSelectPanelOptions {
@@ -47,8 +48,6 @@ const COMPONENT_SELECT_STYLE_TEXT: string = [
 	`.component-select-table-wrap {`,
 	`\tdisplay: block;`,
 	`\twidth: 100%;`,
-	`\toverflow-x: hidden;`,
-	`\toverflow-y: auto;`,
 	`\tmax-height: calc(8 * 33px);`,
 	`\tborder: 1px solid var(--input-border, #d0d0d0);`,
 	`\tborder-radius: 6px;`,
@@ -432,6 +431,19 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		panelElement.appendChild(actionsElement);
 
 		targetContainer.appendChild(panelElement);
+		// 面板挂载到 DOM 后初始化 OverlayScrollbars，鼠标悬停显示滚动条。
+		OverlayScrollbars(tableWrap, {
+			overflow: {
+				x: 'hidden',
+				y: 'scroll',
+			},
+			scrollbars: {
+				theme: 'os-theme-jlceda',
+				autoHide: 'leave',
+				autoHideDelay: 1000,
+				clickScroll: true,
+			},
+		});
 		if (options.onMounted) {
 			options.onMounted();
 		}
