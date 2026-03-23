@@ -236,7 +236,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			return;
 		}
 		if (!todoPanelStateSignature) {
-			todoPanelCollapsed = false;
+			todoPanelCollapsed = true;
 		}
 		const titleText: any = buildTodoPanelTitle(normalizedItems, summary);
 		const signature: any = `${titleText}::${normalizedItems.map((item?: any) => `${String(item.status || '')}:${String(item.title || '')}`).join('|')}`;
