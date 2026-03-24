@@ -209,11 +209,24 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		if (!chatHistoryMessageContainer) {
 			return;
 		}
-		const loadingTitles: any = chatHistoryMessageContainer.querySelectorAll('.process-group-fold.is-loading .process-group-title');
-		for (let index: any = 0; index < loadingTitles.length; index += 1) {
-			const titleElement: any = loadingTitles[index];
+		const nextTitle: any = todoPanelCurrentTaskTitle || '执行过程';
+		const loadingGroups: any = chatHistoryMessageContainer.querySelectorAll('.process-group-fold.is-loading');
+		for (let index: any = 0; index < loadingGroups.length; index += 1) {
+			const groupElement: any = loadingGroups[index];
+			if (!(groupElement instanceof HTMLElement)) {
+				continue;
+			}
+			const titleElement: any = groupElement.querySelector('.process-group-title');
 			if (titleElement instanceof HTMLElement) {
-				titleElement.textContent = todoPanelCurrentTaskTitle || '执行过程';
+				titleElement.textContent = nextTitle;
+			}
+			// 将标题写回分组内第一个过程消息节点的显示记录，供会话恢复使用。
+			const contentNode: any = groupElement.querySelector('.process-group-content');
+			if (contentNode) {
+				const firstProcessNode: any = contentNode.querySelector('.chat-message.reasoning, .chat-message.tool-exec');
+				if (firstProcessNode instanceof HTMLElement) {
+					sessionManager.setProcessTitleByNode(firstProcessNode, todoPanelCurrentTaskTitle);
+				}
 			}
 		}
 	}

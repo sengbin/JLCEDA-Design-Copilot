@@ -439,11 +439,16 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 			return;
 		}
 		const normalizedRole: any = String(role || '').trim() === 'user' ? 'user' : 'ai';
+		// 保留已写入的 processTitle，避免文本更新时覆盖掉该字段。
+		const existingProcessTitle: any = String((chatDisplayMessages[index] as Record<string, unknown>).processTitle || '').trim();
 		chatDisplayMessages[index] = {
 			role: normalizedRole,
 			variant: String(variant || '').trim(),
 			text: normalizeDisplayMessageText(normalizedRole, text),
 		};
+		if (existingProcessTitle) {
+			(chatDisplayMessages[index] as Record<string, unknown>).processTitle = existingProcessTitle;
+		}
 	}
 	// 构建可持久化的上下文消息快照。
 	function buildPersistedAgentMessagesSnapshot(): Array<Record<string, unknown>> {
@@ -564,7 +569,15 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 		if (!Number.isFinite(indexValue) || indexValue < 0 || indexValue >= chatDisplayMessages.length) {
 			return;
 		}
-		(chatDisplayMessages[indexValue] as Record<string, unknown>).processTitle = String(title || '').trim();
+		const newTitle: any = String(title || '').trim();
+		const currentTitle: any = String((chatDisplayMessages[indexValue] as Record<string, unknown>).processTitle || '').trim();
+		if (newTitle === currentTitle) {
+			return;
+		}
+		(chatDisplayMessages[indexValue] as Record<string, unknown>).processTitle = newTitle;
+		if (!isRestoringChatHistory) {
+			schedulePersistChatSession();
+		}
 	}
 	// 读取消息节点对应的过程分组标题。
 	function getProcessTitleByNode(messageNode: unknown): string {
