@@ -38,6 +38,45 @@ export interface ComponentSelectRequest {
 	currentPage: number;
 }
 
+/** 缺少单位符号的歧义数值关键词模式，例如 1k、100n、10u。 */
+const AMBIGUOUS_VALUE_TOKEN_PATTERN: RegExp = /^\d+(?:\.\d+)?[kmgunp]$/i;
+
+/** 需要对数值参数强制单位的器件类型关键词。 */
+const VALUE_UNIT_REQUIRED_COMPONENT_KEYWORDS: readonly string[] = [
+	'电阻',
+	'resistor',
+	'电容',
+	'capacitor',
+	'cap',
+	'电感',
+	'inductor',
+];
+
+// 判断当前关键词是否属于电阻/电容/电感这类需要对阻值、容值、感值强制单位的器件。
+function keywordRequiresValueUnit(keyword: string): boolean {
+	const normalizedKeyword: string = keyword.toLowerCase();
+	return VALUE_UNIT_REQUIRED_COMPONENT_KEYWORDS.some(componentKeyword => normalizedKeyword.includes(componentKeyword));
+}
+
+// 检查关键词中是否存在缺少单位符号的数值参数。
+function findKeywordTokenMissingUnit(keyword: string): string | null {
+	if (!keywordRequiresValueUnit(keyword)) {
+		return null;
+	}
+
+	const keywordTokens: string[] = keyword.split(/\s+/).map(token => token.trim()).filter(Boolean);
+	for (const keywordToken of keywordTokens) {
+		const normalizedToken: string = keywordToken.replace(/^[,，;；]+|[,，;；]+$/g, '');
+		if (!normalizedToken || !/\d/.test(normalizedToken)) {
+			continue;
+		}
+		if (AMBIGUOUS_VALUE_TOKEN_PATTERN.test(normalizedToken)) {
+			return normalizedToken;
+		}
+	}
+	return null;
+}
+
 // 将 EDA lib_Device.search 原始返回项映射为候选器件结构。
 function mapDeviceSearchItem(raw: unknown): ComponentSelectCandidate {
 	const item = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
@@ -71,6 +110,14 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 		const keyword: string = String(args.keyword ?? '').trim();
 		if (!keyword) {
 			return { ok: false, error: '缺少器件搜索关键词，请提供 keyword 参数。' };
+		}
+
+		const keywordTokenMissingUnit: string | null = findKeywordTokenMissingUnit(keyword);
+		if (keywordTokenMissingUnit) {
+			return {
+				ok: false,
+				error: `电阻、电容、电感这类器件的阻值/容值/感值必须带单位符号，检测到“${keywordTokenMissingUnit}”缺少单位。请改为带单位的写法后重试，例如电阻使用 1kΩ，电容使用 100nF，电感使用 10uH。`,
+			};
 		}
 
 		// 限制每页显示数量，最少 2 个，最多 20 个，默认 20 个。

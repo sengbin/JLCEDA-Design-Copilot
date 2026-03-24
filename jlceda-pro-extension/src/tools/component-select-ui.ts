@@ -1107,6 +1107,6 @@ export async function applyComponentSelectInteraction(options: ApplyComponentSel
 	return {
 		ok: true,
 		selectedCandidate: selectResult.candidate,
-		message: `用户已选择器件：${String(selectResult.candidate.name || '')}`,
+		message: `用户已最终确认器件：${String(selectResult.candidate.name || selectResult.candidate.uuid)}。后续必须以该器件为准，不得因 AI 预期不一致而要求用户重新选型，也不得自行改选其他候选器件。`,
 	};
 }
