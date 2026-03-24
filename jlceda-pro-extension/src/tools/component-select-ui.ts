@@ -355,19 +355,42 @@ const COMPONENT_SELECT_STYLE_TEXT: string = [
 	`.component-select-tooltip {`,
 	`	position: fixed;`,
 	`	z-index: 9999;`,
-	`	max-width: 320px;`,
-	`	padding: 6px 10px;`,
-	`	background: #2d2d2d;`,
+	`	min-width: 180px;`,
+	`	max-width: 300px;`,
+	`	overflow: hidden;`,
+	`	background: #252525;`,
 	`	color: #e8e8e8;`,
 	`	border: 1px solid #4a4a4a;`,
-	`	border-radius: 5px;`,
+	`	border-radius: 8px;`,
 	`	font-size: 11px;`,
-	`	line-height: 1.6;`,
-	`	white-space: pre-wrap;`,
+	`	line-height: 1.45;`,
 	`	word-break: break-word;`,
 	`	pointer-events: none;`,
-	`	box-shadow: 0 2px 8px rgba(0,0,0,0.40);`,
+	`	box-shadow: 0 8px 20px rgba(0,0,0,0.32);`,
 	`	display: none;`,
+	`}`,
+	`.component-select-tooltip-row {`,
+	`	display: flex;`,
+	`	align-items: flex-start;`,
+	`	gap: 6px;`,
+	`	padding: 4px 8px;`,
+	`}`,
+	`.component-select-tooltip-row:nth-child(odd) {`,
+	`	background: rgba(255,255,255,0.04);`,
+	`}`,
+	`.component-select-tooltip-row:nth-child(even) {`,
+	`	background: rgba(255,255,255,0.08);`,
+	`}`,
+	`.component-select-tooltip-label {`,
+	`	flex: 0 0 auto;`,
+	`	font-weight: 700;`,
+	`	color: #ffffff;`,
+	`	white-space: nowrap;`,
+	`}`,
+	`.component-select-tooltip-value {`,
+	`	flex: 1;`,
+	`	color: #d9d9d9;`,
+	`	min-width: 0;`,
 	`}`,
 ].join('\n');
 
@@ -452,17 +475,84 @@ export function parseComponentSelectRequest(toolResult?: unknown): ComponentSele
 	};
 }
 
-// 格式化描述文本，去掉每段“参数名:”前缀，只保留参数値。
-function formatDescriptionShort(rawDesc: string): string {
+// 解析描述文本，将每段拆成“参数名 / 参数值”。
+function parseDescriptionItems(rawDesc: string): Array<{ label: string; value: string }> {
 	return rawDesc
 		.split(/[;；\n]+/)
 		.map((s: string) => {
 			const trimmed: string = s.trim();
+			if (!trimmed) {
+				return null;
+			}
 			const colonIdx: number = trimmed.search(/[:\uFF1A]/);
-			return colonIdx >= 0 ? trimmed.slice(colonIdx + 1).trim() : trimmed;
+			if (colonIdx < 0) {
+				return {
+					label: '',
+					value: trimmed,
+				};
+			}
+			return {
+				label: trimmed.slice(0, colonIdx).trim(),
+				value: trimmed.slice(colonIdx + 1).trim(),
+			};
 		})
+		.filter((item): item is { label: string; value: string } => {
+			return Boolean(item && (item.label || item.value));
+		});
+}
+
+// 格式化描述文本，去掉每段“参数名:”前缀，只保留参数值。
+function formatDescriptionShort(rawDesc: string): string {
+	return parseDescriptionItems(rawDesc)
+		.map(item => item.value || item.label)
 		.filter((s: string) => s.length > 0)
 		.join(';');
+}
+
+// 渲染结构化描述 tooltip，使参数名更清晰且行间更规整。
+function renderDescriptionTooltip(tooltipElement: HTMLDivElement, rawDesc: string): void {
+	while (tooltipElement.firstChild) {
+		tooltipElement.removeChild(tooltipElement.firstChild);
+	}
+	const items: Array<{ label: string; value: string }> = parseDescriptionItems(rawDesc);
+	if (items.length === 0) {
+		tooltipElement.textContent = rawDesc.trim();
+		return;
+	}
+	for (let index = 0; index < items.length; index += 1) {
+		const item = items[index];
+		const rowElement: HTMLDivElement = document.createElement('div');
+		rowElement.className = 'component-select-tooltip-row';
+		if (item.label) {
+			const labelElement: HTMLSpanElement = document.createElement('span');
+			labelElement.className = 'component-select-tooltip-label';
+			labelElement.textContent = `${item.label}:`;
+			rowElement.appendChild(labelElement);
+		}
+		const valueElement: HTMLSpanElement = document.createElement('span');
+		valueElement.className = 'component-select-tooltip-value';
+		valueElement.textContent = item.value || '—';
+		rowElement.appendChild(valueElement);
+		tooltipElement.appendChild(rowElement);
+	}
+}
+
+// 更新 tooltip 位置，避免超出视口。
+function positionDescriptionTooltip(tooltipElement: HTMLDivElement, event: MouseEvent): void {
+	const gapX = 10;
+	const gapY = 14;
+	const viewportPadding = 12;
+	let left = event.clientX + gapX;
+	let top = event.clientY + gapY;
+	const rect = tooltipElement.getBoundingClientRect();
+	if ((left + rect.width) > (window.innerWidth - viewportPadding)) {
+		left = Math.max(viewportPadding, window.innerWidth - rect.width - viewportPadding);
+	}
+	if ((top + rect.height) > (window.innerHeight - viewportPadding)) {
+		top = Math.max(viewportPadding, window.innerHeight - rect.height - viewportPadding);
+	}
+	tooltipElement.style.left = `${left}px`;
+	tooltipElement.style.top = `${top}px`;
 }
 
 /**
@@ -614,15 +704,14 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 					const cellDef = restCells[ci];
 					td.textContent = cellDef.text;
 					if (ci === 1 && cellDef.title) {
-						// 描述列使用自定义 tooltip，避唔原生 title 属性样式无法控制。
+						// 描述列使用自定义 tooltip，按参数名和值分行展示。
 						const tooltipText: string = cellDef.title;
 						td.addEventListener('mouseenter', () => {
-							tooltipElement.textContent = tooltipText;
+							renderDescriptionTooltip(tooltipElement, tooltipText);
 							tooltipElement.style.display = 'block';
 						});
 						td.addEventListener('mousemove', (e: MouseEvent) => {
-							tooltipElement.style.top = `${e.clientY + 14}px`;
-							tooltipElement.style.left = `${e.clientX + 10}px`;
+							positionDescriptionTooltip(tooltipElement, e);
 						});
 						td.addEventListener('mouseleave', () => {
 							tooltipElement.style.display = 'none';
