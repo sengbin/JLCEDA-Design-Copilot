@@ -15,7 +15,7 @@ export const MANUAL_EXPOSED_TOOL_NAMES: string[] = [
 //	'jlceda_api_search',
 //	'jlceda_context_get',
 //	'jlceda_api_invoke',
-	'jlceda_schematic_check',
+	'schematic_check',
 	'todo_list',
 	'component_select',
 	'component_place',
@@ -176,7 +176,7 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 	if (toolName === 'jlceda_api_invoke') {
 		return '{"apiFullName":"eda.sch_Drc.check","args":"[false,false,true]"}';
 	}
-	if (toolName === 'jlceda_schematic_check') {
+	if (toolName === 'schematic_check') {
 		return '{}';
 	}
 	if (toolName === 'todo_list') {
@@ -314,9 +314,9 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 			}
 			return await runtimeObject.handleInvokeTask(handlerArgs);
 		},
-		async jlceda_schematic_check(handlerArgs?: unknown): Promise<unknown> {
+		async schematic_check(handlerArgs?: unknown): Promise<unknown> {
 			if (typeof runtimeObject.handleSchematicCheckTask !== 'function') {
-				return { ok: false, error: 'jlceda_schematic_check 处理器未初始化。' };
+				return { ok: false, error: 'schematic_check 处理器未初始化。' };
 			}
 			return await runtimeObject.handleSchematicCheckTask(handlerArgs);
 		},
