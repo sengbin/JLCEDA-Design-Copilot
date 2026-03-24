@@ -33,7 +33,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	const CHAT_EMPTY_STATE_EXAMPLES: any = [
 		'帮我检查一下这个原理图。',
 		'这个电路有什么可以优化的地方吗？',
-		'把当前打开的原理图的BOM给我。',
+		'给我设计一个点亮LED的电路。',
 	];
 	const RUNNING_INDICATOR_TEXT: any = '执行中...';
 	const imageUploadButton: any = document.querySelector('.image-upload-button');
