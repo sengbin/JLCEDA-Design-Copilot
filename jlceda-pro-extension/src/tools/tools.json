@@ -133,7 +133,7 @@
 					},
 					"limit": {
 						"type": "number",
-						"description": "返回候选数量上限（可选），范围 2~20，默认 20。"
+						"description": "返回候选数量上限，固定 20。"
 					}
 				},
 				"required": ["keyword"],
