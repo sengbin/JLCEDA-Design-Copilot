@@ -1,9 +1,8 @@
-import { OverlayScrollbars } from 'overlayscrollbars';
+﻿import { OverlayScrollbars } from 'overlayscrollbars';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE, DEBUG_TOOL_EXEC_SHOW_CALLED_API, DEBUG_TOOL_EXEC_SHOW_TOOL_NAME } from './debug';
 import { readAgentSystemInstructions } from './llm/agent/instructions';
 import { AI_AGENT_RUNTIME, getModelContextHistoryBudgetTokens, throwIfAgentAborted } from './llm/agent/runtime';
-import tools from './tools/tools.json';
 import { buildAnthropicRequestPayload, buildAnthropicTools, buildModelRequestPayload, buildResponsesTools, pickManualExposedTools, validateModelRequestConfig } from './llm/client';
 import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock, processAnthropicStreamEvent } from './llm/stream';
 import { CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveApiFormat, resolveImagePayloadMode, resolveModelConfig } from './page/model';
@@ -15,6 +14,7 @@ import { createChatSessionManager } from './session/session';
 import { applyComponentPlaceInteraction } from './tools/component-place-ui';
 import { applyComponentSelectInteraction } from './tools/component-select-ui';
 import { createAgentToolRuntime, executeToolWithTimeout } from './tools/executor';
+import tools from './tools/tools.json';
 import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 
 (function () {
@@ -504,7 +504,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		return node.classList.contains('reasoning') || node.classList.contains('tool-exec');
 	}
 	// 创建“执行过程”外层折叠节点。
-	function createProcessGroupElements(defaultOpen?: any) {
+	function createProcessGroupElements(defaultOpen?: any, groupTitle?: string) {
 		const wrapperNode: any = document.createElement('div');
 		wrapperNode.className = 'chat-process-group';
 		const detailsNode: any = document.createElement('details');
@@ -525,7 +525,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		iconWrapNode.appendChild(chevronIconNode);
 		const titleNode: any = document.createElement('span');
 		titleNode.className = 'process-group-title';
-		titleNode.textContent = todoPanelCurrentTaskTitle || '执行过程';
+		titleNode.textContent = groupTitle || todoPanelCurrentTaskTitle || '执行过程';
 		const loadingNode: any = document.createElement('span');
 		loadingNode.className = 'process-group-loading-indicator';
 		loadingNode.setAttribute('aria-hidden', 'true');
@@ -580,7 +580,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				cursor = endCursor;
 				continue;
 			}
-			const processGroupElements: any = createProcessGroupElements(false);
+			const restoredTitle: string = sessionManager.getProcessTitleByNode(children[cursor]);
+			const processGroupElements: any = createProcessGroupElements(false, restoredTitle);
 			chatHistoryMessageContainer.insertBefore(processGroupElements.wrapperNode, children[cursor]);
 			for (let moveIndex: any = cursor; moveIndex < endCursor; moveIndex += 1) {
 				processGroupElements.contentNode.appendChild(children[moveIndex]);
@@ -2938,6 +2939,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 							reasoningStreamMessage = createAiStreamingMessage('reasoning');
 							reasoningStreamMessage.setLoading(true);
 							processFoldGroupController.appendProcessNode(reasoningStreamMessage.getNode());
+							// 将当前任务标题写入该节点的显示记录，供会话恢复时使用。
+							sessionManager.setProcessTitleByNode(reasoningStreamMessage.getNode(), todoPanelCurrentTaskTitle);
 						}
 						processFoldGroupController.setLoading(true);
 						reasoningStreamMessage.append(delta.text);
@@ -2975,6 +2978,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				else if (reasoningContent && !hasReasoningStream) {
 					const reasoningMessageNode: any = appendMessage('ai', reasoningContent, 'reasoning');
 					processFoldGroupController.appendProcessNode(reasoningMessageNode);
+					// 将当前任务标题写入该节点的显示记录，供会话恢复时使用。
+					sessionManager.setProcessTitleByNode(reasoningMessageNode, todoPanelCurrentTaskTitle);
 					collapseReasoningDetails(reasoningMessageNode);
 				}
 				// 循环检测：仅按回复文本判定，工具调用不参与限制。
@@ -3025,6 +3030,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						const toolCallId: any = toolCall && toolCall.id ? toolCall.id : (`tool-call-${Date.now()}-${index}`);
 						const toolMessageNode: any = appendMessage('ai', formatToolExecRawText(toolCall, undefined, true), 'tool-exec');
 						processFoldGroupController.appendProcessNode(toolMessageNode);
+						// 将当前任务标题写入该节点的显示记录，供会话恢复时使用。
+						sessionManager.setProcessTitleByNode(toolMessageNode, todoPanelCurrentTaskTitle);
 						let result: any = null;
 						const displayToolCall: any = toolCall;
 						setFoldLoadingState(toolMessageNode, true);

@@ -143,56 +143,95 @@ const COMPONENT_SELECT_STYLE_TEXT: string = [
 	`\theight: 26px;`,
 	`\tpadding: 0 10px;`,
 	`\tborder-radius: 5px;`,
-	`\tborder: 1px solid #b4b4b4;`,
-	`\tbackground: #ececec;`,
-	`\tcolor: #3f3f3f;`,
+	`\tborder: 1px solid #a0a0a0;`,
+	`\tbackground: #e8e8e8;`,
+	`\tcolor: #1a1a1a;`,
 	`\tfont-size: 12px;`,
 	`\tfont-weight: 600;`,
 	`\tcursor: pointer;`,
 	`\ttransition: background 0.15s ease, border-color 0.15s ease;`,
 	`}`,
 	`.component-select-button:hover:not(:disabled) {`,
-	`\tbackground: #e0e0e0;`,
+	`\tbackground: #dcdcdc;`,
+	`\tborder-color: #888888;`,
 	`}`,
 	`.component-select-button:active:not(:disabled) {`,
-	`\tbackground: #d3d3d3;`,
+	`\tbackground: #cfcfcf;`,
+	`\tborder-color: #787878;`,
 	`}`,
 	`.component-select-button.confirm {`,
-	`\tbackground: #3f7fb9;`,
-	`\tcolor: #f6fbff;`,
-	`\tborder-color: #3f7fb9;`,
+	`\tbackground: #2d6faa;`,
+	`\tcolor: #ffffff;`,
+	`\tborder-color: #2d6faa;`,
 	`}`,
 	`.component-select-button.confirm:hover:not(:disabled) {`,
-	`\tbackground: #3674ab;`,
-	`\tborder-color: #3674ab;`,
+	`\tbackground: #2663a0;`,
+	`\tborder-color: #2663a0;`,
 	`}`,
 	`.component-select-button.confirm:active:not(:disabled) {`,
-	`\tbackground: #2f6698;`,
-	`\tborder-color: #2f6698;`,
+	`\tbackground: #205588;`,
+	`\tborder-color: #205588;`,
 	`}`,
 	`.component-select-button:disabled {`,
 	`\topacity: 1;`,
-	`\tborder-color: #c5c5c5;`,
-	`\tbackground: #e6e6e6;`,
-	`\tcolor: #8b8b8b;`,
+	`\tborder-color: #c0c0c0;`,
+	`\tbackground: #e0e0e0;`,
+	`\tcolor: #909090;`,
 	`\tcursor: default;`,
 	`}`,
 	`@media (prefers-color-scheme: dark) {`,
+	`\t.component-select-panel {`,
+	`\t\tbackground: #1e1e1e;`,
+	`\t\tborder-color: #3c3c3c;`,
+	`\t}`,
+	`\t.component-select-title {`,
+	`\t\tcolor: #e8e8e8;`,
+	`\t}`,
+	`\t.component-select-desc {`,
+	`\t\tcolor: #b0b0b0;`,
+	`\t}`,
+	`\t.component-select-table-wrap {`,
+	`\t\tborder-color: #3c3c3c;`,
+	`\t}`,
+	`\t.component-select-table th {`,
+	`\t\tbackground: #2a2a2a;`,
+	`\t\tcolor: #b0b0b0;`,
+	`\t\tborder-bottom-color: #3c3c3c;`,
+	`\t}`,
+	`\t.component-select-table td {`,
+	`\t\tcolor: #e8e8e8;`,
+	`\t\tborder-bottom-color: #3c3c3c;`,
+	`\t}`,
 	`\t.component-select-button {`,
-	`\t\tborder-color: #727272;`,
-	`\t\tbackground: #555555;`,
-	`\t\tcolor: #f5f7fa;`,
+	`\t\tborder-color: #5a5a5a;`,
+	`\t\tbackground: #3a3a3a;`,
+	`\t\tcolor: #e8e8e8;`,
 	`\t}`,
 	`\t.component-select-button:hover:not(:disabled) {`,
-	`\t\tbackground: #646464;`,
+	`\t\tbackground: #484848;`,
+	`\t\tborder-color: #727272;`,
 	`\t}`,
 	`\t.component-select-button:active:not(:disabled) {`,
-	`\t\tbackground: #4a4a4a;`,
+	`\t\tbackground: #2f2f2f;`,
+	`\t\tborder-color: #5a5a5a;`,
+	`\t}`,
+	`\t.component-select-button.confirm {`,
+	`\t\tbackground: #2d6faa;`,
+	`\t\tcolor: #ffffff;`,
+	`\t\tborder-color: #4a8fc8;`,
+	`\t}`,
+	`\t.component-select-button.confirm:hover:not(:disabled) {`,
+	`\t\tbackground: #2663a0;`,
+	`\t\tborder-color: #4087c0;`,
+	`\t}`,
+	`\t.component-select-button.confirm:active:not(:disabled) {`,
+	`\t\tbackground: #205588;`,
+	`\t\tborder-color: #357ab0;`,
 	`\t}`,
 	`\t.component-select-button:disabled {`,
-	`\t\tborder-color: #5f5f5f;`,
-	`\t\tbackground: #4b4b4b;`,
-	`\t\tcolor: #9a9a9a;`,
+	`\t\tborder-color: #444444;`,
+	`\t\tbackground: #2a2a2a;`,
+	`\t\tcolor: #666666;`,
 	`\t}`,
 	`}`,
 	`.component-select-pagination-nav {`,
@@ -307,6 +346,29 @@ const COMPONENT_SELECT_STYLE_TEXT: string = [
 	`\tbackground: transparent;`,
 	`\tfont-weight: 600;`,
 	`}`,
+	`.component-select-table-hint {`,
+	`	font-size: 11px;`,
+	`	color: var(--text-secondary, #888888);`,
+	`	margin-bottom: 4px;`,
+	`	user-select: none;`,
+	`}`,
+	`.component-select-tooltip {`,
+	`	position: fixed;`,
+	`	z-index: 9999;`,
+	`	max-width: 320px;`,
+	`	padding: 6px 10px;`,
+	`	background: #2d2d2d;`,
+	`	color: #e8e8e8;`,
+	`	border: 1px solid #4a4a4a;`,
+	`	border-radius: 5px;`,
+	`	font-size: 11px;`,
+	`	line-height: 1.6;`,
+	`	white-space: pre-wrap;`,
+	`	word-break: break-word;`,
+	`	pointer-events: none;`,
+	`	box-shadow: 0 2px 8px rgba(0,0,0,0.40);`,
+	`	display: none;`,
+	`}`,
 ].join('\n');
 
 // 注入选型面板样式（只注一次）。
@@ -390,6 +452,19 @@ export function parseComponentSelectRequest(toolResult?: unknown): ComponentSele
 	};
 }
 
+// 格式化描述文本，去掉每段“参数名:”前缀，只保留参数値。
+function formatDescriptionShort(rawDesc: string): string {
+	return rawDesc
+		.split(/[;；\n]+/)
+		.map((s: string) => {
+			const trimmed: string = s.trim();
+			const colonIdx: number = trimmed.search(/[:\uFF1A]/);
+			return colonIdx >= 0 ? trimmed.slice(colonIdx + 1).trim() : trimmed;
+		})
+		.filter((s: string) => s.length > 0)
+		.join(';');
+}
+
 /**
  * 在工具消息节点内渲染器件选型交互面板，等待用户选择并确认。
  * @param options - 面板选项。
@@ -429,6 +504,17 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		descElement.className = 'component-select-desc';
 		descElement.textContent = selectRequest.description;
 		panelElement.appendChild(descElement);
+
+		// 表格上方提示文字。
+		const tableHintElement: HTMLDivElement = document.createElement('div');
+		tableHintElement.className = 'component-select-table-hint';
+		tableHintElement.textContent = '悬停“描述”列可查看完整参数详情';
+		panelElement.appendChild(tableHintElement);
+
+		// 自定义 tooltip 层，用于描述列悬停弹出（功能需要在 buildTbodyRows 中引用）。
+		const tooltipElement: HTMLDivElement = document.createElement('div');
+		tooltipElement.className = 'component-select-tooltip';
+		document.body.appendChild(tooltipElement);
 
 		// 表格容器。
 		const tableWrap: HTMLDivElement = document.createElement('div');
@@ -514,20 +600,38 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 				// 其余固定列：封装 → 描述 → 品牌
 				// 描述 tooltip：将分号/换行分隔的参数拆开，每条占一行。
 				const rawDesc: string = candidate.description || '';
+				const descShort: string = rawDesc ? formatDescriptionShort(rawDesc) : '—';
 				const descTooltip: string | undefined = rawDesc
 					? rawDesc.split(/[;；\n]/).map((s: string) => s.trim()).filter((s: string) => s.length > 0).join('\n')
 					: undefined;
 				const restCells: Array<{ text: string; title?: string }> = [
 					{ text: candidate.footprintName || '—' },
-					{ text: rawDesc || '—', title: descTooltip },
+					{ text: descShort, title: descTooltip },
 					{ text: candidate.manufacturer || candidate.supplier || '—' },
 				];
 				for (let ci = 0; ci < restCells.length; ci += 1) {
 					const td: HTMLTableCellElement = document.createElement('td');
 					const cellDef = restCells[ci];
 					td.textContent = cellDef.text;
-					// 有显式 title 用 title，否则用单元格文本作为悬停提示。
-					td.title = cellDef.title !== undefined ? cellDef.title : cellDef.text;
+					if (ci === 1 && cellDef.title) {
+						// 描述列使用自定义 tooltip，避唔原生 title 属性样式无法控制。
+						const tooltipText: string = cellDef.title;
+						td.addEventListener('mouseenter', () => {
+							tooltipElement.textContent = tooltipText;
+							tooltipElement.style.display = 'block';
+						});
+						td.addEventListener('mousemove', (e: MouseEvent) => {
+							tooltipElement.style.top = `${e.clientY + 14}px`;
+							tooltipElement.style.left = `${e.clientX + 10}px`;
+						});
+						td.addEventListener('mouseleave', () => {
+							tooltipElement.style.display = 'none';
+						});
+					}
+					else {
+						// 其他列使用原生 title 悬停提示。
+						td.title = cellDef.title !== undefined ? cellDef.title : cellDef.text;
+					}
 					row.appendChild(td);
 				}
 
@@ -806,6 +910,7 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 			if (options.abortSignal && onAbort) {
 				options.abortSignal.removeEventListener('abort', onAbort);
 			}
+			tooltipElement.remove();
 			panelElement.remove();
 			resolve(result);
 		};

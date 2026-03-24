@@ -117,6 +117,18 @@ export interface ChatSessionManager {
 	 * @param variant - 变体。
 	 */
 	syncDisplayRecordByMessageNode: (messageNode: unknown, role: unknown, text: unknown, variant: unknown) => void;
+	/**
+	 * 按消息节点写入过程分组标题。
+	 * @param messageNode - 消息节点。
+	 * @param title - 标题文本。
+	 */
+	setProcessTitleByNode: (messageNode: unknown, title: string) => void;
+	/**
+	 * 按消息节点读取过程分组标题。
+	 * @param messageNode - 消息节点。
+	 * @returns 标题文本。
+	 */
+	getProcessTitleByNode: (messageNode: unknown) => string;
 	/** 节流写入会话。 */
 	schedulePersistChatSession: () => void;
 	/** 立即写入会话。 */
@@ -283,11 +295,12 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 			if (!text && !variant) {
 				continue;
 			}
-			output.push({
-				role,
-				text,
-				variant,
-			});
+			const processTitle: any = String((item as Record<string, unknown>).processTitle || '').trim();
+			const record: Record<string, unknown> = { role, text, variant };
+			if (processTitle) {
+				record.processTitle = processTitle;
+			}
+			output.push(record);
 		}
 		return output.slice(-maxMessages);
 	}
@@ -538,6 +551,36 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 			schedulePersistChatSession();
 		}
 	}
+	// 写入过程分组标题到消息节点对应的显示记录。
+	function setProcessTitleByNode(messageNode: unknown, title: unknown): void {
+		if (!messageNode || !(messageNode instanceof HTMLElement)) {
+			return;
+		}
+		const indexText: any = String(messageNode.getAttribute('data-display-index') || '').trim();
+		if (!indexText) {
+			return;
+		}
+		const indexValue: any = Number(indexText);
+		if (!Number.isFinite(indexValue) || indexValue < 0 || indexValue >= chatDisplayMessages.length) {
+			return;
+		}
+		(chatDisplayMessages[indexValue] as Record<string, unknown>).processTitle = String(title || '').trim();
+	}
+	// 读取消息节点对应的过程分组标题。
+	function getProcessTitleByNode(messageNode: unknown): string {
+		if (!messageNode || !(messageNode instanceof HTMLElement)) {
+			return '';
+		}
+		const indexText: any = String(messageNode.getAttribute('data-display-index') || '').trim();
+		if (!indexText) {
+			return '';
+		}
+		const indexValue: any = Number(indexText);
+		if (!Number.isFinite(indexValue) || indexValue < 0 || indexValue >= chatDisplayMessages.length) {
+			return '';
+		}
+		return String((chatDisplayMessages[indexValue] as Record<string, unknown>).processTitle || '').trim();
+	}
 	// 将指定会话恢复到运行时消息与页面。
 	function restoreSessionRecordToRuntime(sessionRecord: PersistedSessionRecord | null): boolean {
 		if (!sessionRecord) {
@@ -549,6 +592,7 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 					role: String(item && item.role ? item.role : 'ai') === 'user' ? 'user' : 'ai',
 					text: String(item && item.text ? item.text : '').trim(),
 					variant: String(item && item.variant ? item.variant : '').trim(),
+					processTitle: String(item && item.processTitle ? item.processTitle : '').trim(),
 				};
 			})
 			.filter((item) => {
@@ -601,7 +645,11 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 			const endIndex: any = Math.min(restoredDisplayCursor + RESTORE_RENDER_BATCH_SIZE, normalizedDisplayMessages.length);
 			for (; restoredDisplayCursor < endIndex; restoredDisplayCursor += 1) {
 				const item: any = normalizedDisplayMessages[restoredDisplayCursor];
-				appendMessage(item.role, item.text, item.variant);
+				const restoredNode: any = appendMessage(item.role, item.text, item.variant);
+				// 恢复过程分组标题到对应消息节点的显示记录。
+				if (item.processTitle && restoredNode instanceof HTMLElement) {
+					setProcessTitleByNode(restoredNode, item.processTitle);
+				}
 			}
 			scrollChatHistoryIfAllowed();
 			if (restoredDisplayCursor < normalizedDisplayMessages.length) {
@@ -855,6 +903,8 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 		updateChatSessionTitleById,
 		pushDisplayMessageRecord,
 		syncDisplayRecordByMessageNode,
+		setProcessTitleByNode,
+		getProcessTitleByNode,
 		schedulePersistChatSession,
 		persistChatSessionNow,
 		clearPersistedChatSession,
