@@ -49,6 +49,7 @@ interface InteractivePlacePanelResult {
 interface PlaceComponentApi {
 	context: unknown;
 	method: (component: { libraryUuid: string; uuid: string }, subPartName?: string) => Promise<boolean>;
+	getAllPrimitiveId: () => Promise<string[]>;
 }
 
 interface FollowMouseTipApi {
@@ -224,12 +225,13 @@ function resolvePlaceComponentApi(runtimeWindow: Window): PlaceComponentApi {
 		throw new Error('当前环境未检测到 EDA API 对象。');
 	}
 	const componentModule: unknown = root.sch_PrimitiveComponent;
-	if (!isObjectRecord(componentModule) || typeof componentModule.placeComponentWithMouse !== 'function') {
+	if (!isObjectRecord(componentModule) || typeof componentModule.placeComponentWithMouse !== 'function' || typeof componentModule.getAllPrimitiveId !== 'function') {
 		throw new Error('未找到 eda.sch_PrimitiveComponent.placeComponentWithMouse API。');
 	}
 	return {
 		context: componentModule,
 		method: componentModule.placeComponentWithMouse as (component: { libraryUuid: string; uuid: string }, subPartName?: string) => Promise<boolean>,
+		getAllPrimitiveId: componentModule.getAllPrimitiveId as () => Promise<string[]>,
 	};
 }
 
@@ -360,38 +362,109 @@ function setRowState(bindings: PlaceRowBinding[], index: number, stateClass: str
 async function executePlaceAttempt(runtimeWindow: Window, placeApi: PlaceComponentApi, followMouseTipApi: FollowMouseTipApi | null, component: ComponentPlaceItem, timeoutSeconds: number, onTimeout: () => void): Promise<InteractivePlaceAttemptResult> {
 	const timeoutMs: number = Math.max(1, Math.round(timeoutSeconds * 1000));
 	const tipText: string = `请在原理图中放置器件：${formatComponentTitle(component)}`;
-	let timedOut: boolean = false;
-	let timerId: number = 0;
-	try {
-		if (followMouseTipApi) {
-			void Promise.resolve(followMouseTipApi.show.call(followMouseTipApi.context, tipText, timeoutMs)).catch(() => undefined);
-		}
-		timerId = window.setTimeout(() => {
-			timedOut = true;
-			onTimeout();
-		}, timeoutMs);
-		const placed: boolean = await Promise.resolve(placeApi.method.call(
-			placeApi.context,
-			{ uuid: component.uuid, libraryUuid: component.libraryUuid },
-			component.subPartName || undefined,
-		));
-		return {
-			placed: Boolean(placed),
-			timedOut,
-			error: '',
-		};
+
+	if (followMouseTipApi) {
+		void Promise.resolve(followMouseTipApi.show.call(followMouseTipApi.context, tipText, timeoutMs)).catch(() => undefined);
 	}
-	catch (error: unknown) {
-		return {
-			placed: false,
-			timedOut,
-			error: toSafeErrorMessage(error),
-		};
+
+	try {
+		// 启动交互式放置会话。placeComponentWithMouse 会话启动成功后立即返回 true，
+		// 器件开始跟随鼠标，此时尚未完成放置。
+		let started: boolean;
+		try {
+			started = Boolean(await Promise.resolve(placeApi.method.call(
+				placeApi.context,
+				{ uuid: component.uuid, libraryUuid: component.libraryUuid },
+				component.subPartName || undefined,
+			)));
+		}
+		catch (error: unknown) {
+			return {
+				placed: false,
+				timedOut: false,
+				error: toSafeErrorMessage(error),
+			};
+		}
+
+		if (!started) {
+			return {
+				placed: false,
+				timedOut: false,
+				error: 'placeComponentWithMouse 返回 false，交互放置会话未能启动。',
+			};
+		}
+
+		// 等待 EDA 完成浮动图元创建（器件跟随鼠标的状态），再取快照作为轮询基线。
+		// 基线之后出现的新图元，才是用户点击放置的结果。
+		await new Promise<void>((resolveDelay) => {
+			window.setTimeout(resolveDelay, 500);
+		});
+
+		const referenceIdSet: Set<string> = new Set<string>();
+		try {
+			const referenceIds: string[] = await Promise.resolve(placeApi.getAllPrimitiveId.call(placeApi.context));
+			for (let i: number = 0; i < referenceIds.length; i++) {
+				const id: string = String(referenceIds[i] || '').trim();
+				if (id) {
+					referenceIdSet.add(id);
+				}
+			}
+		}
+		catch {
+			// 快照失败时 referenceIdSet 保持为空，轮询时任何 ID 都视为新增。
+		}
+
+		// 以 400ms 间隔轮询，等待用户点击放置后出现超出基线的新图元。
+		const remainMs: number = Math.max(1, timeoutMs - 500);
+		return await new Promise<InteractivePlaceAttemptResult>((resolve) => {
+			let active: boolean = true;
+			const timerId: number = window.setTimeout(() => {
+				active = false;
+				onTimeout();
+				resolve({
+					placed: false,
+					timedOut: true,
+					error: '',
+				});
+			}, remainMs);
+
+			async function checkForPlacement(): Promise<void> {
+				if (!active) {
+					return;
+				}
+				try {
+					const currentIds: string[] = await Promise.resolve(placeApi.getAllPrimitiveId.call(placeApi.context));
+					if (!active) {
+						return;
+					}
+					for (let i: number = 0; i < currentIds.length; i++) {
+						const id: string = String(currentIds[i] || '').trim();
+						if (id && !referenceIdSet.has(id)) {
+							active = false;
+							window.clearTimeout(timerId);
+							resolve({
+								placed: true,
+								timedOut: false,
+								error: '',
+							});
+							return;
+						}
+					}
+				}
+				catch {
+					// 单次轮询异常时跳过，下次继续轮询。
+				}
+				if (active) {
+					window.setTimeout(() => {
+						void checkForPlacement();
+					}, 400);
+				}
+			}
+
+			void checkForPlacement();
+		});
 	}
 	finally {
-		if (timerId) {
-			window.clearTimeout(timerId);
-		}
 		if (followMouseTipApi) {
 			void Promise.resolve(followMouseTipApi.remove.call(followMouseTipApi.context, tipText)).catch(() => undefined);
 		}
