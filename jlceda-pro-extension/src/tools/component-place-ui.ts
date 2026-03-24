@@ -67,12 +67,28 @@ interface PlaceRowBinding {
 const COMPONENT_PLACE_STYLE_ID: string = 'jlceda-component-place-style';
 
 const COMPONENT_PLACE_STYLE_TEXT: string = [
+	`.component-place-overlay {`,
+	`	position: fixed;`,
+	`	inset: 0;`,
+	`	z-index: 9000;`,
+	`	display: flex;`,
+	`	align-items: center;`,
+	`	justify-content: center;`,
+	`	padding: 24px;`,
+	`	box-sizing: border-box;`,
+	`	overflow: auto;`,
+	`	background: rgba(15, 23, 42, 0.22);`,
+	`}`,
 	`.component-place-panel {`,
-	`\tmargin-top: 10px;`,
+	`	margin: 0;`,
+	`	width: min(640px, calc(100vw - 48px));`,
+	`	max-width: 100%;`,
 	`\tpadding: 12px;`,
 	`\tborder: 1px solid var(--tool-border, #d2d2d2);`,
 	`\tborder-radius: 8px;`,
 	`\tbackground: var(--panel-bg, #ffffff);`,
+	`	box-sizing: border-box;`,
+	`	box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);`,
 	`}`,
 	`.component-place-title {`,
 	`\tfont-size: 13px;`,
@@ -590,9 +606,7 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 	const runtimeWindow: Window = options.runtimeWindow || window;
 	const placeApi: PlaceComponentApi = resolvePlaceComponentApi(runtimeWindow);
 	const followMouseTipApi: FollowMouseTipApi | null = resolveFollowMouseTipApi(runtimeWindow);
-	const messageNode: HTMLElement = options.messageNode;
 	const placeRequest: ComponentPlaceRequest = options.placeRequest;
-	const targetContainer: HTMLElement = (messageNode.querySelector('.fold-content') as HTMLElement | null) ?? messageNode;
 
 	return await new Promise<InteractivePlacePanelResult>((resolve) => {
 		let resolved: boolean = false;
@@ -600,9 +614,12 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 		let running: boolean = false;
 		let cancelRequested: boolean = false;
 		const placedComponents: ComponentPlaceItem[] = [];
+		const overlayElement: HTMLDivElement = document.createElement('div');
+		overlayElement.className = 'component-place-overlay';
 
 		const panelElement: HTMLDivElement = document.createElement('div');
 		panelElement.className = 'component-place-panel';
+		overlayElement.appendChild(panelElement);
 
 		const titleElement: HTMLDivElement = document.createElement('div');
 		titleElement.className = 'component-place-title';
@@ -669,7 +686,7 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 		actionsElement.appendChild(cancelButton);
 		actionsElement.appendChild(startButton);
 		panelElement.appendChild(actionsElement);
-		targetContainer.appendChild(panelElement);
+		document.body.appendChild(overlayElement);
 
 		let onAbort: (() => void) | undefined;
 
@@ -681,7 +698,7 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 			if (options.abortSignal && onAbort) {
 				options.abortSignal.removeEventListener('abort', onAbort);
 			}
-			panelElement.remove();
+			overlayElement.remove();
 			resolve(result);
 		}
 

@@ -28,12 +28,28 @@ interface RequestSelectPanelResult {
 const COMPONENT_SELECT_STYLE_ID: string = 'jlceda-component-select-style';
 
 const COMPONENT_SELECT_STYLE_TEXT: string = [
+	`.component-select-overlay {`,
+	`	position: fixed;`,
+	`	inset: 0;`,
+	`	z-index: 9000;`,
+	`	display: flex;`,
+	`	align-items: center;`,
+	`	justify-content: center;`,
+	`	padding: 24px;`,
+	`	box-sizing: border-box;`,
+	`	overflow: auto;`,
+	`	background: rgba(15, 23, 42, 0.22);`,
+	`}`,
 	`.component-select-panel {`,
-	`\tmargin-top: 10px;`,
+	`	margin: 0;`,
+	`	width: min(820px, calc(100vw - 48px));`,
+	`	max-width: 100%;`,
 	`\tpadding: 12px;`,
 	`\tborder: 1px solid var(--tool-border, #d2d2d2);`,
 	`\tborder-radius: 8px;`,
 	`\tbackground: var(--panel-bg, #ffffff);`,
+	`	box-sizing: border-box;`,
+	`	box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);`,
 	`}`,
 	`.component-select-title {`,
 	`\tfont-size: 13px;`,
@@ -563,10 +579,7 @@ function positionDescriptionTooltip(tooltipElement: HTMLDivElement, event: Mouse
 export async function requestComponentSelectPanel(options: RequestSelectPanelOptions): Promise<RequestSelectPanelResult> {
 	ensureComponentSelectStyleMounted();
 
-	const messageNode: HTMLElement = options.messageNode;
 	const selectRequest: ComponentSelectRequest = options.selectRequest;
-	const targetContainer: HTMLElement
-		= (messageNode.querySelector('.fold-content') as HTMLElement | null) ?? messageNode;
 
 	return await new Promise<RequestSelectPanelResult>((resolve) => {
 		let resolved: boolean = false;
@@ -578,10 +591,13 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		const hasFetchPage: boolean = typeof options.fetchPage === 'function';
 		let isPageLoading: boolean = false;
 		let tableOsInstance: any = null;
+		const overlayElement: HTMLDivElement = document.createElement('div');
+		overlayElement.className = 'component-select-overlay';
 
 		// 创建面板根节点。
 		const panelElement: HTMLDivElement = document.createElement('div');
 		panelElement.className = 'component-select-panel';
+		overlayElement.appendChild(panelElement);
 
 		// 标题。
 		const titleElement: HTMLDivElement = document.createElement('div');
@@ -810,7 +826,7 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		actionsElement.appendChild(buttonsGroup);
 		panelElement.appendChild(actionsElement);
 
-		targetContainer.appendChild(panelElement);
+		document.body.appendChild(overlayElement);
 		// 面板挂载到 DOM 后初始化 OverlayScrollbars。
 		tableOsInstance = OverlayScrollbars(tableWrap, {
 			overflow: {
@@ -1000,7 +1016,7 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 				options.abortSignal.removeEventListener('abort', onAbort);
 			}
 			tooltipElement.remove();
-			panelElement.remove();
+			overlayElement.remove();
 			resolve(result);
 		};
 
