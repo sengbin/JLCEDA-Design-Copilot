@@ -127,12 +127,14 @@ const BUILT_IN_AGENT_SYSTEM_INSTRUCTIONS: string = [
 	'调用时机：',
 	'- 用户已经确认具体器件型号，且需要在原理图上逐个放置时。',
 	'- 一次需要放置多个器件时，优先把所有已确定器件合并为 components 数组后一次调用。',
+	'- 电源符号和地符号禁止调用此工具，必须由用户手动放置。',
 	'',
 	'调用方法：',
 	'1. 传入 components 数组，每项至少包含 uuid 和 libraryUuid。',
 	'2. 可选传入 timeoutSeconds，控制单个器件放置的超时阈值。',
 	'3. 工具会展示交互面板，按顺序引导用户逐个完成放置。',
 	'4. 单个器件超过超时阈值后，工具会在当前尝试结束且仍未放置成功时自动重试 1 次。',
+	'5. 若任务涉及 VCC、VDD、+3.3V、+5V、GND、AGND、DGND 等电源/地符号，必须明确告知用户手动添加，禁止加入 components 数组。',
 	'',
 	'参数规则：',
 	'- `components`：待放置器件数组，必填。',
@@ -141,6 +143,7 @@ const BUILT_IN_AGENT_SYSTEM_INSTRUCTIONS: string = [
 	'结果处理：',
 	'- ok=true 时：返回 placedCount、totalCount 和 placedComponents。',
 	'- ok=false 时：返回明确的 errorCode 和失败位置，必须停止后续放置并说明原因。',
+	'- 如果报错指出包含电源或地符号，必须改为提示用户手动放置，禁止再次尝试自动放置。',
 ].join('\n');
 
 // 文件下载规则指令。

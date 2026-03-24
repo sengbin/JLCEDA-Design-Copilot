@@ -30,6 +30,21 @@ export interface ComponentPlaceRequest {
 	retryCount: number;
 }
 
+// 禁止自动放置的电源/地符号关键字集合。
+const FORBIDDEN_POWER_GROUND_TOKENS: readonly string[] = [
+	'VCC',
+	'VDD',
+	'VSS',
+	'+3.3V',
+	'+5V',
+	'3.3V',
+	'5V',
+	'GND',
+	'AGND',
+	'DGND',
+	'PGND',
+];
+
 // 判断输入是否为普通对象。
 function isPlainObjectRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -55,6 +70,27 @@ function normalizeComponentPlaceItem(raw: unknown, index: number): ComponentPlac
 		footprintName: String(raw.footprintName ?? '').trim(),
 		subPartName: String(raw.subPartName ?? '').trim(),
 	};
+}
+
+// 规范化器件标识文本，便于做电源/地符号判定。
+function normalizePowerGroundToken(text: string): string {
+	return text.replace(/\s+/g, '').toUpperCase();
+}
+
+// 判断器件是否为禁止自动放置的电源或地符号。
+function matchForbiddenPowerGroundToken(component: ComponentPlaceItem): string {
+	const candidates: string[] = [component.name, component.footprintName, component.subPartName]
+		.map(value => String(value || '').trim())
+		.filter(Boolean);
+	for (const candidate of candidates) {
+		const normalizedCandidate: string = normalizePowerGroundToken(candidate);
+		for (const token of FORBIDDEN_POWER_GROUND_TOKENS) {
+			if (normalizedCandidate === normalizePowerGroundToken(token)) {
+				return token;
+			}
+		}
+	}
+	return '';
 }
 
 // 解析超时参数，未提供时使用默认值。
@@ -114,6 +150,16 @@ export function createComponentPlaceHandler() {
 		catch (error: unknown) {
 			const message: string = error instanceof Error ? error.message : String(error ?? '');
 			return { ok: false, error: message || 'components 参数无效。' };
+		}
+
+		for (let index = 0; index < components.length; index += 1) {
+			const forbiddenToken: string = matchForbiddenPowerGroundToken(components[index]);
+			if (forbiddenToken) {
+				return {
+					ok: false,
+					error: `components[${String(index)}] 包含电源或地符号 ${forbiddenToken}，此类符号禁止通过 component_place 自动放置，必须由用户手动添加。`,
+				};
+			}
 		}
 
 		const placement: ComponentPlaceRequest = {

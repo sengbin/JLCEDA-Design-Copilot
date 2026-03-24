@@ -145,7 +145,7 @@
 		"type": "function",
 		"function": {
 			"name": "component_place",
-			"description": "在原理图中逐个引导用户交互放置已选定器件。必须传入已经确定好的器件列表，工具会按顺序调用交互式放置 API，并在单个器件放置超时后于当前尝试结束后自动重试 1 次。禁止让模型自己循环调用 jlceda_api_invoke 逐个放置。",
+			"description": "在原理图中逐个引导用户交互放置已选定器件。必须传入已经确定好的器件列表，工具会按顺序调用交互式放置 API，并在单个器件放置超时后于当前尝试结束后自动重试 1 次。禁止让模型自己循环调用 jlceda_api_invoke 逐个放置。电源符号和地符号（如 VCC、VDD、+3.3V、+5V、GND、AGND、DGND）禁止通过此工具自动放置，必须由用户手动添加。",
 			"parameters": {
 				"type": "object",
 				"properties": {
