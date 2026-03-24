@@ -180,7 +180,7 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 			selection: {
 				protocol: COMPONENT_SELECT_PROTOCOL,
 				title: `器件选型：${keyword}`,
-				description: `以下是立创商城中"${keyword}"的搜索结果，每页 ${String(pageSize)} 个，请选择合适的一个：`,
+				description: `以下是系统库中"${keyword}"的搜索结果，每页 ${String(pageSize)} 个，请选择合适的一个：`,
 				candidates,
 				pageSize,
 				currentPage: 1,
