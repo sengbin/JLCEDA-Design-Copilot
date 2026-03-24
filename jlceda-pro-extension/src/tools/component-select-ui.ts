@@ -20,6 +20,7 @@ interface RequestSelectPanelOptions {
 }
 
 interface RequestSelectPanelResult {
+	reason: 'confirmed' | 'cancelled' | 'aborted';
 	confirmed: boolean;
 	candidate?: ComponentSelectCandidate;
 }
@@ -810,16 +811,16 @@ export async function requestComponentSelectPanel(options: RequestSelectPanelOpt
 		};
 
 		onAbort = (): void => {
-			finalize({ confirmed: false });
+			finalize({ reason: 'aborted', confirmed: false });
 		};
 
 		cancelButton.addEventListener('click', () => {
-			finalize({ confirmed: false });
+			finalize({ reason: 'cancelled', confirmed: false });
 		});
 
 		confirmButton.addEventListener('click', () => {
 			const selected: ComponentSelectCandidate | undefined = currentCandidates[selectedIndex];
-			finalize({ confirmed: true, candidate: selected });
+			finalize({ reason: 'confirmed', confirmed: true, candidate: selected });
 		});
 
 		if (options.abortSignal) {
@@ -875,11 +876,22 @@ export async function applyComponentSelectInteraction(options: ApplyComponentSel
 	if (options.abortSignal && options.abortSignal.aborted) {
 		throw new DOMException('【诊断信息】用户已停止', 'AbortError');
 	}
+	if (selectResult.reason === 'aborted') {
+		throw new DOMException('【诊断信息】用户已停止', 'AbortError');
+	}
+	if (selectResult.reason === 'cancelled') {
+		return {
+			ok: true,
+			skipped: true,
+			skipReason: 'user-cancelled-selection',
+			message: '用户取消当前器件选型，请不要放置该器件，继续处理后续步骤，不要重试当前器件选型。',
+		};
+	}
 	if (!selectResult.confirmed || !selectResult.candidate) {
 		return {
 			ok: false,
-			error: '用户取消器件选型，工具执行已终止。',
-			errorCode: 'COMPONENT_SELECT_CANCELLED',
+			error: '器件选型结果无效，未取得可用候选器件。',
+			errorCode: 'COMPONENT_SELECT_INVALID_RESULT',
 		};
 	}
 	return {
