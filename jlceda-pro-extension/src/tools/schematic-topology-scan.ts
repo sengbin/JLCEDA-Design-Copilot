@@ -37,25 +37,25 @@ async function extractSchematicTopology(root: any, safeCall: SchematicTopologySc
 	}
 
 	const components: Array<{
-		primitiveId: string;
-		reference: string;
-		name: string;
-		x: number;
-		y: number;
-		rotation: number;
-		mirror: boolean;
-		footprintUuid: string;
-		subPartName: string;
+		componentInstanceId: string;     // 器件实例 ID，唯一标识当前原理图中的该器件实例
+		designator: string;              // 位号，如 R1、C1、U1
+		symbolName: string;              // 原理图符号名称
+		centerX_mil: number;             // 器件中心点 X 坐标，单位 mil，原理图坐标系
+		centerY_mil: number;             // 器件中心点 Y 坐标，单位 mil，原理图坐标系
+		rotationDeg: number;             // 旋转角度，单位：度，顺时针为正
+		isMirroredHorizontally: boolean; // 是否水平镜像
+		pcbFootprintUuid: string;        // 对应 PCB 封装的 UUID
+		schematicSubPartName: string;    // 多子件器件中的当前子件名称，单子件器件为空
 		pins: Array<{
-			primitiveId: string;
-			pinName: string;
-			pinNumber: string;
-			pinType: string;
-			x: number;
-			y: number;
-			rotation: number;
-			pinLength: number;
-			noConnected: boolean;
+			pinInstanceId: string;          // 引脚实例 ID，唯一标识该引脚
+			pinSignalName: string;          // 引脚信号名称，如 VCC、GND、PA0
+			pinPadNumber: string;           // 引脚编号，与封装焊盘编号对应，如 1、2、A1
+			pinElectricalType: string;      // 引脚电气类型，如 input、output、power、passive 等
+			wireConnectionX_mil: number;    // 引脚导线连接点 X 坐标，单位 mil，用于连线分析
+			wireConnectionY_mil: number;    // 引脚导线连接点 Y 坐标，单位 mil，用于连线分析
+			orientationDeg: number;         // 引脚朝向角度，单位：度，表示引脚伸出方向
+			pinLength_mil: number;          // 引脚长度，单位 mil
+			hasNoConnectMark: boolean;      // 是否放置了 No Connect 标记（X），true 表示该引脚不参与任何连线
 		}>;
 	}> = [];
 
@@ -77,40 +77,40 @@ async function extractSchematicTopology(root: any, safeCall: SchematicTopologySc
 		}
 
 		const pins: Array<{
-			primitiveId: string;
-			pinName: string;
-			pinNumber: string;
-			pinType: string;
-			x: number;
-			y: number;
-			rotation: number;
-			pinLength: number;
-			noConnected: boolean;
+			pinInstanceId: string;          // 引脚实例 ID，唯一标识该引脚
+			pinSignalName: string;          // 引脚信号名称，如 VCC、GND、PA0
+			pinPadNumber: string;           // 引脚编号，与封装焊盘编号对应，如 1、2、A1
+			pinElectricalType: string;      // 引脚电气类型，如 input、output、power、passive 等
+			wireConnectionX_mil: number;    // 引脚导线连接点 X 坐标，单位 mil，用于连线分析
+			wireConnectionY_mil: number;    // 引脚导线连接点 Y 坐标，单位 mil，用于连线分析
+			orientationDeg: number;         // 引脚朝向角度，单位：度，表示引脚伸出方向
+			pinLength_mil: number;          // 引脚长度，单位 mil
+			hasNoConnectMark: boolean;      // 是否放置了 No Connect 标记（X），true 表示该引脚不参与任何连线
 		}> = [];
 		for (const rawPin of Array.isArray(pinsRaw) ? pinsRaw : []) {
 			pins.push({
-				primitiveId: sg<string>(rawPin, 'getState_PrimitiveId', ''),
-				pinName: sg<string>(rawPin, 'getState_PinName', ''),
-				pinNumber: sg<string>(rawPin, 'getState_PinNumber', ''),
-				pinType: sg<string>(rawPin, 'getState_PinType', ''),
-				x: sg<number>(rawPin, 'getState_X', 0),
-				y: sg<number>(rawPin, 'getState_Y', 0),
-				rotation: sg<number>(rawPin, 'getState_Rotation', 0),
-				pinLength: sg<number>(rawPin, 'getState_PinLength', 0),
-				noConnected: sg<boolean>(rawPin, 'getState_NoConnected', false),
+				pinInstanceId: sg<string>(rawPin, 'getState_PrimitiveId', ''),
+				pinSignalName: sg<string>(rawPin, 'getState_PinName', ''),
+				pinPadNumber: sg<string>(rawPin, 'getState_PinNumber', ''),
+				pinElectricalType: sg<string>(rawPin, 'getState_PinType', ''),
+				wireConnectionX_mil: sg<number>(rawPin, 'getState_X', 0),
+				wireConnectionY_mil: sg<number>(rawPin, 'getState_Y', 0),
+				orientationDeg: sg<number>(rawPin, 'getState_Rotation', 0),
+				pinLength_mil: sg<number>(rawPin, 'getState_PinLength', 0),
+				hasNoConnectMark: sg<boolean>(rawPin, 'getState_NoConnected', false),
 			});
 		}
 
 		components.push({
-			primitiveId,
-			reference,
-			name: sg<string>(rawComponent, 'getState_Name', ''),
-			x: sg<number>(rawComponent, 'getState_X', 0),
-			y: sg<number>(rawComponent, 'getState_Y', 0),
-			rotation: sg<number>(rawComponent, 'getState_Rotation', 0),
-			mirror: sg<boolean>(rawComponent, 'getState_Mirror', false),
-			footprintUuid,
-			subPartName: sg<string>(rawComponent, 'getState_SubPartName', ''),
+			componentInstanceId: primitiveId,
+			designator: reference,
+			symbolName: sg<string>(rawComponent, 'getState_Name', ''),
+			centerX_mil: sg<number>(rawComponent, 'getState_X', 0),
+			centerY_mil: sg<number>(rawComponent, 'getState_Y', 0),
+			rotationDeg: sg<number>(rawComponent, 'getState_Rotation', 0),
+			isMirroredHorizontally: sg<boolean>(rawComponent, 'getState_Mirror', false),
+			pcbFootprintUuid: footprintUuid,
+			schematicSubPartName: sg<string>(rawComponent, 'getState_SubPartName', ''),
 			pins,
 		});
 	}
