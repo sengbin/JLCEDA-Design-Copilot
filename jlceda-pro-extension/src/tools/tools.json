@@ -3,7 +3,7 @@
 		"type": "function",
 		"function": {
 			"name": "jlceda_api_index",
-			"description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。调用任何 EDA API 前必须先调用此工具（第一步）。获取全量可调用 API 索引表，每项包含完整路径（fullName）和功能描述（summary）。从索引中锁定目标 API 路径后，再依次执行第二步（jlceda_api_search 查询完整签名）和第三步（jlceda_api_invoke 执行调用）。禁止跳过此步骤直接调用 API。",
+			"description": "查询可调用 EDA API 索引。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -20,7 +20,7 @@
 		"type": "function",
 		"function": {
 			"name": "jlceda_api_search",
-			"description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。API 调用流程第二步。必须在 jlceda_api_index 返回索引并确认目标 API 路径后，调用此工具查询该路径的完整参数签名（signatureText）。禁止在未执行第一步前直接检索。使用 scope=callable 并结合 owner 缩小范围；查询到签名后，才可进入第三步 jlceda_api_invoke 执行调用。",
+			"description": "检索 EDA API 签名与说明。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -51,7 +51,7 @@
 		"type": "function",
 		"function": {
 			"name": "jlceda_context_get",
-			"description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。读取当前 EDA 运行时上下文快照，包括工程、文档、图页与选区信息。",
+			"description": "获取当前 EDA 运行时上下文。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -68,7 +68,7 @@
 		"type": "function",
 		"function": {
 			"name": "jlceda_api_invoke",
-			"description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。API 调用流程第三步（最终执行步骤）。必须严格在第一步（jlceda_api_index 已返回含目标路径的索引）和第二步（jlceda_api_search 已确认完整参数签名）全部完成后，才能调用此工具。禁止跳过任意步骤直接执行 API。将参数数组序列化为 JSON 字符串在 args 中传入，无参数时传 \"[]\"。",
+			"description": "调用指定的 EDA API。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -90,7 +90,7 @@
 		"type": "function",
 		"function": {
 			"name": "schematic_check",
-			"description": "执行原理图完整检查。内部自动完成：① ERC 电气规则检查；② 构建器件布局图（含每个器件的位号、坐标、旋转、镜像、封装，及每个引脚的名称、编号、类型、坐标、方向、引脚长度、连接状态）。无需任何参数。当用户要求检查原理图、分析电路或查看是否有问题时，必须调用此工具，禁止手动分步拼凑检查流程。输出报告按以下结构组织：一、ERC 基础检查；二、元件清单；三、电路功能分析；四、各模块分析；五、连接性检查；六、功能性判断；七、总体结论。",
+			"description": "执行原理图完整检查并返回分析结果。",
 			"parameters": {
 				"type": "object",
 				"properties": {},
@@ -102,7 +102,7 @@
 		"type": "function",
 		"function": {
 			"name": "todo_list",
-			"description": "更新结构化任务列表。用于把任务项展示到聊天输入框上方的独立待办面板，禁止在正文中输出待办列表。",
+			"description": "更新任务面板中的结构化待办列表。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -124,7 +124,7 @@
 		"type": "function",
 		"function": {
 			"name": "component_select",
-			"description": "在 EDA 系统库中搜索候选器件并发起用户交互选型。当用户要求在原理图上放置某类器件时，必须先调用此工具让用户从候选列表中确认具体的器件型号，再凭返回的 uuid 和 libraryUuid 调用 eda.sch_PrimitiveComponent.placeComponentWithMouse 放置。禁止跳过此工具直接放置。用户一旦确认某个候选器件，该结果就是最终结果；即使与 AI 预期不一致，也不得要求用户重新选型或自行改选，除非用户明确要求更换器件。仅对电阻、电容、电感这类带阻值/容值/感值的器件，若关键词包含数值参数则必须带单位符号，例如 1kΩ、100nF、10uH，禁止使用 1k、100n、10u 这类缺少单位的写法。",
+			"description": "搜索候选器件并等待用户确认选型结果。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -146,7 +146,7 @@
 		"type": "function",
 		"function": {
 			"name": "component_place",
-			"description": "在原理图中逐个引导用户交互放置已选定器件。必须传入已经确定好的器件列表，工具会按顺序调用交互式放置 API，并在单个器件放置超时后于当前尝试结束后自动重试 1 次。禁止让模型自己循环调用 jlceda_api_invoke 逐个放置。电源符号和地符号（如 VCC、VDD、+3.3V、+5V、GND、AGND、DGND）禁止通过此工具自动放置，必须由用户手动添加。",
+			"description": "引导用户交互放置已确认的器件列表。",
 			"parameters": {
 				"type": "object",
 				"properties": {
