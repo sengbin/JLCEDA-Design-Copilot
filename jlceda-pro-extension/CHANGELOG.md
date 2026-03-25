@@ -1,5 +1,7 @@
 # 2.4.4 (2026-03-25)
 
+- 变更：原理图检查工具拆分为两个专用工具：`schematic_topology_scan`（ERC + 器件拓扑提取，为自动连线准备数据）和 `schematic_netlist_analyze`（完整网表提取，供 AI 功能性分析）。
+- 新增：`schematic_netlist_analyze` 工具：提取原理图完整网表并配合 AI 系统指令，输出包含电路功能概述、器件选型、电源方案、信号连线、保护可靠性、整体可用性的完整功能性分析报告。
 - 变更：`schematic_check` 返回字段由 `componentLayout` 更名为 `schematicTopology`，避免将功能性检查误解为布局检查。
 - 优化：原理图检查相关内置指令与说明统一改为“原理图拓扑快照”表述，强调连接关系与结构分析语义。
 

@@ -6,7 +6,8 @@ import { createApiSearchHandler } from './api-search';
 import { createComponentPlaceHandler } from './component-place';
 import { createComponentSelectHandler } from './component-select';
 import { createContextGetHandler } from './context-get';
-import { createSchematicCheckHandler } from './schematic-check';
+import { createSchematicNetlistAnalyzeHandler } from './schematic-netlist-analyze';
+import { createSchematicTopologyScanHandler } from './schematic-topology-scan';
 import { createTodoListHandler } from './todo_list';
 
 // 允许暴露给模型并允许执行的工具白名单。
@@ -15,7 +16,8 @@ export const MANUAL_EXPOSED_TOOL_NAMES: string[] = [
 	// 'jlceda_api_search',
 	// 'jlceda_context_get',
 	// 'jlceda_api_invoke',
-	'schematic_check',
+	'schematic_topology_scan',
+	'schematic_netlist_analyze',
 	'todo_list',
 	'component_select',
 	'component_place',
@@ -176,7 +178,10 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 	if (toolName === 'jlceda_api_invoke') {
 		return '{"apiFullName":"eda.sch_Drc.check","args":"[false,false,true]"}';
 	}
-	if (toolName === 'schematic_check') {
+	if (toolName === 'schematic_topology_scan') {
+		return '{}';
+	}
+	if (toolName === 'schematic_netlist_analyze') {
 		return '{}';
 	}
 	if (toolName === 'todo_list') {
@@ -314,11 +319,17 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 			}
 			return await runtimeObject.handleInvokeTask(handlerArgs);
 		},
-		async schematic_check(handlerArgs?: unknown): Promise<unknown> {
-			if (typeof runtimeObject.handleSchematicCheckTask !== 'function') {
-				return { ok: false, error: 'schematic_check 处理器未初始化。' };
+		async schematic_topology_scan(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleSchematicTopologyScanTask !== 'function') {
+				return { ok: false, error: 'schematic_topology_scan 处理器未初始化。' };
 			}
-			return await runtimeObject.handleSchematicCheckTask(handlerArgs);
+			return await runtimeObject.handleSchematicTopologyScanTask(handlerArgs);
+		},
+		async schematic_netlist_analyze(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleSchematicNetlistAnalyzeTask !== 'function') {
+				return { ok: false, error: 'schematic_netlist_analyze 处理器未初始化。' };
+			}
+			return await runtimeObject.handleSchematicNetlistAnalyzeTask(handlerArgs);
 		},
 		async todo_list(handlerArgs?: unknown): Promise<unknown> {
 			if (typeof runtimeObject.handleTodoListTask !== 'function') {
@@ -404,7 +415,8 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 	const { handleApiSearchTask } = createApiSearchHandler(runtimeWindow || window);
 	const { handleContextTask } = createContextGetHandler(runtimeWindow || window, deps);
 	const { handleInvokeTask, resolveApiMemberInAnyRoot } = createApiInvokeHandler(runtimeWindow || window, deps);
-	const { handleSchematicCheckTask } = createSchematicCheckHandler(runtimeWindow || window, deps);
+	const { handleSchematicTopologyScanTask } = createSchematicTopologyScanHandler(runtimeWindow || window, deps);
+	const { handleSchematicNetlistAnalyzeTask } = createSchematicNetlistAnalyzeHandler(runtimeWindow || window, deps);
 	const { handleTodoListTask } = createTodoListHandler();
 	const { handleComponentSelectTask } = createComponentSelectHandler(runtimeWindow || window);
 	const { handleComponentPlaceTask } = createComponentPlaceHandler();
@@ -443,9 +455,17 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 				return { ok: false, error: toSafeErrorMessage(error) };
 			}
 		},
-		handleSchematicCheckTask: async (payload?: unknown) => {
+		handleSchematicTopologyScanTask: async (payload?: unknown) => {
 			try {
-				return await handleSchematicCheckTask(payload);
+				return await handleSchematicTopologyScanTask(payload);
+			}
+			catch (error: unknown) {
+				return { ok: false, error: toSafeErrorMessage(error) };
+			}
+		},
+		handleSchematicNetlistAnalyzeTask: async (payload?: unknown) => {
+			try {
+				return await handleSchematicNetlistAnalyzeTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };

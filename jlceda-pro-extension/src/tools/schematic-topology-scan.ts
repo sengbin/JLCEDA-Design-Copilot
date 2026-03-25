@@ -1,8 +1,18 @@
-// 文件说明：原理图检查工具 —— 固定执行 ERC + 原理图拓扑快照提取，将结果返回给 AI 分析。
+/**
+ * ------------------------------------------------------------------------
+ * 名称：原理图拓扑扫描工具
+ * 说明：提取当前原理图器件拓扑信息（含坐标、引脚详情），为自动连线分析提供数据基础。
+ * 作者：Lion
+ * 邮箱：chengbin@3578.cn
+ * 日期：2026-03-25
+ * 备注：无
+ * ------------------------------------------------------------------------
+ */
+
 import { getEdaApiRoot } from '../utils';
 
 // 依赖接口：由 executor 注入，避免循环引用。
-export interface SchematicCheckDeps {
+export interface SchematicTopologyScanDeps {
 	safeCall: (executor: () => unknown | Promise<unknown>) => Promise<unknown>;
 }
 
@@ -20,7 +30,7 @@ function sg<T>(obj: unknown, method: string, fallback: T): T {
 }
 
 // 按当前原理图器件图元构建原理图拓扑快照，包含连线分析所需的器件、引脚与几何信息。
-async function extractSchematicTopology(root: any, safeCall: SchematicCheckDeps['safeCall']): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
+async function extractSchematicTopology(root: any, safeCall: SchematicTopologyScanDeps['safeCall']): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
 	const componentListRaw = await safeCall(() => root.sch_PrimitiveComponent.getAll(undefined, true));
 	if (!Array.isArray(componentListRaw)) {
 		return { ok: false, error: '器件列表获取失败，sch_PrimitiveComponent.getAll 未返回数组。' };
@@ -109,44 +119,34 @@ async function extractSchematicTopology(root: any, safeCall: SchematicCheckDeps[
 }
 
 /**
- * 创建原理图检查处理器。
+ * 创建原理图拓扑扫描处理器。
  * @param runtimeWindow - 运行时窗口对象。
  * @param deps - 注入的工具依赖。
- * @returns 原理图检查处理器。
+ * @returns 原理图拓扑扫描处理器。
  */
-export function createSchematicCheckHandler(runtimeWindow: Window, deps: SchematicCheckDeps): {
-	handleSchematicCheckTask: (payload: unknown) => Promise<unknown>;
+export function createSchematicTopologyScanHandler(runtimeWindow: Window, deps: SchematicTopologyScanDeps): {
+	handleSchematicTopologyScanTask: (payload: unknown) => Promise<unknown>;
 } {
 	const { safeCall } = deps;
 
-	// 执行原理图检查主流程。
-	async function handleSchematicCheckTask(_payload: unknown): Promise<unknown> {
+	// 构建原理图拓扑快照，包含连线分析所需的器件与引脚信息。
+	async function handleSchematicTopologyScanTask(_payload: unknown): Promise<unknown> {
 		const rootUnknown: unknown = getEdaApiRoot(runtimeWindow);
 		if (!rootUnknown || (typeof rootUnknown !== 'object' && typeof rootUnknown !== 'function')) {
 			return { ok: false, error: '当前环境未检测到 EDA API 对象。' };
 		}
 		const root: any = rootUnknown;
 
-		// 第一步：ERC 电气规则检查。
-		const ercRaw = await safeCall(() => root.sch_Drc.check(false, false, true));
-		const ercPassed = ercRaw === true;
-
-		// 第二步：构建原理图拓扑快照，包含连线分析所需的器件与引脚信息。
 		const extracted = await extractSchematicTopology(root, safeCall);
 		if (!extracted.ok) {
-			return {
-				ok: false,
-				error: extracted.error,
-				erc: { passed: ercPassed, rawResult: ercRaw },
-			};
+			return { ok: false, error: extracted.error };
 		}
 
 		return {
 			ok: true,
-			erc: { passed: ercPassed, rawResult: ercRaw },
 			schematicTopology: extracted.data,
 		};
 	}
 
-	return { handleSchematicCheckTask };
+	return { handleSchematicTopologyScanTask };
 }

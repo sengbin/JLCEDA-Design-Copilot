@@ -89,8 +89,20 @@
 	{
 		"type": "function",
 		"function": {
-			"name": "schematic_check",
-			"description": "执行原理图完整检查并返回分析结果。",
+			"name": "schematic_topology_scan",
+			"description": "提取原理图器件拓扑信息（含坐标、引脚详情），为连线分析提供数据基础。",
+			"parameters": {
+				"type": "object",
+				"properties": {},
+				"additionalProperties": false
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "schematic_netlist_analyze",
+			"description": "提取原理图完整网表，返回网络连接关系，供 AI 进行功能性审查与电路分析。",
 			"parameters": {
 				"type": "object",
 				"properties": {},
