@@ -1,3 +1,8 @@
+# 2.4.3 (2026-03-25)
+
+- 优化：工具定义中的 `description` 调整为简短功能介绍，避免与系统指令中的调用约束重复。
+- 优化：已暴露工具的调用约束统一写入内置系统指令，覆盖 `todo_list`、`schematic_check`、`component_select`、`component_place`。
+
 # 2.4.2 (2026-03-25)
 
 - 变更：API 查询与调用工具（`jlceda_api_index`、`jlceda_api_search`、`jlceda_context_get`、`jlceda_api_invoke`）已实现但暂未对模型暴露，作为托底工具预留，后续按需启用。
