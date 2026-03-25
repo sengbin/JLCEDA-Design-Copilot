@@ -1,4 +1,4 @@
-// 文件说明：原理图检查工具 —— 固定执行 ERC + 器件布局图提取，将结果返回给 AI 分析。
+// 文件说明：原理图检查工具 —— 固定执行 ERC + 原理图拓扑快照提取，将结果返回给 AI 分析。
 import { getEdaApiRoot } from '../utils';
 
 // 依赖接口：由 executor 注入，避免循环引用。
@@ -19,8 +19,8 @@ function sg<T>(obj: unknown, method: string, fallback: T): T {
 	return fallback;
 }
 
-// 按当前原理图器件图元构建器件布局图，包含连线所需的全量坐标、旋转、引脚类型与连接状态。
-async function extractComponentLayout(root: any, safeCall: SchematicCheckDeps['safeCall']): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
+// 按当前原理图器件图元构建原理图拓扑快照，包含连线分析所需的器件、引脚与几何信息。
+async function extractSchematicTopology(root: any, safeCall: SchematicCheckDeps['safeCall']): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
 	const componentListRaw = await safeCall(() => root.sch_PrimitiveComponent.getAll(undefined, true));
 	if (!Array.isArray(componentListRaw)) {
 		return { ok: false, error: '器件列表获取失败，sch_PrimitiveComponent.getAll 未返回数组。' };
@@ -131,8 +131,8 @@ export function createSchematicCheckHandler(runtimeWindow: Window, deps: Schemat
 		const ercRaw = await safeCall(() => root.sch_Drc.check(false, false, true));
 		const ercPassed = ercRaw === true;
 
-		// 第二步：构建器件布局图，包含连线所需的全量坐标与引脚信息。
-		const extracted = await extractComponentLayout(root, safeCall);
+		// 第二步：构建原理图拓扑快照，包含连线分析所需的器件与引脚信息。
+		const extracted = await extractSchematicTopology(root, safeCall);
 		if (!extracted.ok) {
 			return {
 				ok: false,
@@ -144,7 +144,7 @@ export function createSchematicCheckHandler(runtimeWindow: Window, deps: Schemat
 		return {
 			ok: true,
 			erc: { passed: ercPassed, rawResult: ercRaw },
-			componentLayout: extracted.data,
+			schematicTopology: extracted.data,
 		};
 	}
 
