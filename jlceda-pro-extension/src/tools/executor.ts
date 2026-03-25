@@ -11,10 +11,10 @@ import { createTodoListHandler } from './todo_list';
 
 // 允许暴露给模型并允许执行的工具白名单。
 export const MANUAL_EXPOSED_TOOL_NAMES: string[] = [
-	'jlceda_api_index',
-	'jlceda_api_search',
-	'jlceda_context_get',
-	'jlceda_api_invoke',
+	// 'jlceda_api_index',
+	// 'jlceda_api_search',
+	// 'jlceda_context_get',
+	// 'jlceda_api_invoke',
 	'schematic_check',
 	'todo_list',
 	'component_select',
