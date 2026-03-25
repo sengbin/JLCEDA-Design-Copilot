@@ -1,7 +1,7 @@
 # 2.4.4 (2026-03-25)
 
-- 变更：原理图检查工具拆分为两个专用工具：`schematic_topology_scan`（ERC + 器件拓扑提取，为自动连线准备数据）和 `schematic_netlist_analyze`（完整网表提取，供 AI 功能性分析）。
-- 新增：`schematic_netlist_analyze` 工具：提取原理图完整网表并配合 AI 系统指令，输出包含电路功能概述、器件选型、电源方案、信号连线、保护可靠性、整体可用性的完整功能性分析报告。
+- 变更：原理图检查工具拆分为两个专用工具：`schematic_topology`（ERC + 器件拓扑提取，为自动连线准备数据）和 `schematic_netlist`（完整网表提取，供 AI 功能性分析）。
+- 新增：`schematic_netlist` 工具：提取原理图完整网表并配合 AI 系统指令，输出包含电路功能概述、器件选型、电源方案、信号连线、保护可靠性、整体可用性的完整功能性分析报告。
 - 变更：`schematic_check` 返回字段由 `componentLayout` 更名为 `schematicTopology`，避免将功能性检查误解为布局检查。
 - 优化：原理图检查相关内置指令与说明统一改为“原理图拓扑快照”表述，强调连接关系与结构分析语义。
 
@@ -12,9 +12,9 @@
 
 # 2.4.2 (2026-03-25)
 
-- 变更：API 查询与调用工具（`jlceda_api_index`、`jlceda_api_search`、`jlceda_context_get`、`jlceda_api_invoke`）已实现但暂未对模型暴露，作为托底工具预留，后续按需启用。
+- 变更：API 查询与调用工具（`api_index`、`api_search`、`eda_context`、`api_invoke`）已实现但暂未对模型暴露，作为托底工具预留，后续按需启用。
 - 优化：工具优先级规则：原理图检查、器件选型、器件放置为高优先级专用工具，API 工具为托底工具，仅在专用工具均无法满足需求时才允许使用。
-- 优化：新增 API 调用三步顺序强制规则：必须先用 `jlceda_api_index` 获取索引，再用 `jlceda_api_search` 确认签名，最后才能用 `jlceda_api_invoke` 执行调用，禁止跳过任意步骤。
+- 优化：新增 API 调用三步顺序强制规则：必须先用 `api_index` 获取索引，再用 `api_search` 确认签名，最后才能用 `api_invoke` 执行调用，禁止跳过任意步骤。
 
 # 2.4.1 (2026-03-24)
 
