@@ -2,7 +2,7 @@
 import { getEdaApiRoot } from '../utils';
 
 // 依赖接口：由 executor 注入，避免循环引用。
-export interface ContextGetDeps {
+export interface EdaContextDeps {
 	safeCall: (executor: () => unknown | Promise<unknown>) => Promise<unknown>;
 	toSerializableAsync: (value: unknown, depth?: number, seen?: WeakSet<object>) => Promise<unknown>;
 }
@@ -13,8 +13,8 @@ export interface ContextGetDeps {
  * @param deps - 注入的序列化工具依赖。
  * @returns 上下文查询处理器。
  */
-export function createContextGetHandler(runtimeWindow: Window, deps: ContextGetDeps): {
-	handleContextTask: (payload: unknown) => Promise<unknown>;
+export function createEdaContextHandler(runtimeWindow: Window, deps: EdaContextDeps): {
+	handleEdaContextTask: (payload: unknown) => Promise<unknown>;
 } {
 	const { safeCall, toSerializableAsync } = deps;
 
@@ -52,12 +52,12 @@ export function createContextGetHandler(runtimeWindow: Window, deps: ContextGetD
 	}
 
 	// 处理上下文查询工具。
-	async function handleContextTask(payload: unknown): Promise<unknown> {
+	async function handleEdaContextTask(payload: unknown): Promise<unknown> {
 		const scope: any = payload && typeof payload === 'object' && !Array.isArray(payload)
 			? String((payload as any).scope ?? '').trim()
 			: '';
 		return await buildContextSnapshot(scope);
 	}
 
-	return { handleContextTask };
+	return { handleEdaContextTask };
 }

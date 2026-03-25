@@ -12,7 +12,7 @@
 import { getEdaApiRoot } from '../utils';
 
 // 依赖接口：由 executor 注入，避免循环引用。
-export interface SchematicTopologyScanDeps {
+export interface SchematicTopologyDeps {
 	safeCall: (executor: () => unknown | Promise<unknown>) => Promise<unknown>;
 }
 
@@ -30,32 +30,32 @@ function sg<T>(obj: unknown, method: string, fallback: T): T {
 }
 
 // 按当前原理图器件图元构建原理图拓扑快照，包含连线分析所需的器件、引脚与几何信息。
-async function extractSchematicTopology(root: any, safeCall: SchematicTopologyScanDeps['safeCall']): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
+async function extractSchematicTopology(root: any, safeCall: SchematicTopologyDeps['safeCall']): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
 	const componentListRaw = await safeCall(() => root.sch_PrimitiveComponent.getAll(undefined, true));
 	if (!Array.isArray(componentListRaw)) {
 		return { ok: false, error: '器件列表获取失败，sch_PrimitiveComponent.getAll 未返回数组。' };
 	}
 
 	const components: Array<{
-		componentInstanceId: string;     // 器件实例 ID，唯一标识当前原理图中的该器件实例
-		designator: string;              // 位号，如 R1、C1、U1
-		symbolName: string;              // 原理图符号名称
-		centerX_mil: number;             // 器件中心点 X 坐标，单位 mil，原理图坐标系
-		centerY_mil: number;             // 器件中心点 Y 坐标，单位 mil，原理图坐标系
-		rotationDeg: number;             // 旋转角度，单位：度，顺时针为正
+		componentInstanceId: string; // 器件实例 ID，唯一标识当前原理图中的该器件实例
+		designator: string; // 位号，如 R1、C1、U1
+		symbolName: string; // 原理图符号名称
+		centerX_mil: number; // 器件中心点 X 坐标，单位 mil，原理图坐标系
+		centerY_mil: number; // 器件中心点 Y 坐标，单位 mil，原理图坐标系
+		rotationDeg: number; // 旋转角度，单位：度，顺时针为正
 		isMirroredHorizontally: boolean; // 是否水平镜像
-		pcbFootprintUuid: string;        // 对应 PCB 封装的 UUID
-		schematicSubPartName: string;    // 多子件器件中的当前子件名称，单子件器件为空
+		pcbFootprintUuid: string; // 对应 PCB 封装的 UUID
+		schematicSubPartName: string; // 多子件器件中的当前子件名称，单子件器件为空
 		pins: Array<{
-			pinInstanceId: string;          // 引脚实例 ID，唯一标识该引脚
-			pinSignalName: string;          // 引脚信号名称，如 VCC、GND、PA0
-			pinPadNumber: string;           // 引脚编号，与封装焊盘编号对应，如 1、2、A1
-			pinElectricalType: string;      // 引脚电气类型，如 input、output、power、passive 等
-			wireConnectionX_mil: number;    // 引脚导线连接点 X 坐标，单位 mil，用于连线分析
-			wireConnectionY_mil: number;    // 引脚导线连接点 Y 坐标，单位 mil，用于连线分析
-			orientationDeg: number;         // 引脚朝向角度，单位：度，表示引脚伸出方向
-			pinLength_mil: number;          // 引脚长度，单位 mil
-			hasNoConnectMark: boolean;      // 是否放置了 No Connect 标记（X），true 表示该引脚不参与任何连线
+			pinInstanceId: string; // 引脚实例 ID，唯一标识该引脚
+			pinSignalName: string; // 引脚信号名称，如 VCC、GND、PA0
+			pinPadNumber: string; // 引脚编号，与封装焊盘编号对应，如 1、2、A1
+			pinElectricalType: string; // 引脚电气类型，如 input、output、power、passive 等
+			wireConnectionX_mil: number; // 引脚导线连接点 X 坐标，单位 mil，用于连线分析
+			wireConnectionY_mil: number; // 引脚导线连接点 Y 坐标，单位 mil，用于连线分析
+			orientationDeg: number; // 引脚朝向角度，单位：度，表示引脚伸出方向
+			pinLength_mil: number; // 引脚长度，单位 mil
+			hasNoConnectMark: boolean; // 是否放置了 No Connect 标记（X），true 表示该引脚不参与任何连线
 		}>;
 	}> = [];
 
@@ -77,15 +77,15 @@ async function extractSchematicTopology(root: any, safeCall: SchematicTopologySc
 		}
 
 		const pins: Array<{
-			pinInstanceId: string;          // 引脚实例 ID，唯一标识该引脚
-			pinSignalName: string;          // 引脚信号名称，如 VCC、GND、PA0
-			pinPadNumber: string;           // 引脚编号，与封装焊盘编号对应，如 1、2、A1
-			pinElectricalType: string;      // 引脚电气类型，如 input、output、power、passive 等
-			wireConnectionX_mil: number;    // 引脚导线连接点 X 坐标，单位 mil，用于连线分析
-			wireConnectionY_mil: number;    // 引脚导线连接点 Y 坐标，单位 mil，用于连线分析
-			orientationDeg: number;         // 引脚朝向角度，单位：度，表示引脚伸出方向
-			pinLength_mil: number;          // 引脚长度，单位 mil
-			hasNoConnectMark: boolean;      // 是否放置了 No Connect 标记（X），true 表示该引脚不参与任何连线
+			pinInstanceId: string; // 引脚实例 ID，唯一标识该引脚
+			pinSignalName: string; // 引脚信号名称，如 VCC、GND、PA0
+			pinPadNumber: string; // 引脚编号，与封装焊盘编号对应，如 1、2、A1
+			pinElectricalType: string; // 引脚电气类型，如 input、output、power、passive 等
+			wireConnectionX_mil: number; // 引脚导线连接点 X 坐标，单位 mil，用于连线分析
+			wireConnectionY_mil: number; // 引脚导线连接点 Y 坐标，单位 mil，用于连线分析
+			orientationDeg: number; // 引脚朝向角度，单位：度，表示引脚伸出方向
+			pinLength_mil: number; // 引脚长度，单位 mil
+			hasNoConnectMark: boolean; // 是否放置了 No Connect 标记（X），true 表示该引脚不参与任何连线
 		}> = [];
 		for (const rawPin of Array.isArray(pinsRaw) ? pinsRaw : []) {
 			pins.push({
@@ -124,13 +124,13 @@ async function extractSchematicTopology(root: any, safeCall: SchematicTopologySc
  * @param deps - 注入的工具依赖。
  * @returns 原理图拓扑扫描处理器。
  */
-export function createSchematicTopologyScanHandler(runtimeWindow: Window, deps: SchematicTopologyScanDeps): {
-	handleSchematicTopologyScanTask: (payload: unknown) => Promise<unknown>;
+export function createSchematicTopologyHandler(runtimeWindow: Window, deps: SchematicTopologyDeps): {
+	handleSchematicTopologyTask: (payload: unknown) => Promise<unknown>;
 } {
 	const { safeCall } = deps;
 
 	// 构建原理图拓扑快照，包含连线分析所需的器件与引脚信息。
-	async function handleSchematicTopologyScanTask(_payload: unknown): Promise<unknown> {
+	async function handleSchematicTopologyTask(_payload: unknown): Promise<unknown> {
 		const rootUnknown: unknown = getEdaApiRoot(runtimeWindow);
 		if (!rootUnknown || (typeof rootUnknown !== 'object' && typeof rootUnknown !== 'function')) {
 			return { ok: false, error: '当前环境未检测到 EDA API 对象。' };
@@ -148,5 +148,5 @@ export function createSchematicTopologyScanHandler(runtimeWindow: Window, deps: 
 		};
 	}
 
-	return { handleSchematicTopologyScanTask };
+	return { handleSchematicTopologyTask };
 }

@@ -2,7 +2,7 @@
 	{
 		"type": "function",
 		"function": {
-			"name": "jlceda_api_index",
+			"name": "api_index",
 			"description": "查询可调用 EDA API 索引。",
 			"parameters": {
 				"type": "object",
@@ -19,7 +19,7 @@
 	{
 		"type": "function",
 		"function": {
-			"name": "jlceda_api_search",
+			"name": "api_search",
 			"description": "检索 EDA API 签名与说明。",
 			"parameters": {
 				"type": "object",
@@ -50,7 +50,7 @@
 	{
 		"type": "function",
 		"function": {
-			"name": "jlceda_context_get",
+			"name": "eda_context",
 			"description": "获取当前 EDA 运行时上下文。",
 			"parameters": {
 				"type": "object",
@@ -67,7 +67,7 @@
 	{
 		"type": "function",
 		"function": {
-			"name": "jlceda_api_invoke",
+			"name": "api_invoke",
 			"description": "调用指定的 EDA API。",
 			"parameters": {
 				"type": "object",
@@ -89,7 +89,7 @@
 	{
 		"type": "function",
 		"function": {
-			"name": "schematic_topology_scan",
+			"name": "schematic_topology",
 			"description": "提取原理图器件拓扑信息（含坐标、引脚详情），为连线分析提供数据基础。",
 			"parameters": {
 				"type": "object",
@@ -101,7 +101,7 @@
 	{
 		"type": "function",
 		"function": {
-			"name": "schematic_netlist_analyze",
+			"name": "schematic_netlist",
 			"description": "提取原理图完整网表，返回网络连接关系，供 AI 进行功能性审查与电路分析。",
 			"parameters": {
 				"type": "object",

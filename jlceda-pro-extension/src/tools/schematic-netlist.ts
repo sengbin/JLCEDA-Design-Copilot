@@ -12,12 +12,12 @@
 import { getEdaApiRoot } from '../utils';
 
 // 依赖接口：由 executor 注入，避免循环引用。
-export interface SchematicNetlistAnalyzeDeps {
+export interface SchematicNetlistDeps {
 	safeCall: (executor: () => unknown | Promise<unknown>) => Promise<unknown>;
 }
 
 // 获取完整网表文本，供 AI 功能性分析使用。
-async function extractNetlistText(root: any, safeCall: SchematicNetlistAnalyzeDeps['safeCall']): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
+async function extractNetlistText(root: any, safeCall: SchematicNetlistDeps['safeCall']): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
 	const netlistFileRaw = await safeCall(() => root.sch_ManufactureData.getNetlistFile());
 	if (!netlistFileRaw || typeof netlistFileRaw !== 'object') {
 		return { ok: false, error: '网表文件获取失败，getNetlistFile 返回空值。' };
@@ -37,13 +37,13 @@ async function extractNetlistText(root: any, safeCall: SchematicNetlistAnalyzeDe
  * @param deps - 注入的工具依赖。
  * @returns 原理图网表分析处理器。
  */
-export function createSchematicNetlistAnalyzeHandler(runtimeWindow: Window, deps: SchematicNetlistAnalyzeDeps): {
-	handleSchematicNetlistAnalyzeTask: (payload: unknown) => Promise<unknown>;
+export function createSchematicNetlistHandler(runtimeWindow: Window, deps: SchematicNetlistDeps): {
+	handleSchematicNetlistTask: (payload: unknown) => Promise<unknown>;
 } {
 	const { safeCall } = deps;
 
 	// 执行 ERC 检查并提取完整网表，供 AI 进行功能性分析。
-	async function handleSchematicNetlistAnalyzeTask(_payload: unknown): Promise<unknown> {
+	async function handleSchematicNetlistTask(_payload: unknown): Promise<unknown> {
 		const rootUnknown: unknown = getEdaApiRoot(runtimeWindow);
 		if (!rootUnknown || (typeof rootUnknown !== 'object' && typeof rootUnknown !== 'function')) {
 			return { ok: false, error: '当前环境未检测到 EDA API 对象。' };
@@ -71,5 +71,5 @@ export function createSchematicNetlistAnalyzeHandler(runtimeWindow: Window, deps
 		};
 	}
 
-	return { handleSchematicNetlistAnalyzeTask };
+	return { handleSchematicNetlistTask };
 }

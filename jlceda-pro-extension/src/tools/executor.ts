@@ -5,19 +5,19 @@ import { createApiInvokeHandler } from './api-invoke';
 import { createApiSearchHandler } from './api-search';
 import { createComponentPlaceHandler } from './component-place';
 import { createComponentSelectHandler } from './component-select';
-import { createContextGetHandler } from './context-get';
-import { createSchematicNetlistAnalyzeHandler } from './schematic-netlist-analyze';
-import { createSchematicTopologyScanHandler } from './schematic-topology-scan';
+import { createEdaContextHandler } from './eda-context';
+import { createSchematicNetlistHandler } from './schematic-netlist';
+import { createSchematicTopologyHandler } from './schematic-topology';
 import { createTodoListHandler } from './todo_list';
 
 // 允许暴露给模型并允许执行的工具白名单。
 export const MANUAL_EXPOSED_TOOL_NAMES: string[] = [
-	// 'jlceda_api_index',
-	// 'jlceda_api_search',
-	// 'jlceda_context_get',
-	// 'jlceda_api_invoke',
-	'schematic_topology_scan',
-	'schematic_netlist_analyze',
+	// 'api_index',
+	// 'api_search',
+	// 'eda_context',
+	// 'api_invoke',
+	'schematic_topology',
+	'schematic_netlist',
 	'todo_list',
 	'component_select',
 	'component_place',
@@ -166,22 +166,22 @@ function normalizeRawToolArgumentsText(rawArguments?: any): string {
 
 // 根据工具名返回参数格式提示。
 function buildExpectedArgumentsFormat(toolName: string): string {
-	if (toolName === 'jlceda_api_index') {
+	if (toolName === 'api_index') {
 		return '{"owner":"sch"}';
 	}
-	if (toolName === 'jlceda_api_search') {
+	if (toolName === 'api_search') {
 		return '{"query":"bom","scope":"callable","owner":"sch","limit":10}';
 	}
-	if (toolName === 'jlceda_context_get') {
+	if (toolName === 'eda_context') {
 		return '{"scope":"sch"}';
 	}
-	if (toolName === 'jlceda_api_invoke') {
+	if (toolName === 'api_invoke') {
 		return '{"apiFullName":"eda.sch_Drc.check","args":"[false,false,true]"}';
 	}
-	if (toolName === 'schematic_topology_scan') {
+	if (toolName === 'schematic_topology') {
 		return '{}';
 	}
-	if (toolName === 'schematic_netlist_analyze') {
+	if (toolName === 'schematic_netlist') {
 		return '{}';
 	}
 	if (toolName === 'todo_list') {
@@ -210,7 +210,7 @@ function normalizeParsedToolArguments(toolName: string, sourceArgs: unknown): {
 		changed = true;
 	}
 
-	if (toolName === 'jlceda_api_search' && isPlainObjectRecord(currentArgs)) {
+	if (toolName === 'api_search' && isPlainObjectRecord(currentArgs)) {
 		const normalized: Record<string, unknown> = { ...currentArgs };
 		if (!String(normalized.query || '').trim()) {
 			const keywordText: any = String(normalized.keyword || '').trim();
@@ -226,7 +226,7 @@ function normalizeParsedToolArguments(toolName: string, sourceArgs: unknown): {
 		return { changed, args: normalized, error: '' };
 	}
 
-	if (toolName !== 'jlceda_api_invoke') {
+	if (toolName !== 'api_invoke') {
 		return { changed, args: currentArgs, error: '' };
 	}
 
@@ -295,41 +295,41 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 
 	const runtimeObject: any = toolRuntime && typeof toolRuntime === 'object' ? toolRuntime : {};
 	const handlerMap: Record<string, (args?: unknown) => Promise<unknown>> = {
-		async jlceda_api_index(handlerArgs?: unknown): Promise<unknown> {
+		async api_index(handlerArgs?: unknown): Promise<unknown> {
 			if (typeof runtimeObject.handleApiIndexTask !== 'function') {
-				return { ok: false, error: 'jlceda_api_index 处理器未初始化。' };
+				return { ok: false, error: 'api_index 处理器未初始化。' };
 			}
 			return await runtimeObject.handleApiIndexTask(handlerArgs);
 		},
-		async jlceda_api_search(handlerArgs?: unknown): Promise<unknown> {
+		async api_search(handlerArgs?: unknown): Promise<unknown> {
 			if (typeof runtimeObject.handleApiSearchTask !== 'function') {
-				return { ok: false, error: 'jlceda_api_search 处理器未初始化。' };
+				return { ok: false, error: 'api_search 处理器未初始化。' };
 			}
 			return await runtimeObject.handleApiSearchTask(handlerArgs);
 		},
-		async jlceda_context_get(handlerArgs?: unknown): Promise<unknown> {
-			if (typeof runtimeObject.handleContextTask !== 'function') {
-				return { ok: false, error: 'jlceda_context_get 处理器未初始化。' };
+		async eda_context(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleEdaContextTask !== 'function') {
+				return { ok: false, error: 'eda_context 处理器未初始化。' };
 			}
-			return await runtimeObject.handleContextTask(handlerArgs);
+			return await runtimeObject.handleEdaContextTask(handlerArgs);
 		},
-		async jlceda_api_invoke(handlerArgs?: unknown): Promise<unknown> {
-			if (typeof runtimeObject.handleInvokeTask !== 'function') {
-				return { ok: false, error: 'jlceda_api_invoke 处理器未初始化。' };
+		async api_invoke(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleApiInvokeTask !== 'function') {
+				return { ok: false, error: 'api_invoke 处理器未初始化。' };
 			}
-			return await runtimeObject.handleInvokeTask(handlerArgs);
+			return await runtimeObject.handleApiInvokeTask(handlerArgs);
 		},
-		async schematic_topology_scan(handlerArgs?: unknown): Promise<unknown> {
-			if (typeof runtimeObject.handleSchematicTopologyScanTask !== 'function') {
-				return { ok: false, error: 'schematic_topology_scan 处理器未初始化。' };
+		async schematic_topology(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleSchematicTopologyTask !== 'function') {
+				return { ok: false, error: 'schematic_topology 处理器未初始化。' };
 			}
-			return await runtimeObject.handleSchematicTopologyScanTask(handlerArgs);
+			return await runtimeObject.handleSchematicTopologyTask(handlerArgs);
 		},
-		async schematic_netlist_analyze(handlerArgs?: unknown): Promise<unknown> {
-			if (typeof runtimeObject.handleSchematicNetlistAnalyzeTask !== 'function') {
-				return { ok: false, error: 'schematic_netlist_analyze 处理器未初始化。' };
+		async schematic_netlist(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleSchematicNetlistTask !== 'function') {
+				return { ok: false, error: 'schematic_netlist 处理器未初始化。' };
 			}
-			return await runtimeObject.handleSchematicNetlistAnalyzeTask(handlerArgs);
+			return await runtimeObject.handleSchematicNetlistTask(handlerArgs);
 		},
 		async todo_list(handlerArgs?: unknown): Promise<unknown> {
 			if (typeof runtimeObject.handleTodoListTask !== 'function') {
@@ -413,10 +413,10 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 	const deps = { safeCall, toSerializableAsync, activeBlobUrls };
 	const { handleApiIndexTask } = createApiIndexHandler();
 	const { handleApiSearchTask } = createApiSearchHandler(runtimeWindow || window);
-	const { handleContextTask } = createContextGetHandler(runtimeWindow || window, deps);
-	const { handleInvokeTask, resolveApiMemberInAnyRoot } = createApiInvokeHandler(runtimeWindow || window, deps);
-	const { handleSchematicTopologyScanTask } = createSchematicTopologyScanHandler(runtimeWindow || window, deps);
-	const { handleSchematicNetlistAnalyzeTask } = createSchematicNetlistAnalyzeHandler(runtimeWindow || window, deps);
+	const { handleEdaContextTask } = createEdaContextHandler(runtimeWindow || window, deps);
+	const { handleApiInvokeTask, resolveApiMemberInAnyRoot } = createApiInvokeHandler(runtimeWindow || window, deps);
+	const { handleSchematicTopologyTask } = createSchematicTopologyHandler(runtimeWindow || window, deps);
+	const { handleSchematicNetlistTask } = createSchematicNetlistHandler(runtimeWindow || window, deps);
 	const { handleTodoListTask } = createTodoListHandler();
 	const { handleComponentSelectTask } = createComponentSelectHandler(runtimeWindow || window);
 	const { handleComponentPlaceTask } = createComponentPlaceHandler();
@@ -439,33 +439,33 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 				return { ok: false, error: toSafeErrorMessage(error) };
 			}
 		},
-		handleContextTask: async (payload?: unknown) => {
+		handleEdaContextTask: async (payload?: unknown) => {
 			try {
-				return await handleContextTask(payload);
+				return await handleEdaContextTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };
 			}
 		},
-		handleInvokeTask: async (payload?: unknown) => {
+		handleApiInvokeTask: async (payload?: unknown) => {
 			try {
-				return await handleInvokeTask(payload);
+				return await handleApiInvokeTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };
 			}
 		},
-		handleSchematicTopologyScanTask: async (payload?: unknown) => {
+		handleSchematicTopologyTask: async (payload?: unknown) => {
 			try {
-				return await handleSchematicTopologyScanTask(payload);
+				return await handleSchematicTopologyTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };
 			}
 		},
-		handleSchematicNetlistAnalyzeTask: async (payload?: unknown) => {
+		handleSchematicNetlistTask: async (payload?: unknown) => {
 			try {
-				return await handleSchematicNetlistAnalyzeTask(payload);
+				return await handleSchematicNetlistTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };

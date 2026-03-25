@@ -174,7 +174,7 @@ export function createApiSearchHandler(runtimeWindow: Window): {
 		const payloadObject: any = payload as any;
 		const query: any = String(payloadObject.query ?? '').trim();
 		if (!query) {
-			throw new Error('jlceda_api_search 缺少 query 参数。');
+			throw new Error('api_search 缺少 query 参数。');
 		}
 		const scope: any = String(payloadObject.scope ?? 'all').trim().toLowerCase();
 		if (!['all', 'callable', 'type'].includes(scope)) {

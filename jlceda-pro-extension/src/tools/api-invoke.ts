@@ -85,7 +85,7 @@ function resolveApiCallable(runtimeWindow: Window, apiFullName: string): {
  * @returns API 调用处理器与路径解析工具。
  */
 export function createApiInvokeHandler(runtimeWindow: Window, deps: ApiInvokeDeps): {
-	handleInvokeTask: (payload: unknown) => Promise<unknown>;
+	handleApiInvokeTask: (payload: unknown) => Promise<unknown>;
 	resolveApiMemberInAnyRoot: (apiPath: string) => { context?: unknown; value?: unknown } | null;
 } {
 	const { toSerializableAsync } = deps;
@@ -130,7 +130,7 @@ export function createApiInvokeHandler(runtimeWindow: Window, deps: ApiInvokeDep
 	}
 
 	// 处理 API 调用工具。
-	async function handleInvokeTask(payload: unknown): Promise<unknown> {
+	async function handleApiInvokeTask(payload: unknown): Promise<unknown> {
 		if (!isPlainObjectRecord(payload)) {
 			throw new Error('invoke 任务参数必须为对象。');
 		}
@@ -147,5 +147,5 @@ export function createApiInvokeHandler(runtimeWindow: Window, deps: ApiInvokeDep
 		};
 	}
 
-	return { handleInvokeTask, resolveApiMemberInAnyRoot };
+	return { handleApiInvokeTask, resolveApiMemberInAnyRoot };
 }
