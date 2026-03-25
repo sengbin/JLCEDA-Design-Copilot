@@ -3,7 +3,7 @@
 		"type": "function",
 		"function": {
 			"name": "jlceda_api_index",
-			"description": "获取全量可调用 API 索引表，每项包含完整路径（fullName）和功能描述（summary）。需要调用 EDA API 时，应优先调用此工具获取索引，快速锁定目标 API 路径，再通过 jlceda_api_search 获取完整签名。",
+			"description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。调用任何 EDA API 前必须先调用此工具（第一步）。获取全量可调用 API 索引表，每项包含完整路径（fullName）和功能描述（summary）。从索引中锁定目标 API 路径后，再依次执行第二步（jlceda_api_search 查询完整签名）和第三步（jlceda_api_invoke 执行调用）。禁止跳过此步骤直接调用 API。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -20,7 +20,7 @@
 		"type": "function",
 		"function": {
 			"name": "jlceda_api_search",
-			"description": "在扩展离线 API 文档中检索可调用 API。建议先使用 scope=callable，并结合 owner 缩小范围。",
+			"description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。API 调用流程第二步。必须在 jlceda_api_index 返回索引并确认目标 API 路径后，调用此工具查询该路径的完整参数签名（signatureText）。禁止在未执行第一步前直接检索。使用 scope=callable 并结合 owner 缩小范围；查询到签名后，才可进入第三步 jlceda_api_invoke 执行调用。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -30,7 +30,8 @@
 					},
 					"scope": {
 						"type": "string",
-						"description": "检索范围（可选）：all | callable | type。默认 all。"
+						"enum": ["all", "callable", "type"],
+						"description": "检索范围（可选）：all=全部，callable=可调用 API，type=类型符号。默认 all。查找可调用函数时优先使用 callable。"
 					},
 					"owner": {
 						"type": "string",
@@ -50,7 +51,7 @@
 		"type": "function",
 		"function": {
 			"name": "jlceda_context_get",
-			"description": "读取当前 EDA 运行时上下文快照，包括工程、文档、图页与选区信息。",
+			"description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。读取当前 EDA 运行时上下文快照，包括工程、文档、图页与选区信息。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -67,7 +68,7 @@
 		"type": "function",
 		"function": {
 			"name": "jlceda_api_invoke",
-			"description": "按 apiFullName 调用 EDA API。将参数数组序列化为 JSON 字符串在 args 中传入，无参数时传 \"[]\"。",
+			"description": "【托底工具 · 低优先级】仅在 schematic_check、component_select、component_place 均无法满足需求时才使用。API 调用流程第三步（最终执行步骤）。必须严格在第一步（jlceda_api_index 已返回含目标路径的索引）和第二步（jlceda_api_search 已确认完整参数签名）全部完成后，才能调用此工具。禁止跳过任意步骤直接执行 API。将参数数组序列化为 JSON 字符串在 args 中传入，无参数时传 \"[]\"。",
 			"parameters": {
 				"type": "object",
 				"properties": {
@@ -89,7 +90,7 @@
 		"type": "function",
 		"function": {
 			"name": "schematic_check",
-			"description": "执行原理图完整检查。内部自动完成：① ERC 电气规则检查；② 构建器件布局图（含每个器件的位号、坐标、旋转、镜像、封装，及每个引脚的名称、编号、类型、坐标、方向、引脚长度、连接状态）。无需任何参数。当用户要求检查原理图、分析电路或查看是否有问题时，必须调用此工具，禁止手动分步拼凑检查流程。",
+			"description": "执行原理图完整检查。内部自动完成：① ERC 电气规则检查；② 构建器件布局图（含每个器件的位号、坐标、旋转、镜像、封装，及每个引脚的名称、编号、类型、坐标、方向、引脚长度、连接状态）。无需任何参数。当用户要求检查原理图、分析电路或查看是否有问题时，必须调用此工具，禁止手动分步拼凑检查流程。输出报告按以下结构组织：一、ERC 基础检查；二、元件清单；三、电路功能分析；四、各模块分析；五、连接性检查；六、功能性判断；七、总体结论。",
 			"parameters": {
 				"type": "object",
 				"properties": {},
@@ -107,7 +108,7 @@
 				"properties": {
 					"todoList": {
 						"type": "string",
-						"description": "任务列表 JSON 字符串，解析后必须是数组。示例：[{\"id\":1,\"title\":\"任务标题\",\"status\":\"in-progress\"}]"
+						"description": "任务列表 JSON 字符串，解析后必须是数组，每项必须包含 id、title、status 三个字段。status 仅允许 not-started、in-progress、completed 三个值。示例：[{\"id\":1,\"title\":\"任务标题\",\"status\":\"in-progress\"}]"
 					},
 					"explanation": {
 						"type": "string",
@@ -133,7 +134,7 @@
 					},
 					"limit": {
 						"type": "number",
-						"description": "返回候选数量上限，固定 20。"
+						"description": "返回候选数量上限，范围 2-20，默认 20。"
 					}
 				},
 				"required": ["keyword"],
