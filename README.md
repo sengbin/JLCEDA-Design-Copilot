@@ -26,8 +26,8 @@ EDA API 运行时（Extension iframe 内）
 
 | 工具                       | 说明                                                 |
 | -------------------------- | ---------------------------------------------------- |
-| `schematic_topology_scan` | 提取器件拓扑信息（含坐标、引脚详情），为自动连线分析提供数据基础 |
-| `schematic_netlist_analyze` | 执行 ERC 检查并提取完整网表，供 AI 进行功能性审查与电路分析 |
+| `schematic_topology` | 提取器件拓扑信息（含坐标、引脚详情），为自动连线分析提供数据基础 |
+| `schematic_netlist` | 执行 ERC 检查并提取完整网表，供 AI 进行功能性审查与电路分析 |
 | `component_select`       | 在 EDA 系统库中搜索候选器件，并展示交互选型面板供用户确认 |
 | `component_place`        | 按顺序启动器件交互放置流程，在侧边栏显示当前进度     |
 | `todo_list`              | 更新结构化任务列表，在输入框上方独立展示待办项       |
