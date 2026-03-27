@@ -1780,7 +1780,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				const foldTitle: any = buildFoldTitle(variant, normalizedText);
 				if (DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE) {
 					const foldContentHtml: any = renderToolExecPlainText(normalizedText);
-					messageNode.innerHTML = `<details class="fold-block" open><summary class="fold-summary">${buildFoldSummaryInnerHtml(foldTitle)}</summary><div class="fold-content">${foldContentHtml}</div></details>`;
+					messageNode.innerHTML = `<details class="fold-block"><summary class="fold-summary">${buildFoldSummaryInnerHtml(foldTitle)}</summary><div class="fold-content">${foldContentHtml}</div></details>`;
 				}
 				else {
 					messageNode.innerHTML = `<div class="tool-exec-title-only"><span class="tool-exec-title-only-glyph" aria-hidden="true"><svg class="tool-exec-title-only-icon" viewBox="0 0 100 100" focusable="false"><use xlink:href="#icon-tool-equipment"></use></svg><span class="tool-exec-title-only-spinner"><svg class="tool-exec-title-only-spinner-icon" viewBox="0 0 12 12" focusable="false"><use xlink:href="#icon-spinner-half"></use></svg></span></span><span class="tool-exec-title-only-text">${escapeHtml(foldTitle)}</span></div>`;
