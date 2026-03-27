@@ -1,9 +1,12 @@
 ﻿import { OverlayScrollbars } from 'overlayscrollbars';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE, DEBUG_TOOL_EXEC_SHOW_CALLED_API, DEBUG_TOOL_EXEC_SHOW_TOOL_NAME } from './debug';
+import { createLlmAdapter } from './llm/adapters/factory';
+import { normalizeMessageContentForChat } from './llm/adapters/openai-chat';
+import { normalizeReasoning, pickExposedTools, readAssistantContent, readReasoningContent } from './llm/adapters/types';
 import { readAgentSystemInstructions } from './llm/agent/instructions';
 import { AI_AGENT_RUNTIME, getModelContextHistoryBudgetTokens, throwIfAgentAborted } from './llm/agent/runtime';
-import { buildAnthropicRequestPayload, buildAnthropicTools, buildModelRequestPayload, buildResponsesTools, pickManualExposedTools, validateModelRequestConfig } from './llm/client';
+import { validateModelRequestConfig } from './llm/client';
 import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock, processAnthropicStreamEvent } from './llm/stream';
 import { CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveApiFormat, resolveImagePayloadMode, resolveModelConfig } from './page/model';
 import { closeIFramePageById, ensureSvgIconSpriteLoaded, escapeHtml, formatToolExecRawText, renderMarkdown, renderToolExecPlainText } from './page/render';
@@ -68,7 +71,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	const TOOL_CALL_TIMEOUT_SECONDS: any = AI_AGENT_RUNTIME.toolCallTimeoutSeconds;
 	const MODEL_MAX_OUTPUT_TOKENS: any = AI_AGENT_RUNTIME.modelMaxOutputTokens;
 	const toolRuntime: any = createAgentToolRuntime(window);
-	const exposedTools: any = pickManualExposedTools(tools);
+	const exposedTools: any = pickExposedTools(tools);
 	const MODEL_CONTEXT_HISTORY_BUDGET_TOKENS: any = getModelContextHistoryBudgetTokens();
 	const chatHistory: any = document.querySelector('.chat-history');
 	const chatTextareaScroll: any = document.querySelector('.chat-textarea-scroll');
@@ -2101,17 +2104,6 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			},
 		};
 	}
-	// 获取最近一条用户消息索引。
-	function findLastUserMessageIndex(messages?: any) {
-		const source: any = Array.isArray(messages) ? messages : [];
-		for (let index: any = source.length - 1; index >= 0; index -= 1) {
-			const item: any = source[index];
-			if (item && item.role === 'user') {
-				return index;
-			}
-		}
-		return -1;
-	}
 	// 粗略估算文本 token 数。
 	function estimateTokenCount(text?: any) {
 		const source: any = String(text || '');
@@ -2182,287 +2174,6 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		return sliced;
 	}
-	// 组装 responses 回退输入文本。
-	function buildResponsesInputText(systemInstructionsText?: any) {
-		const contextMessages: any = buildContextWindowMessages();
-		const historyLines: any = [];
-		for (let index: any = 0; index < contextMessages.length; index += 1) {
-			const messageItem: any = contextMessages[index];
-			if (!messageItem || (messageItem.role !== 'user' && messageItem.role !== 'assistant')) {
-				continue;
-			}
-			const contentText: any = readAssistantContent(messageItem.content);
-			if (!contentText) {
-				continue;
-			}
-			historyLines.push(`${messageItem.role === 'assistant' ? '助手' : '用户'}：${contentText}`);
-		}
-		const recentLines: any = historyLines.slice(-12);
-		const historyText: any = recentLines.join('\n');
-		const pieces: any = [`系统提示：${String(systemInstructionsText || '').trim()}`];
-		if (historyText) {
-			pieces.push(`对话历史：\n${historyText}`);
-		}
-		return pieces.join('\n\n');
-	}
-	// 规范化消息内容为 responses 所需结构。
-	function normalizeMessageContentForResponses(content?: any, role?: any) {
-		const normalized: any = [];
-		// assistant 消息内容类型必须为 output_text，user 为 input_text。
-		const textType: any = String(role || '').trim() === 'assistant' ? 'output_text' : 'input_text';
-		// 追加文本片段。
-		function pushText(text?: any) {
-			const trimmed: any = String(text || '').trim();
-			if (trimmed) {
-				normalized.push({
-					type: textType,
-					text: trimmed,
-				});
-			}
-		}
-		// 追加图片片段。
-		function pushImage(urlValue?: any) {
-			if (!urlValue) {
-				return;
-			}
-			const imageUrl: any = typeof urlValue === 'string' ? urlValue : (urlValue && urlValue.url ? urlValue.url : '');
-			if (!imageUrl) {
-				return;
-			}
-			normalized.push({
-				type: 'input_image',
-				image_url: imageUrl,
-			});
-		}
-		if (typeof content === 'string') {
-			pushText(content);
-			return normalized;
-		}
-		if (!Array.isArray(content)) {
-			return normalized;
-		}
-		for (let index: any = 0; index < content.length; index += 1) {
-			const item: any = content[index];
-			if (!item || typeof item !== 'object') {
-				continue;
-			}
-			const type: any = String(item.type || '').trim().toLowerCase();
-			if (type === 'input_text' || type === 'text') {
-				pushText(item.text || item.output_text || '');
-				continue;
-			}
-			if (type === 'input_image') {
-				pushImage(item.image_url || '');
-				continue;
-			}
-			if (type === 'image_url') {
-				pushImage(item.image_url || '');
-				continue;
-			}
-		}
-		return normalized;
-	}
-	// 构建 responses 输入条目数组。
-	function buildResponsesInputEntries(systemInstructionsText?: any) {
-		const contextMessages: any = buildContextWindowMessages();
-		const lastUserIndex: any = findLastUserMessageIndex(contextMessages);
-		const entries: any = [];
-		for (let index: any = 0; index < contextMessages.length; index += 1) {
-			const messageItem: any = contextMessages[index];
-			if (!messageItem || !messageItem.role) {
-				continue;
-			}
-			if (messageItem.role === 'tool') {
-				if (index <= lastUserIndex) {
-					continue;
-				}
-				const callId: any = String(messageItem.tool_call_id || '').trim();
-				const outputText: any = String(messageItem.content || '').trim();
-				if (!callId || !outputText) {
-					continue;
-				}
-				entries.push({
-					type: 'function_call_output',
-					call_id: callId,
-					output: outputText,
-				});
-				continue;
-			}
-			if (messageItem.role !== 'user' && messageItem.role !== 'assistant') {
-				continue;
-			}
-			// assistant 消息携带 tool_calls 时，在 Responses API 中需转换为顶层 function_call 条目。
-			if (messageItem.role === 'assistant' && Array.isArray(messageItem.tool_calls) && messageItem.tool_calls.length > 0) {
-				// 若 assistant 同时有文本内容，先推入 output_text 条目。
-				const assistantContentArray: any = normalizeMessageContentForResponses(messageItem.content, 'assistant');
-				if (assistantContentArray.length > 0) {
-					entries.push({ role: 'assistant', content: assistantContentArray });
-				}
-				// 推入每个工具调用的 function_call 条目。
-				for (let tcIndex: any = 0; tcIndex < messageItem.tool_calls.length; tcIndex += 1) {
-					const tc: any = messageItem.tool_calls[tcIndex];
-					if (!tc || !tc.function) {
-						continue;
-					}
-					entries.push({
-						type: 'function_call',
-						call_id: String(tc.id || `call-${tcIndex}`),
-						name: String(tc.function.name || ''),
-						arguments: String(tc.function.arguments || '{}'),
-					});
-				}
-				continue;
-			}
-			const contentArray: any = normalizeMessageContentForResponses(messageItem.content, messageItem.role);
-			if (contentArray.length === 0) {
-				continue;
-			}
-			const entry: any = {
-				role: messageItem.role,
-				content: contentArray,
-			};
-			if (messageItem.role === 'assistant') {
-				const reasoningContent: any = readReasoningContent(messageItem);
-				if (reasoningContent) {
-					entry.reasoning_content = reasoningContent;
-				}
-			}
-			entries.push(entry);
-		}
-		if (entries.length === 0) {
-			entries.push({
-				role: 'user',
-				content: [
-					{
-						type: 'input_text',
-						text: buildResponsesInputText(systemInstructionsText),
-					},
-				],
-			});
-		}
-		return entries;
-	}
-	// 规范化消息内容为 chat/completions 结构。
-	function normalizeMessageContentForChat(content?: any, allowImagePart?: any) {
-		const normalizedParts: any = [];
-		const textLines: any = [];
-		// 追加文本内容。
-		function pushText(text?: any) {
-			const trimmed: any = String(text || '').trim();
-			if (!trimmed) {
-				return;
-			}
-			textLines.push(trimmed);
-			if (allowImagePart) {
-				normalizedParts.push({
-					type: 'text',
-					text: trimmed,
-				});
-			}
-		}
-		// 追加图片内容。
-		function pushImage(imageValue?: any) {
-			const imageUrl: any = typeof imageValue === 'string'
-				? imageValue
-				: (imageValue && imageValue.url ? String(imageValue.url) : '');
-			if (!imageUrl) {
-				return;
-			}
-			textLines.push('[图片]');
-			if (allowImagePart) {
-				normalizedParts.push({
-					type: 'image_url',
-					image_url: {
-						url: imageUrl,
-					},
-				});
-			}
-		}
-		if (typeof content === 'string') {
-			pushText(content);
-		}
-		else if (Array.isArray(content)) {
-			for (let index: any = 0; index < content.length; index += 1) {
-				const item: any = content[index];
-				if (!item) {
-					continue;
-				}
-				if (typeof item === 'string') {
-					pushText(item);
-					continue;
-				}
-				const type: any = String(item.type || '').trim().toLowerCase();
-				if (type === 'text' || type === 'input_text') {
-					pushText(item.text || item.output_text || '');
-					continue;
-				}
-				if (type === 'image_url' || type === 'input_image') {
-					pushImage(item.image_url || '');
-				}
-			}
-		}
-		if (allowImagePart) {
-			if (normalizedParts.length === 0) {
-				return '';
-			}
-			if (normalizedParts.length === 1 && normalizedParts[0].type === 'text') {
-				return normalizedParts[0].text;
-			}
-			return normalizedParts;
-		}
-		return textLines.join('\n').trim();
-	}
-	// 构建 chat/completions 消息数组。
-	function buildChatMessagesEntries(selectedModelValue?: any, systemInstructionsText?: any) {
-		const outputMessages: any = [{ role: 'system', content: String(systemInstructionsText || '').trim() }];
-		const contextMessages: any = buildContextWindowMessages();
-		const lastUserIndex: any = findLastUserMessageIndex(contextMessages);
-		const imagePayloadMode: any = resolveImagePayloadMode(selectedModelValue);
-		const allowImagePart: any = imagePayloadMode === 'image_url';
-		for (let index: any = 0; index < contextMessages.length; index += 1) {
-			const messageItem: any = contextMessages[index];
-			if (!messageItem || !messageItem.role) {
-				continue;
-			}
-			if (messageItem.role === 'tool') {
-				if (index <= lastUserIndex) {
-					continue;
-				}
-				outputMessages.push({
-					role: 'tool',
-					tool_call_id: String(messageItem.tool_call_id || ''),
-					name: String(messageItem.name || ''),
-					content: String(messageItem.content || '').trim(),
-				});
-				continue;
-			}
-			if (messageItem.role === 'user' || messageItem.role === 'assistant') {
-				const hasToolCalls: any = messageItem.role === 'assistant'
-					&& index > lastUserIndex
-					&& Array.isArray(messageItem.tool_calls)
-					&& messageItem.tool_calls.length > 0;
-				const normalizedContent: any = normalizeMessageContentForChat(messageItem.content, allowImagePart);
-				if (!normalizedContent && !hasToolCalls) {
-					continue;
-				}
-				const normalizedMessage: any = {
-					role: messageItem.role,
-					content: hasToolCalls ? (normalizedContent || null) : (normalizedContent || ''),
-				};
-				if (messageItem.role === 'assistant') {
-					const reasoningContent: any = readReasoningContent(messageItem);
-					if (reasoningContent) {
-						normalizedMessage.reasoning_content = reasoningContent;
-					}
-				}
-				if (hasToolCalls) {
-					normalizedMessage.tool_calls = messageItem.tool_calls;
-				}
-				outputMessages.push(normalizedMessage);
-			}
-		}
-		return outputMessages;
-	}
 	// 读取 responses 接口输出文本。
 	function readResponsesOutputText(responseData?: any) {
 		if (!responseData || typeof responseData !== 'object') {
@@ -2497,79 +2208,6 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		return textParts.join('\n').trim();
 	}
-	// 读取助手消息文本内容。
-	function readAssistantContent(content?: any) {
-		if (typeof content === 'string') {
-			return content;
-		}
-		if (Array.isArray(content)) {
-			return content
-				.map((item?: any) => {
-					if (!item) {
-						return '';
-					}
-					if (typeof item === 'string') {
-						return item;
-					}
-					if (item.type === 'text' || item.type === 'input_text') {
-						return String(item.text || '');
-					}
-					if (item.type === 'image_url' || item.type === 'input_image') {
-						return '[图片]';
-					}
-					return '';
-				})
-				.join('\\n')
-				.trim();
-		}
-		return '';
-	}
-	// 规范化推理内容文本。
-	function normalizeReasoning(value?: any) {
-		if (!value) {
-			return '';
-		}
-		if (typeof value === 'string') {
-			return value.trim();
-		}
-		if (Array.isArray(value)) {
-			return value
-				.map((item?: any) => {
-					if (!item) {
-						return '';
-					}
-					if (typeof item === 'string') {
-						return item;
-					}
-					if (typeof item.text === 'string') {
-						return item.text;
-					}
-					if (typeof item.reasoning_content === 'string') {
-						return item.reasoning_content;
-					}
-					return '';
-				})
-				.join('\n')
-				.trim();
-		}
-		if (typeof value === 'object') {
-			if (typeof value.text === 'string') {
-				return value.text.trim();
-			}
-			if (typeof value.reasoning_content === 'string') {
-				return value.reasoning_content.trim();
-			}
-		}
-		return '';
-	}
-	// 读取消息中的推理内容。
-	function readReasoningContent(message?: any, fallbackText?: any) {
-		const fromMessage: any = normalizeReasoning(message && (message.reasoning_content || message.reasoning || message.reasoningContent));
-		if (fromMessage) {
-			return fromMessage;
-		}
-		return String(fallbackText || '').trim();
-	}
 	// 提取 think 标签中的推理文本。
 	function splitThinkContent(text?: any) {
 		const input: any = String(text || '');
@@ -2588,163 +2226,27 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			reasoningText: thinkParts.join('\n\n').trim(),
 		};
 	}
-	// 将内部消息内容转换为 Anthropic 用户消息内容块数组。
-	function buildAnthropicUserContentParts(content?: any, allowImagePart?: any) {
-		const parts: any[] = [];
-		// 追加文本内容块。
-		function pushText(text?: any) {
-			const trimmed: any = String(text || '').trim();
-			if (trimmed) {
-				parts.push({ type: 'text', text: trimmed });
-			}
-		}
-		// 追加图片内容块（base64 格式）。
-		function pushImage(imageValue?: any) {
-			if (!allowImagePart) {
-				return;
-			}
-			const imageUrl: any = typeof imageValue === 'string'
-				? imageValue
-				: (imageValue && imageValue.url ? String(imageValue.url) : '');
-			if (!imageUrl) {
-				return;
-			}
-			const dataUrlMatch: any = imageUrl.match(/^data:(image\/[^;]+);base64,(.+)$/i);
-			if (dataUrlMatch) {
-				parts.push({
-					type: 'image',
-					source: {
-						type: 'base64',
-						media_type: String(dataUrlMatch[1] || 'image/png').toLowerCase(),
-						data: dataUrlMatch[2],
-					},
-				});
-			}
-		}
-		if (typeof content === 'string') {
-			pushText(content);
-		}
-		else if (Array.isArray(content)) {
-			for (let index: any = 0; index < content.length; index += 1) {
-				const item: any = content[index];
-				if (!item) {
-					continue;
-				}
-				if (typeof item === 'string') {
-					pushText(item);
-					continue;
-				}
-				const itemType: any = String(item.type || '').trim().toLowerCase();
-				if (itemType === 'text' || itemType === 'input_text') {
-					pushText(item.text || item.output_text || '');
-				}
-				else if (itemType === 'image_url' || itemType === 'input_image') {
-					pushImage(item.image_url || '');
-				}
-			}
-		}
-		return parts;
-	}
-	// 将内部 agentMessages 转换为 Anthropic Messages API 格式消息数组。
-	function buildAnthropicMessagesEntries(selectedModelValue?: any) {
-		const contextMessages: any = buildContextWindowMessages();
-		const imagePayloadMode: any = resolveImagePayloadMode(selectedModelValue);
-		const allowImagePart: any = imagePayloadMode === 'image_url';
-		const anthropicMessages: any[] = [];
-		for (let index: any = 0; index < contextMessages.length; index += 1) {
-			const messageItem: any = contextMessages[index];
-			if (!messageItem || !messageItem.role) {
-				continue;
-			}
-			if (messageItem.role === 'user') {
-				const contentParts: any = buildAnthropicUserContentParts(messageItem.content, allowImagePart);
-				if (contentParts.length > 0) {
-					anthropicMessages.push({ role: 'user', content: contentParts });
-				}
-			}
-			else if (messageItem.role === 'assistant') {
-				const contentBlocks: any[] = [];
-				const textContent: any = readAssistantContent(messageItem.content);
-				if (textContent) {
-					contentBlocks.push({ type: 'text', text: textContent });
-				}
-				if (Array.isArray(messageItem.tool_calls) && messageItem.tool_calls.length > 0) {
-					for (let tc: any = 0; tc < messageItem.tool_calls.length; tc += 1) {
-						const toolCall: any = messageItem.tool_calls[tc];
-						let inputObject: any = {};
-						try {
-							const argText: any = String(toolCall && toolCall.function ? (toolCall.function.arguments || '{}') : '{}');
-							inputObject = JSON.parse(argText);
-						}
-						catch { }
-						contentBlocks.push({
-							type: 'tool_use',
-							id: String(toolCall && toolCall.id ? toolCall.id : '').trim() || (`toolu-${Date.now()}-${tc}`),
-							name: String(toolCall && toolCall.function ? (toolCall.function.name || '') : '').trim(),
-							input: inputObject,
-						});
-					}
-				}
-				if (contentBlocks.length > 0) {
-					anthropicMessages.push({ role: 'assistant', content: contentBlocks });
-				}
-			}
-			else if (messageItem.role === 'tool') {
-				// tool 结果合并到 user 消息的 tool_result 块中。
-				const toolResult: any = {
-					type: 'tool_result',
-					tool_use_id: String(messageItem.tool_call_id || '').trim(),
-					content: String(messageItem.content || '').trim(),
-				};
-				const lastMsg: any = anthropicMessages.length > 0 ? anthropicMessages[anthropicMessages.length - 1] : null;
-				if (lastMsg && lastMsg.role === 'user' && Array.isArray(lastMsg.content) && lastMsg.content.length > 0 && lastMsg.content[0].type === 'tool_result') {
-					lastMsg.content.push(toolResult);
-				}
-				else {
-					anthropicMessages.push({ role: 'user', content: [toolResult] });
-				}
-			}
-		}
-		return anthropicMessages;
-	}
 	// 调用模型并处理流式返回。
 	async function callModel(config?: any, onStreamDelta?: any, abortSignal?: any) {
 		const requestConfig: any = validateModelRequestConfig(config, getNormalizedEndpoint);
 		const endpoint: any = requestConfig.endpoint;
 		const modelName: any = requestConfig.modelName;
 		const apiKey: any = requestConfig.apiKey;
-		const isResponsesEndpoint: any = endpoint.endsWith('/responses');
-		const isAnthropicFormat: any = String((config && config.apiFormat) || '').trim() === 'anthropic';
+		const apiFormat: any = String((config && config.apiFormat) || '').trim();
 		const instructionsResult: any = readAgentSystemInstructions();
 		const systemInstructionsText: any = String(instructionsResult && instructionsResult.instructions ? instructionsResult.instructions : '').trim();
-		const payload: any = isAnthropicFormat
-			? buildAnthropicRequestPayload({
-					modelName,
-					systemText: systemInstructionsText,
-					messages: buildAnthropicMessagesEntries(config.selectedModel),
-					tools: buildAnthropicTools(exposedTools),
-					maxOutputTokens: MODEL_MAX_OUTPUT_TOKENS,
-				})
-			: buildModelRequestPayload({
-					isResponsesEndpoint,
-					modelName,
-					responsesInput: buildResponsesInputEntries(systemInstructionsText),
-					responsesTools: buildResponsesTools(exposedTools),
-					chatMessages: buildChatMessagesEntries(config.selectedModel, systemInstructionsText),
-					chatTools: exposedTools,
-					selectedModel: config.selectedModel,
-					maxOutputTokens: MODEL_MAX_OUTPUT_TOKENS,
-				});
-		const requestHeaders: any = isAnthropicFormat
-			? {
-					'Content-Type': 'application/json',
-					'x-api-key': apiKey,
-					'anthropic-version': '2023-06-01',
-				}
-			: {
-					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${apiKey}`,
-				};
+		const adapter: any = createLlmAdapter({ endpoint, modelName, apiFormat });
+		const contextMessages: any = buildContextWindowMessages();
+		const payload: any = adapter.buildPayload({
+			modelName,
+			contextMessages,
+			systemText: systemInstructionsText,
+			tools: exposedTools,
+			maxOutputTokens: MODEL_MAX_OUTPUT_TOKENS,
+			selectedModel: String((config && config.selectedModel) || ''),
+		});
+		const requestHeaders: any = adapter.buildHeaders(apiKey);
+		const streamFormat: any = adapter.getStreamFormat();
 		const response: any = await fetch(endpoint, {
 			method: 'POST',
 			headers: requestHeaders,
@@ -2883,10 +2385,10 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			catch {
 				chunkObject = null;
 			}
-			if (isAnthropicFormat) {
+			if (streamFormat === 'anthropic') {
 				handleAnthropicChunk(chunkObject, eventType);
 			}
-			else if (isResponsesEndpoint) {
+			else if (streamFormat === 'responses') {
 				handleResponsesChunk(chunkObject, eventType);
 			}
 			else {
@@ -2923,7 +2425,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		if (message.content || message.reasoning_content || message.tool_calls.length > 0) {
 			return message;
 		}
-		if (!isResponsesEndpoint && !isAnthropicFormat && responseTextBuffer.trim()) {
+		if (streamFormat === 'chat' && responseTextBuffer.trim()) {
 			let data: any = null;
 			try {
 				data = JSON.parse(responseTextBuffer);

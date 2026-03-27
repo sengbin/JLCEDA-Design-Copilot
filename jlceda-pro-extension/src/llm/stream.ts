@@ -13,11 +13,9 @@ function mergeToolCallText(existingText?: any, incomingText?: any) {
 	if (currentText === nextText) {
 		return currentText;
 	}
+	// next 以 current 开头，说明 done/completed 事件发来的是包含当前前缀的完整字符串，取更长的 next。
 	if (nextText.indexOf(currentText) === 0) {
 		return nextText;
-	}
-	if (currentText.indexOf(nextText) === 0) {
-		return currentText;
 	}
 	return currentText + nextText;
 }

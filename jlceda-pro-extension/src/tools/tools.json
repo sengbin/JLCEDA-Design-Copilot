@@ -113,8 +113,17 @@
 				"type": "object",
 				"properties": {
 					"todoList": {
-						"type": "string",
-						"description": "任务列表 JSON 字符串，解析后必须是数组，每项必须包含 id、title、status 三个字段。status 仅允许 not-started、in-progress、completed 三个值。示例：[{\"id\":1,\"title\":\"任务标题\",\"status\":\"in-progress\"}]"
+						"type": "array",
+						"description": "任务列表数组，每项必须包含 id、title、status 三个字段。status 仅允许 not-started、in-progress、completed 三个值。",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": { "type": "number", "description": "任务 ID，正整数。" },
+								"title": { "type": "string", "description": "任务标题。" },
+								"status": { "type": "string", "description": "任务状态：not-started、in-progress、completed。" }
+							},
+							"required": ["id", "title", "status"]
+						}
 					},
 					"explanation": {
 						"type": "string",

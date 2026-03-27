@@ -100,19 +100,9 @@ export function createTodoListHandler(): {
 			return { ok: false, error: 'todo_list 参数必须为对象。' };
 		}
 
-		const todoListText: string = String(payload.todoList || '').trim();
-		if (!todoListText) {
-			return { ok: false, error: 'todo_list 缺少 todoList 字符串参数。' };
-		}
-		let rawTodoList: unknown = [];
-		try {
-			rawTodoList = JSON.parse(todoListText);
-		}
-		catch {
-			return { ok: false, error: 'todo_list.todoList 必须是有效 JSON 字符串（内容为数组）。' };
-		}
+		const rawTodoList: unknown = payload.todoList;
 		if (!Array.isArray(rawTodoList)) {
-			return { ok: false, error: 'todo_list.todoList 解析后必须为数组。' };
+			return { ok: false, error: 'todo_list.todoList 必须是数组类型。' };
 		}
 		if (rawTodoList.length === 0) {
 			return { ok: false, error: 'todoList 不能为空。' };
