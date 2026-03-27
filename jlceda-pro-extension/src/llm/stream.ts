@@ -250,13 +250,13 @@ export function mergeToolCallDelta(toolCalls?: any, deltaToolCalls?: any) {
  * 处理 Anthropic 流式 SSE 事件，提取文本增量与工具调用增量。
  * @param chunkObject - SSE 事件数据对象。
  * @param eventType - SSE 事件类型字符串。
- * @param activeToolBlockMap - 活跃工具调用块信息映射（index → {id, name}）。
+ * @param activeToolBlockMap - 活跃工具调用块信息映射（内容块索引 → {id, name, toolCallIndex}）。
  * @returns 文本增量与工具调用增量。
  */
 export function processAnthropicStreamEvent(
 	chunkObject: any,
 	eventType: string,
-	activeToolBlockMap: Map<number, { id: string; name: string }>,
+	activeToolBlockMap: Map<number, { id: string; name: string; toolCallIndex: number }>,
 ): { textDelta: string; toolCallDeltas: any[] } {
 	let textDelta: any = '';
 	const toolCallDeltas: any[] = [];
@@ -272,9 +272,11 @@ export function processAnthropicStreamEvent(
 		if (block && String(block.type || '').trim() === 'tool_use') {
 			const toolId: any = String(block.id || '').trim();
 			const toolName: any = String(block.name || '').trim();
-			activeToolBlockMap.set(blockIndex, { id: toolId, name: toolName });
+			// 用当前 Map 的大小作为顺序工具调用索引，避免因文字块占用内容块索引而产生稀疏数组。
+			const toolCallIndex: number = activeToolBlockMap.size;
+			activeToolBlockMap.set(blockIndex, { id: toolId, name: toolName, toolCallIndex });
 			toolCallDeltas.push({
-				index: blockIndex,
+				index: toolCallIndex,
 				id: toolId,
 				type: 'function',
 				function: { name: toolName, arguments: '' },
@@ -298,7 +300,7 @@ export function processAnthropicStreamEvent(
 		if (deltaType === 'input_json_delta') {
 			const toolBlock: any = activeToolBlockMap.get(blockIndex);
 			toolCallDeltas.push({
-				index: blockIndex,
+				index: toolBlock ? toolBlock.toolCallIndex : 0,
 				id: toolBlock ? toolBlock.id : '',
 				type: 'function',
 				function: {
