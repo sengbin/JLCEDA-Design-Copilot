@@ -128,7 +128,8 @@ export function buildModelRequestPayload(params: {
 	selectedModel: string;
 	maxOutputTokens: number;
 }): Record<string, unknown> {
-	const manualResponsesTools: any = pickManualExposedTools(params.responsesTools);
+	// responsesTools 已由调用方经 buildResponsesTools 转换为 Responses API 扁平格式（无 .function 子对象），
+	// 不能再经过 pickManualExposedTools（该函数依赖 .function.name），直接使用即可。
 	const manualChatTools: any = pickManualExposedTools(params.chatTools);
 	// DeepSeek 模型按名称前缀检测，匹配时对 chat 工具列表启用 strict Function Calling 模式。
 	const effectiveChatTools: any = isDeepSeekModel(params.modelName || params.selectedModel)
@@ -138,7 +139,7 @@ export function buildModelRequestPayload(params: {
 		return {
 			model: params.modelName,
 			input: params.responsesInput,
-			tools: manualResponsesTools,
+			tools: Array.isArray(params.responsesTools) ? params.responsesTools : [],
 			tool_choice: 'auto',
 			max_output_tokens: params.maxOutputTokens,
 			stream: true,

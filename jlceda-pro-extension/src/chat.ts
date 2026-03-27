@@ -2206,14 +2206,16 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		return pieces.join('\n\n');
 	}
 	// 规范化消息内容为 responses 所需结构。
-	function normalizeMessageContentForResponses(content?: any) {
+	function normalizeMessageContentForResponses(content?: any, role?: any) {
 		const normalized: any = [];
+		// assistant 消息内容类型必须为 output_text，user 为 input_text。
+		const textType: any = String(role || '').trim() === 'assistant' ? 'output_text' : 'input_text';
 		// 追加文本片段。
 		function pushText(text?: any) {
 			const trimmed: any = String(text || '').trim();
 			if (trimmed) {
 				normalized.push({
-					type: 'input_text',
+					type: textType,
 					text: trimmed,
 				});
 			}
@@ -2289,7 +2291,29 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			if (messageItem.role !== 'user' && messageItem.role !== 'assistant') {
 				continue;
 			}
-			const contentArray: any = normalizeMessageContentForResponses(messageItem.content);
+			// assistant 消息携带 tool_calls 时，在 Responses API 中需转换为顶层 function_call 条目。
+			if (messageItem.role === 'assistant' && Array.isArray(messageItem.tool_calls) && messageItem.tool_calls.length > 0) {
+				// 若 assistant 同时有文本内容，先推入 output_text 条目。
+				const assistantContentArray: any = normalizeMessageContentForResponses(messageItem.content, 'assistant');
+				if (assistantContentArray.length > 0) {
+					entries.push({ role: 'assistant', content: assistantContentArray });
+				}
+				// 推入每个工具调用的 function_call 条目。
+				for (let tcIndex: any = 0; tcIndex < messageItem.tool_calls.length; tcIndex += 1) {
+					const tc: any = messageItem.tool_calls[tcIndex];
+					if (!tc || !tc.function) {
+						continue;
+					}
+					entries.push({
+						type: 'function_call',
+						call_id: String(tc.id || `call-${tcIndex}`),
+						name: String(tc.function.name || ''),
+						arguments: String(tc.function.arguments || '{}'),
+					});
+				}
+				continue;
+			}
+			const contentArray: any = normalizeMessageContentForResponses(messageItem.content, messageItem.role);
 			if (contentArray.length === 0) {
 				continue;
 			}
