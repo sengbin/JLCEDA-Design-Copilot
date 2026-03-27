@@ -2844,6 +2844,31 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				mergeToolCallDelta(message.tool_calls, anthropicResult.toolCallDeltas);
 			}
 		}
+		// 统一处理单个 SSE 事件块，避免流结束时遗漏最后一个未带空行分隔符的事件。
+		function handleParsedSseEventBlock(eventBlock?: any) {
+			const parsedEvent: any = parseSseEventBlock(String(eventBlock || ''));
+			if (!parsedEvent) {
+				return;
+			}
+			const eventType: any = parsedEvent.eventType;
+			const payloadText: any = parsedEvent.payloadText;
+			let chunkObject: any = null;
+			try {
+				chunkObject = JSON.parse(payloadText);
+			}
+			catch {
+				chunkObject = null;
+			}
+			if (isAnthropicFormat) {
+				handleAnthropicChunk(chunkObject, eventType);
+			}
+			else if (isResponsesEndpoint) {
+				handleResponsesChunk(chunkObject, eventType);
+			}
+			else {
+				handleChatChunk(chunkObject);
+			}
+		}
 		while (true) {
 			const readResult: any = await reader.read();
 			const done: any = readResult.done;
@@ -2859,34 +2884,17 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				const eventBlock: any = buffer.slice(0, delimiterIndex);
 				buffer = buffer.slice(delimiterIndex + 2);
 				delimiterIndex = buffer.indexOf('\n\n');
-				const parsedEvent: any = parseSseEventBlock(eventBlock);
-				if (!parsedEvent) {
-					continue;
-				}
-				const eventType: any = parsedEvent.eventType;
-				const payloadText: any = parsedEvent.payloadText;
-				let chunkObject: any = null;
-				try {
-					chunkObject = JSON.parse(payloadText);
-				}
-				catch {
-					chunkObject = null;
-				}
-				if (isAnthropicFormat) {
-					handleAnthropicChunk(chunkObject, eventType);
-				}
-				else if (isResponsesEndpoint) {
-					handleResponsesChunk(chunkObject, eventType);
-				}
-				else {
-					handleChatChunk(chunkObject);
-				}
+				handleParsedSseEventBlock(eventBlock);
 			}
 		}
 		const remainText: any = decoder.decode();
 		if (remainText) {
 			responseTextBuffer += remainText;
 			buffer += remainText.replace(/\r\n/g, '\n');
+		}
+		if (buffer.trim()) {
+			handleParsedSseEventBlock(buffer);
+			buffer = '';
 		}
 		if (message.content || message.reasoning_content || message.tool_calls.length > 0) {
 			return message;
