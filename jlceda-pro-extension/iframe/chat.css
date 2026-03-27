@@ -474,8 +474,8 @@ body {
 	color: var(--text-secondary);
 }
 .chat-empty-state-logo {
-	width: 114px;
-	height: 114px;
+	width: 96px;
+	height: 96px;
 	margin-bottom: 20px;
 }
 .chat-empty-state-logo img {
@@ -557,8 +557,8 @@ body {
 		margin-top: clamp(-112px, -12vh, -64px);
 	}
 	.chat-empty-state-logo {
-		width: 96px;
-		height: 96px;
+		width: 80px;
+		height: 80px;
 		margin-bottom: 18px;
 	}
 	.chat-empty-state-title {

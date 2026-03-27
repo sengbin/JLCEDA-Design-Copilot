@@ -1102,6 +1102,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			activeAbortController = null;
 			stopStreamIdleWatch();
 			hideRunningIndicator();
+			syncTodoPanelCollapsedState();
 		}
 	}
 	// 判断输入框是否有可发送内容。
