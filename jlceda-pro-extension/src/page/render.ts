@@ -103,6 +103,7 @@ export function escapeHtml(input: unknown): string {
  */
 export function parseInlineMarkdown(text: unknown): string {
 	let html: any = escapeHtml(text);
+	html = html.replace(/&lt;br\s*\/?&gt;/gi, '<br />');
 	html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 	html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 	html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
