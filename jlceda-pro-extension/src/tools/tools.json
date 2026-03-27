@@ -11,8 +11,7 @@
 						"type": "string",
 						"description": "命名空间过滤（可选），例如 sch/pcb/lib/dmt，不填则返回全部。"
 					}
-				},
-				"additionalProperties": false
+				}
 			}
 		}
 	},
@@ -42,8 +41,7 @@
 						"description": "返回上限（可选），范围 1~50。"
 					}
 				},
-				"required": ["query"],
-				"additionalProperties": false
+				"required": ["query"]
 			}
 		}
 	},
@@ -59,8 +57,7 @@
 						"type": "string",
 						"description": "上下文范围标识（可选），用于业务侧分组标记。"
 					}
-				},
-				"additionalProperties": false
+				}
 			}
 		}
 	},
@@ -81,8 +78,7 @@
 						"description": "参数数组的 JSON 字符串，将全部参数按顺序放入数组并序列化，例如 \"[false,false,true]\" 或 \"[{\\\"uuid\\\":\\\"abc\\\"},100,100]\"."
 					}
 				},
-				"required": ["apiFullName", "args"],
-				"additionalProperties": false
+				"required": ["apiFullName", "args"]
 			}
 		}
 	},
@@ -93,8 +89,7 @@
 			"description": "提取原理图器件拓扑信息（含坐标、引脚详情），为连线分析提供数据基础。",
 			"parameters": {
 				"type": "object",
-				"properties": {},
-				"additionalProperties": false
+				"properties": {}
 			}
 		}
 	},
@@ -105,8 +100,7 @@
 			"description": "提取原理图完整网表，返回网络连接关系，供 AI 进行功能性审查与电路分析。",
 			"parameters": {
 				"type": "object",
-				"properties": {},
-				"additionalProperties": false
+				"properties": {}
 			}
 		}
 	},
@@ -127,8 +121,7 @@
 						"description": "可选说明文本。"
 					}
 				},
-				"required": ["todoList"],
-				"additionalProperties": false
+				"required": ["todoList"]
 			}
 		}
 	},
@@ -149,8 +142,7 @@
 						"description": "返回候选数量上限，范围 2-20，默认 20。"
 					}
 				},
-				"required": ["keyword"],
-				"additionalProperties": false
+				"required": ["keyword"]
 			}
 		}
 	},
@@ -189,8 +181,7 @@
 									"description": "多子部件器件的子部件名称（可选）。"
 								}
 							},
-							"required": ["uuid", "libraryUuid"],
-							"additionalProperties": false
+							"required": ["uuid", "libraryUuid"]
 						}
 					},
 					"timeoutSeconds": {
@@ -198,8 +189,7 @@
 						"description": "单个器件放置超时时间（可选），单位秒，范围 30~180，默认 60。"
 					}
 				},
-				"required": ["components"],
-				"additionalProperties": false
+				"required": ["components"]
 			}
 		}
 	}

@@ -2422,7 +2422,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				}
 				const normalizedMessage: any = {
 					role: messageItem.role,
-					content: normalizedContent || '',
+					content: hasToolCalls ? (normalizedContent || null) : (normalizedContent || ''),
 				};
 				if (messageItem.role === 'assistant') {
 					const reasoningContent: any = readReasoningContent(messageItem);
@@ -2917,6 +2917,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			// 循环检测：记录上一次助手回复文本指纹与连续相同次数。
 			let lastLoopFingerprint: any = '';
 			let sameLoopCount: any = 0;
+			// 工具调用循环检测：记录连续仅调用 todo_list 的步骤计数。
+			let toolCallLoopCount: any = 0;
 			for (let step: any = 0; step < MAX_AGENT_STEPS; step += 1) {
 				throwIfAgentAborted(abortSignal);
 				let reasoningStreamMessage: any = null;
@@ -3101,6 +3103,27 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 							content: safeJsonStringify(sanitizeToolResultForModel(result)),
 						});
 						sessionManager.schedulePersistChatSession();
+					}
+					// 工具调用循环检测：连续 5 步仅调用 todo_list 则判定为死循环。
+					const toolNamesInStep: any = message.tool_calls.map((tc: any) =>
+						tc && tc.function ? tc.function.name : '',
+					).filter(Boolean);
+					if (toolNamesInStep.length > 0 && toolNamesInStep.every((n: any) => n === 'todo_list')) {
+						toolCallLoopCount += 1;
+						if (toolCallLoopCount > 4) {
+							throw Object.assign(
+								new Error(
+									'**检测到模型陷入死循环，已为你自动终止本次对话。**\n\n'
+									+ '当前模型连续多次反复调用任务列表但无法推进实际任务。\n\n'
+									+ '这通常是由于该模型对工具调用的支持存在缺陷，或指令理解有偏差。\n\n'
+									+ '**这不是你的问题，是模型的缺陷。** 建议切换至其他模型后重新发起对话。',
+								),
+								{ name: 'ToolCallLoopError' },
+							);
+						}
+					}
+					else {
+						toolCallLoopCount = 0;
 					}
 					processFoldGroupController.setLoading(false);
 					showRunningIndicator();

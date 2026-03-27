@@ -1,3 +1,9 @@
+# 2.4.5 (2026-03-27)
+
+- 修复：工具 schema 移除所有 `additionalProperties: false` 约束，解决 MiniMax 等部分模型在工具调用时流式返回为空的兼容性问题。
+- 修复：assistant 消息携带 `tool_calls` 但无文本内容时，`content` 改为 `null`，修复与 Claude（Anthropic）兼容端交互时报 "field messages is required" 的问题。
+- 新增：agent 循环检测新增连续纯 `todo_list` 调用的死循环检测，连续 5 步仅调用 `todo_list` 时自动终止并提示用户切换模型。
+
 # 2.4.4 (2026-03-25)
 
 - 变更：原理图检查工具拆分为两个专用工具：`schematic_topology`（ERC + 器件拓扑提取，为自动连线准备数据）和 `schematic_netlist`（完整网表提取，供 AI 功能性分析）。
