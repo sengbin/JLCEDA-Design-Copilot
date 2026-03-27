@@ -187,6 +187,7 @@ export function createOpenAIResponsesAdapter(): LlmAdapter {
 		buildPayload(ctx: LlmAdapterContext): Record<string, unknown> {
 			return {
 				model: ctx.modelName,
+				instructions: ctx.systemText || undefined,
 				input: buildResponsesInput(ctx),
 				tools: convertToResponsesTools(ctx.tools),
 				tool_choice: 'auto',
