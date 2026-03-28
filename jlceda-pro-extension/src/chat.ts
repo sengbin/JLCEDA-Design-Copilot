@@ -5,7 +5,7 @@ import { createLlmAdapter } from './llm/adapters/factory';
 import { normalizeMessageContentForChat } from './llm/adapters/openai-chat';
 import { normalizeReasoning, pickExposedTools, readAssistantContent, readReasoningContent } from './llm/adapters/types';
 import { readAgentSystemInstructions } from './llm/agent/instructions';
-import { AI_AGENT_RUNTIME, getModelContextHistoryBudgetTokens, throwIfAgentAborted } from './llm/agent/runtime';
+import { AI_AGENT_RUNTIME, throwIfAgentAborted } from './llm/agent/runtime';
 import { validateModelRequestConfig } from './llm/client';
 import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock, processAnthropicStreamEvent } from './llm/stream';
 import { CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveApiFormat, resolveImagePayloadMode, resolveModelConfig } from './page/model';
@@ -72,7 +72,6 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	const MODEL_MAX_OUTPUT_TOKENS: any = AI_AGENT_RUNTIME.modelMaxOutputTokens;
 	const toolRuntime: any = createAgentToolRuntime(window);
 	const exposedTools: any = pickExposedTools(tools);
-	const MODEL_CONTEXT_HISTORY_BUDGET_TOKENS: any = getModelContextHistoryBudgetTokens();
 	const chatHistory: any = document.querySelector('.chat-history');
 	const chatTextareaScroll: any = document.querySelector('.chat-textarea-scroll');
 	const chatEditor: any = document.querySelector('.chat-textarea');
@@ -2109,75 +2108,10 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			},
 		};
 	}
-	// 粗略估算文本 token 数。
-	function estimateTokenCount(text?: any) {
-		const source: any = String(text || '');
-		if (!source) {
-			return 0;
-		}
-		return Math.ceil(source.length / 1.6);
-	}
-	// 读取单条上下文消息的文本内容。
-	function getContextMessageText(messageItem?: any) {
-		if (!messageItem || typeof messageItem !== 'object') {
-			return '';
-		}
-		if (messageItem.role === 'tool') {
-			const toolName: any = String(messageItem.name || '').trim();
-			const toolContent: any = String(messageItem.content || '').trim();
-			return `[tool:${toolName}]\n${toolContent}`;
-		}
-		const contentText: any = readAssistantContent(messageItem.content);
-		const toolCallBrief: any = (Array.isArray(messageItem.tool_calls) && messageItem.tool_calls.length > 0)
-			? (`[tool_calls:${messageItem.tool_calls.length}]`)
-			: '';
-		return [contentText, toolCallBrief].filter((piece?: any) => {
-			return !!String(piece || '').trim();
-		}).join('\n');
-	}
-	// 估算消息在上下文中的 token 占用。
-	function estimateMessageTokenUsage(messageItem?: any) {
-		if (!messageItem || typeof messageItem !== 'object') {
-			return 0;
-		}
-		const roleText: any = String(messageItem.role || '').trim();
-		const contentText: any = getContextMessageText(messageItem);
-		return estimateTokenCount(roleText) + estimateTokenCount(contentText) + 12;
-	}
-	// 构建受 token 预算约束的上下文窗口。
+	// 构建上下文窗口消息列表。
 	function buildContextWindowMessages() {
 		const history: any = Array.isArray(agentMessages) ? agentMessages : [];
-		if (history.length === 0) {
-			return [];
-		}
-		let totalTokens: any = 0;
-		for (let index: any = 0; index < history.length; index += 1) {
-			totalTokens += estimateMessageTokenUsage(history[index]);
-		}
-		if (totalTokens <= MODEL_CONTEXT_HISTORY_BUDGET_TOKENS) {
-			return history.slice();
-		}
-		let rollingTokens: any = 0;
-		let startIndex: any = history.length - 1;
-		for (let index: any = history.length - 1; index >= 0; index -= 1) {
-			const usage: any = estimateMessageTokenUsage(history[index]);
-			if (rollingTokens + usage > MODEL_CONTEXT_HISTORY_BUDGET_TOKENS) {
-				break;
-			}
-			rollingTokens += usage;
-			startIndex = index;
-		}
-		while (startIndex < history.length && history[startIndex] && history[startIndex].role !== 'user') {
-			startIndex += 1;
-		}
-		if (startIndex >= history.length) {
-			startIndex = Math.max(0, history.length - 1);
-		}
-		let sliced: any = history.slice(startIndex);
-		while (sliced.length > 0 && sliced[0] && sliced[0].role === 'tool') {
-			sliced = sliced.slice(1);
-		}
-		return sliced;
+		return history.slice();
 	}
 	// 读取 responses 接口输出文本。
 	function readResponsesOutputText(responseData?: any) {

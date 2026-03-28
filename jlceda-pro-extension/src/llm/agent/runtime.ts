@@ -15,15 +15,6 @@ export const AI_AGENT_RUNTIME: any = {
 	modelContextSafeMarginTokens: 4096,
 };
 /**
- * 计算上下文历史预算。
- * @returns Token 预算。
- */
-export function getModelContextHistoryBudgetTokens(): number {
-	return Math.max(4096, AI_AGENT_RUNTIME.modelContextLimitTokens
-		- AI_AGENT_RUNTIME.modelMaxOutputTokens
-		- AI_AGENT_RUNTIME.modelContextSafeMarginTokens);
-}
-/**
  * 检查智能体是否已被中止。
  * @param abortSignal - 中止信号。
  */
