@@ -8,6 +8,7 @@ import { readAgentSystemInstructions } from './llm/agent/instructions';
 import { AI_AGENT_RUNTIME, throwIfAgentAborted } from './llm/agent/runtime';
 import { validateModelRequestConfig } from './llm/client';
 import { extractResponsesToolCallDeltas, mergeToolCallDelta, parseSseEventBlock, processAnthropicStreamEvent } from './llm/stream';
+import { copyAllHistory, copyRound } from './page/chat-copy';
 import { CHAT_MODEL_CONFIG_CONSTANTS, getNormalizedEndpoint, isImageUploadEnabled, persistModelSelection, readConfig, readModelSelection, resolveApiFormat, resolveImagePayloadMode, resolveModelConfig } from './page/model';
 import { closeIFramePageById, ensureSvgIconSpriteLoaded, escapeHtml, formatToolExecRawText, renderMarkdown, renderToolExecPlainText } from './page/render';
 import { applyTheme, setupThemeSync } from './page/theme';
@@ -87,6 +88,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	const chatSessionDropdownMenu: any = document.querySelector('.chat-sesson-dropdown-menu');
 	const chatSessionAddButton: any = document.querySelector('.chat-sesson-add-button');
 	const chatSessionDeleteButton: any = document.querySelector('.chat-sesson-delete-button');
+	const chatContextMenu: any = document.querySelector('.chat-context-menu');
 	const agentMessages: any = [];
 	const chatDisplayMessages: any = [];
 	const pendingImageEntries: any = [];
@@ -1772,7 +1774,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				messageNode.innerHTML = '<div class="chat-round-separator-line" aria-hidden="true"></div>';
 			}
 			else if (variant === 'round-model') {
-				messageNode.innerHTML = `<div class="chat-round-model-text">${escapeHtml(normalizedText)}</div>`;
+				const copyBtnHtml: any = '<div class="chat-round-model-actions"><button class="chat-copy-round-button" type="button" title="复制本轮对话" aria-label="复制本轮对话"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use xlink:href="#icon-copy"></use></svg></button></div>';
+				messageNode.innerHTML = `${copyBtnHtml}<div class="chat-round-model-text">${escapeHtml(normalizedText)}</div>`;
 			}
 			else if (variant === 'running') {
 				messageNode.innerHTML = `<span class="chat-running-status"><span class="chat-running-spinner" aria-hidden="true"><svg class="chat-running-spinner-icon" viewBox="0 0 12 12" focusable="false"><use xlink:href="#icon-spinner-half"></use></svg></span><span class="chat-running-text">${escapeHtml(normalizedText || RUNNING_INDICATOR_TEXT)}</span></span>`;
@@ -2391,8 +2394,6 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			// 循环检测：记录上一次助手回复文本指纹与连续相同次数。
 			let lastLoopFingerprint: any = '';
 			let sameLoopCount: any = 0;
-			// 工具调用循环检测：记录连续仅调用 todo_list 的步骤计数。
-			let toolCallLoopCount: any = 0;
 			for (let step: any = 0; step < MAX_AGENT_STEPS; step += 1) {
 				throwIfAgentAborted(abortSignal);
 				let reasoningStreamMessage: any = null;
@@ -2410,47 +2411,64 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 					reasoningStreamMessage.collapse();
 					reasoningFoldAutoCollapsed = true;
 				};
-				const message: any = await callModel(config, (delta: any) => {
-					if (!delta || !delta.type) {
-						return;
-					}
-					const deltaType = delta.type;
-					if (deltaType !== 'reasoning') {
-						collapseReasoningFoldOnce();
-					}
-					if (deltaType === 'reasoning') {
-						if (!delta.text) {
+				let message: any;
+				try {
+					message = await callModel(config, (delta: any) => {
+						if (!delta || !delta.type) {
 							return;
 						}
-						markStreamActive();
-						hasReasoningStream = true;
-						if (!reasoningStreamMessage) {
-							reasoningStreamMessage = createAiStreamingMessage('reasoning');
-							reasoningStreamMessage.setLoading(true);
-							processFoldGroupController.appendProcessNode(reasoningStreamMessage.getNode());
-							// 将当前任务标题写入该节点的显示记录，供会话恢复时使用。
-							sessionManager.setProcessTitleByNode(reasoningStreamMessage.getNode(), todoPanelCurrentTaskTitle);
+						const deltaType = delta.type;
+						if (deltaType !== 'reasoning') {
+							collapseReasoningFoldOnce();
 						}
-						processFoldGroupController.setLoading(true);
-						reasoningStreamMessage.append(delta.text);
-						return;
-					}
-					if (deltaType === 'content') {
-						if (reasoningStreamMessage) {
-							reasoningStreamMessage.setLoading(false);
-						}
-						if (!delta.text) {
+						if (deltaType === 'reasoning') {
+							if (!delta.text) {
+								return;
+							}
+							markStreamActive();
+							hasReasoningStream = true;
+							if (!reasoningStreamMessage) {
+								reasoningStreamMessage = createAiStreamingMessage('reasoning');
+								reasoningStreamMessage.setLoading(true);
+								processFoldGroupController.appendProcessNode(reasoningStreamMessage.getNode());
+								// 将当前任务标题写入该节点的显示记录，供会话恢复时使用。
+								sessionManager.setProcessTitleByNode(reasoningStreamMessage.getNode(), todoPanelCurrentTaskTitle);
+							}
+							processFoldGroupController.setLoading(true);
+							reasoningStreamMessage.append(delta.text);
 							return;
 						}
-						processFoldGroupController.collapseOnContent();
-						markStreamActive();
-						hasAssistantStream = true;
-						if (!assistantStreamMessage) {
-							assistantStreamMessage = createAiStreamingMessage();
+						if (deltaType === 'content') {
+							if (reasoningStreamMessage) {
+								reasoningStreamMessage.setLoading(false);
+							}
+							if (!delta.text) {
+								return;
+							}
+							processFoldGroupController.collapseOnContent();
+							markStreamActive();
+							hasAssistantStream = true;
+							if (!assistantStreamMessage) {
+								assistantStreamMessage = createAiStreamingMessage();
+							}
+							assistantStreamMessage.append(delta.text);
 						}
-						assistantStreamMessage.append(delta.text);
+					}, abortSignal);
+				}
+				catch (callModelErr: any) {
+				// 用户中止时将已流式接收的部分助手内容提交到 agentMessages，确保复制功能可获取页面已展示的内容。
+					if (isAbortError(callModelErr) && assistantStreamMessage) {
+						const partialText: string = String(assistantStreamMessage.getText() || '').trim();
+						if (partialText) {
+							agentMessages.push({
+								role: 'assistant',
+								content: partialText,
+								reasoning_content: '',
+							});
+						}
 					}
-				}, abortSignal);
+					throw callModelErr;
+				}
 				stopStreamIdleWatch();
 				const rawAssistantContent: any = readAssistantContent(message.content);
 				const thinkResult: any = splitThinkContent(rawAssistantContent);
@@ -2578,27 +2596,6 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						});
 						sessionManager.schedulePersistChatSession();
 					}
-					// 工具调用循环检测：连续 5 步仅调用 todo_list 则判定为死循环。
-					const toolNamesInStep: any = message.tool_calls.map((tc: any) =>
-						tc && tc.function ? tc.function.name : '',
-					).filter(Boolean);
-					if (toolNamesInStep.length > 0 && toolNamesInStep.every((n: any) => n === 'todo_list')) {
-						toolCallLoopCount += 1;
-						if (toolCallLoopCount > 4) {
-							throw Object.assign(
-								new Error(
-									'**检测到模型陷入死循环，已为你自动终止本次对话。**\n\n'
-									+ '当前模型连续多次反复调用任务列表但无法推进实际任务。\n\n'
-									+ '这通常是由于该模型对工具调用的支持存在缺陷，或指令理解有偏差。\n\n'
-									+ '**这不是你的问题，是模型的缺陷。** 建议切换至其他模型后重新发起对话。',
-								),
-								{ name: 'ToolCallLoopError' },
-							);
-						}
-					}
-					else {
-						toolCallLoopCount = 0;
-					}
 					processFoldGroupController.setLoading(false);
 					showRunningIndicator();
 					processFoldGroupController.appendProcessNode(runningIndicatorNode);
@@ -2705,6 +2702,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			role: 'user',
 			content: userMessageContent,
 		});
+		const roundUserIdx: number = agentMessages.length - 1;
 		sessionManager.schedulePersistChatSession();
 		activeAbortController = new AbortController();
 		setSending(true);
@@ -2733,7 +2731,10 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		finally {
 			if (roundCompleted) {
-				appendMessage('ai', roundModelText, 'round-model');
+				const roundModelNode: any = appendMessage('ai', roundModelText, 'round-model');
+				if (roundModelNode instanceof HTMLElement) {
+					roundModelNode.setAttribute('data-round-start', String(roundUserIdx));
+				}
 				hasCompletedRound = true;
 			}
 			sessionManager.persistChatSessionNow();
@@ -2752,6 +2753,91 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		handleSend();
 	});
+	// 复制按钮：通过事件委托处理 round-model 行内的复制按钮点击。
+	if (chatHistory) {
+		chatHistory.addEventListener('click', (event?: any) => {
+			const target: any = event && event.target ? event.target.closest('.chat-copy-round-button') : null;
+			if (!target) {
+				return;
+			}
+			const roundNode: any = target.closest('[data-round-start]');
+			const startIdx: number = roundNode
+				? Number.parseInt(String(roundNode.getAttribute('data-round-start') || '-1'), 10)
+				: -1;
+			copyRound(agentMessages, startIdx).catch(() => { });
+		});
+	}
+	// 解析点击目标所属轮次的 roundUserIdx。
+	function resolveRoundStartFromTarget(target: any): number {
+		if (!chatHistory || !target) {
+			return -1;
+		}
+		// 如果点击位置在 round-model 节点内部，直接使用该节点的属性。
+		const selfNode: any = target.closest ? target.closest('[data-round-start]') : null;
+		if (selfNode) {
+			return Number.parseInt(String(selfNode.getAttribute('data-round-start') || '-1'), 10);
+		}
+		// 找到 DOM 中排在点击位置之后的第一个 round-model 节点。
+		const roundNodes: any = chatHistory.querySelectorAll('[data-round-start]');
+		for (let i: number = 0; i < roundNodes.length; i += 1) {
+			const rm: any = roundNodes[i];
+			if (target.compareDocumentPosition(rm) & 4) {
+				return Number.parseInt(String(rm.getAttribute('data-round-start') || '-1'), 10);
+			}
+		}
+		// 点击位置在所有 round-model 之后，返回 -1。
+		return -1;
+	}
+	// 右键菜单：隐藏辅助函数。
+	function hideChatContextMenu() {
+		if (chatContextMenu) {
+			chatContextMenu.classList.remove('is-visible');
+		}
+	}
+	// 右键菜单：聊天历史区域右键触发。
+	if (chatHistory && chatContextMenu) {
+		chatHistory.addEventListener('contextmenu', (event?: any) => {
+			event.preventDefault();
+			const roundStartIdx: number = resolveRoundStartFromTarget(event.target);
+			chatContextMenu.dataset.contextRoundStart = String(roundStartIdx);
+			const menuWidth: any = chatContextMenu.offsetWidth || 120;
+			const menuHeight: any = chatContextMenu.offsetHeight || 60;
+			const viewportWidth: any = window.innerWidth;
+			const viewportHeight: any = window.innerHeight;
+			let left: any = Number(event.clientX);
+			let top: any = Number(event.clientY);
+			if (left + menuWidth > viewportWidth) {
+				left = Math.max(0, viewportWidth - menuWidth - 4);
+			}
+			if (top + menuHeight > viewportHeight) {
+				top = Math.max(0, viewportHeight - menuHeight - 4);
+			}
+			chatContextMenu.style.left = `${String(left)}px`;
+			chatContextMenu.style.top = `${String(top)}px`;
+			chatContextMenu.classList.add('is-visible');
+		});
+		chatContextMenu.addEventListener('click', (event?: any) => {
+			const target: any = event && event.target ? event.target.closest('.chat-context-menu-item') : null;
+			if (!target) {
+				return;
+			}
+			const action: any = String(target.getAttribute('data-action') || '');
+			hideChatContextMenu();
+			if (action === 'copy-round') {
+				const storedIdx: number = Number.parseInt(String(chatContextMenu.dataset.contextRoundStart || '-1'), 10);
+				copyRound(agentMessages, storedIdx).catch(() => { });
+			}
+			else if (action === 'copy-all') {
+				copyAllHistory(agentMessages).catch(() => { });
+			}
+		});
+		document.addEventListener('click', hideChatContextMenu);
+		document.addEventListener('keydown', (event?: any) => {
+			if (event && event.key === 'Escape') {
+				hideChatContextMenu();
+			}
+		});
+	}
 	if (chatTextareaScroll) {
 		chatInputOverlayScrollbar = OverlayScrollbars(chatTextareaScroll, {
 			overflow: {
