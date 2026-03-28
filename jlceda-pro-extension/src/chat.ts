@@ -457,7 +457,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		return /(?:^|\n)\s*返回结果[：:]\s*失败(?:\s*$|\n)/u.test(sourceText);
 	}
 	// 生成可写入模型上下文的工具结果对象。
-	function sanitizeToolResultForModel(result?: any) {
+	function sanitizeToolResultForModel(result?: any, calledToolName?: string) {
 		const resultObject: any = result && typeof result === 'object' ? result : null;
 		if (!resultObject) {
 			return result;
@@ -465,6 +465,11 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		const sanitizedResult: any = { ...resultObject };
 		if (String(sanitizedResult.errorCode || '').trim() === 'INVALID_TOOL_ARGUMENTS_JSON') {
 			sanitizedResult.error = '工具参数不是有效 JSON。';
+		}
+		// todo_list 结果不把 todoList 完整数组返回给模型，避免模型看到全部 not-started 项
+		// 误以为任务未推进而反复重建列表，引发死循环。
+		if (calledToolName === 'todo_list') {
+			delete sanitizedResult.todoList;
 		}
 		return sanitizedResult;
 	}
@@ -2635,7 +2640,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 							role: 'tool',
 							tool_call_id: toolCallId,
 							name: toolName,
-							content: safeJsonStringify(sanitizeToolResultForModel(result)),
+							content: safeJsonStringify(sanitizeToolResultForModel(result, toolName)),
 						});
 						sessionManager.schedulePersistChatSession();
 					}
