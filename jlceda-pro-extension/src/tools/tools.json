@@ -165,17 +165,17 @@
 				"properties": {
 					"components": {
 						"type": "array",
-						"description": "待放置器件数组（必填），按最终放置顺序排列。每项必须提供 uuid 和 libraryUuid，可附带 name、footprintName、subPartName 用于界面提示。",
+						"description": "待放置器件数组（必填），按最终放置顺序排列。每个器件必须提供 uuid 和 libraryUuid。电源/地符号（VCC/GND 等）不通过此工具放置，请用户在 EDA 中手动放置。",
 						"items": {
 							"type": "object",
 							"properties": {
 								"uuid": {
 									"type": "string",
-									"description": "器件 UUID。"
+									"description": "器件 UUID（必填）。"
 								},
 								"libraryUuid": {
 									"type": "string",
-									"description": "器件所属库 UUID。"
+									"description": "器件所属库 UUID（必填）。"
 								},
 								"name": {
 									"type": "string",
@@ -189,8 +189,7 @@
 									"type": "string",
 									"description": "多子部件器件的子部件名称（可选）。"
 								}
-							},
-							"required": ["uuid", "libraryUuid"]
+							}
 						}
 					},
 					"timeoutSeconds": {
@@ -199,6 +198,85 @@
 					}
 				},
 				"required": ["components"]
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "schematic_wire_plan",
+			"description": "校验并规划原理图连线方案。AI 只需声明哪个器件的哪个引脚与哪个引脚相连及所属网络名，禁止提供任何坐标数据。工具自动从原理图拓扑中读取精确引脚坐标，执行端点存在性、No Connect 标记、电源短路、引脚跨网冲突等前置安全校验，校验通过后在聊天页面展示确认面板供用户选择连接方式（导线 / 网络标签）。用户确认后返回 planId 和 connectionMethod，供 schematic_wire_execute 使用；用户取消时立即停止，不得重试。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"connections": {
+						"type": "array",
+						"description": "待连接的引脚对列表。每项声明两个引脚之间的逻辑连接和所属网络名。禁止在任何字段中填写坐标数据。",
+						"items": {
+							"type": "object",
+							"properties": {
+								"from": {
+									"type": "object",
+									"description": "源引脚所属器件与引脚标识。",
+									"properties": {
+										"refDes": {
+											"type": "string",
+											"description": "源引脚所属器件位号，如 U1、R1。必须与原理图中显示的位号完全一致。"
+										},
+										"pin": {
+											"type": "string",
+											"description": "源引脚编号或信号名，如 1、VCC、PA0。工具会自动匹配引脚编号和信号名，任填其一即可。"
+										}
+									},
+									"required": ["refDes", "pin"]
+								},
+								"to": {
+									"type": "object",
+									"description": "目标引脚所属器件与引脚标识。",
+									"properties": {
+										"refDes": {
+											"type": "string",
+											"description": "目标引脚所属器件位号，如 U1、R1。必须与原理图中显示的位号完全一致。"
+										},
+										"pin": {
+											"type": "string",
+											"description": "目标引脚编号或信号名，如 1、VCC、PA0。工具会自动匹配引脚编号和信号名，任填其一即可。"
+										}
+									},
+									"required": ["refDes", "pin"]
+								},
+								"netName": {
+									"type": "string",
+									"description": "本连接所属网络名，如 VCC、GND、UART_TX。同一网络内的所有引脚必须使用相同的 netName。"
+								}
+							},
+							"required": ["from", "to", "netName"]
+						}
+					}
+				},
+				"required": ["connections"]
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "schematic_wire_execute",
+			"description": "执行已由用户确认的原理图连线规划。必须在 schematic_wire_plan 成功返回 planId 和 connectionMethod 后才能调用，二者均需原样传入。工具逐条执行连线，记录每条的成功或失败状态，最后运行 ERC 检查并返回整体结果。",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"planId": {
+						"type": "string",
+						"description": "由 schematic_wire_plan 返回的规划 ID，必须原样传入，不得修改。"
+					},
+					"connectionMethod": {
+						"type": "string",
+						"enum": ["wire", "net-label"],
+						"description": "连接方式，来自 schematic_wire_plan 用户确认的结果，必须原样传入：wire=导线连接，net-label=网络标签连接。"
+					}
+				},
+				"required": ["planId", "connectionMethod"]
 			}
 		}
 	}

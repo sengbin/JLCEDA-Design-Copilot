@@ -18,6 +18,7 @@ import { createChatSessionManager } from './session/session';
 import { applyComponentPlaceInteraction } from './tools/component-place-ui';
 import { applyComponentSelectInteraction } from './tools/component-select-ui';
 import { createAgentToolRuntime, executeToolWithTimeout } from './tools/executor';
+import { applySchematicWirePlanInteraction } from './tools/schematic-wire-plan-ui';
 import tools from './tools/tools.json';
 import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessage } from './utils';
 
@@ -2576,6 +2577,20 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						});
 						if (componentPlaceFinalResult !== null) {
 							result = componentPlaceFinalResult;
+						}
+						const schematicWirePlanFinalResult: any = await applySchematicWirePlanInteraction({
+							toolResult: result,
+							messageNode: toolMessageNode,
+							abortSignal,
+							onBeforeShow: () => {
+								const displayWirePlanResult: any = buildToolExecDisplayResult(toolName, result);
+								setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displayWirePlanResult, false), 'tool-exec');
+								setMessageFoldOpen(toolMessageNode, true);
+							},
+							onMounted: () => forceScrollChatHistoryToBottom(),
+						});
+						if (schematicWirePlanFinalResult !== null) {
+							result = schematicWirePlanFinalResult;
 						}
 						const displayToolResult: any = buildToolExecDisplayResult(toolName, result);
 						setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displayToolResult, false), 'tool-exec');

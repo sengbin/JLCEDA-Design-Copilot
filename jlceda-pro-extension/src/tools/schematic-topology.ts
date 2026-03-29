@@ -22,7 +22,7 @@ function sg<T>(obj: unknown, method: string, fallback: T): T {
 		const fn = (obj as Record<string, unknown>)?.[method];
 		if (typeof fn === 'function') {
 			const result: unknown = (fn as () => unknown).call(obj);
-			return result as T;
+			return result != null ? result as T : fallback;
 		}
 	}
 	catch { /* ignore */ }
@@ -61,58 +61,85 @@ async function extractSchematicTopology(root: any, safeCall: SchematicTopologyDe
 
 	for (const rawComponent of componentListRaw) {
 		const reference = sg<string>(rawComponent, 'getState_Designator', '');
-		// 跳过没有位号的虚拟器件。
-		if (!reference)
-			continue;
-
+		const netFlagName = sg<string>(rawComponent, 'getState_Net', '');
 		const primitiveId = sg<string>(rawComponent, 'getState_PrimitiveId', '');
-		const footprintRaw = await safeCall(() => (rawComponent as any).getState_Footprint());
-		const footprintUuid = footprintRaw && typeof footprintRaw === 'object'
-			? String((footprintRaw as { uuid?: unknown }).uuid ?? '')
-			: '';
 
-		const pinsRaw = await safeCall(() => root.sch_PrimitiveComponent.getAllPinsByPrimitiveId(primitiveId));
-		if (pinsRaw !== undefined && !Array.isArray(pinsRaw)) {
-			return { ok: false, error: `器件 ${reference} 的引脚列表格式异常。` };
-		}
+		if (reference.length > 0) {
+			const footprintRaw = await safeCall(() => (rawComponent as any).getState_Footprint());
+			const footprintUuid = footprintRaw && typeof footprintRaw === 'object'
+				? String((footprintRaw as { uuid?: unknown }).uuid ?? '')
+				: '';
 
-		const pins: Array<{
-			pinInstanceId: string; // 引脚实例 ID，唯一标识该引脚
-			pinSignalName: string; // 引脚信号名称，如 VCC、GND、PA0
-			pinPadNumber: string; // 引脚编号，与封装焊盘编号对应，如 1、2、A1
-			pinElectricalType: string; // 引脚电气类型，如 input、output、power、passive 等
-			wireConnectionX_mil: number; // 引脚导线连接点 X 坐标，单位 mil，用于连线分析
-			wireConnectionY_mil: number; // 引脚导线连接点 Y 坐标，单位 mil，用于连线分析
-			orientationDeg: number; // 引脚朝向角度，单位：度，表示引脚伸出方向
-			pinLength_mil: number; // 引脚长度，单位 mil
-			hasNoConnectMark: boolean; // 是否放置了 No Connect 标记（X），true 表示该引脚不参与任何连线
-		}> = [];
-		for (const rawPin of Array.isArray(pinsRaw) ? pinsRaw : []) {
-			pins.push({
-				pinInstanceId: sg<string>(rawPin, 'getState_PrimitiveId', ''),
-				pinSignalName: sg<string>(rawPin, 'getState_PinName', ''),
-				pinPadNumber: sg<string>(rawPin, 'getState_PinNumber', ''),
-				pinElectricalType: sg<string>(rawPin, 'getState_PinType', ''),
-				wireConnectionX_mil: sg<number>(rawPin, 'getState_X', 0),
-				wireConnectionY_mil: sg<number>(rawPin, 'getState_Y', 0),
-				orientationDeg: sg<number>(rawPin, 'getState_Rotation', 0),
-				pinLength_mil: sg<number>(rawPin, 'getState_PinLength', 0),
-				hasNoConnectMark: sg<boolean>(rawPin, 'getState_NoConnected', false),
+			const pinsRaw = await safeCall(() => root.sch_PrimitiveComponent.getAllPinsByPrimitiveId(primitiveId));
+			if (pinsRaw !== undefined && !Array.isArray(pinsRaw)) {
+				return { ok: false, error: `器件 ${reference} 的引脚列表格式异常。` };
+			}
+
+			const pins: Array<{
+				pinInstanceId: string;
+				pinSignalName: string;
+				pinPadNumber: string;
+				pinElectricalType: string;
+				wireConnectionX_mil: number;
+				wireConnectionY_mil: number;
+				orientationDeg: number;
+				pinLength_mil: number;
+				hasNoConnectMark: boolean;
+			}> = [];
+			for (const rawPin of Array.isArray(pinsRaw) ? pinsRaw : []) {
+				pins.push({
+					pinInstanceId: sg<string>(rawPin, 'getState_PrimitiveId', ''),
+					pinSignalName: sg<string>(rawPin, 'getState_PinName', ''),
+					pinPadNumber: sg<string>(rawPin, 'getState_PinNumber', ''),
+					pinElectricalType: sg<string>(rawPin, 'getState_PinType', ''),
+					wireConnectionX_mil: sg<number>(rawPin, 'getState_X', 0),
+					wireConnectionY_mil: sg<number>(rawPin, 'getState_Y', 0),
+					orientationDeg: sg<number>(rawPin, 'getState_Rotation', 0),
+					pinLength_mil: sg<number>(rawPin, 'getState_PinLength', 0),
+					hasNoConnectMark: sg<boolean>(rawPin, 'getState_NoConnected', false),
+				});
+			}
+
+			components.push({
+				componentInstanceId: primitiveId,
+				designator: reference,
+				symbolName: sg<string>(rawComponent, 'getState_Name', ''),
+				centerX_mil: sg<number>(rawComponent, 'getState_X', 0),
+				centerY_mil: sg<number>(rawComponent, 'getState_Y', 0),
+				rotationDeg: sg<number>(rawComponent, 'getState_Rotation', 0),
+				isMirroredHorizontally: sg<boolean>(rawComponent, 'getState_Mirror', false),
+				pcbFootprintUuid: footprintUuid,
+				schematicSubPartName: sg<string>(rawComponent, 'getState_SubPartName', ''),
+				pins,
 			});
 		}
+		else if (netFlagName.length > 0) {
+			const centerX = sg<number>(rawComponent, 'getState_X', 0);
+			const centerY = sg<number>(rawComponent, 'getState_Y', 0);
 
-		components.push({
-			componentInstanceId: primitiveId,
-			designator: reference,
-			symbolName: sg<string>(rawComponent, 'getState_Name', ''),
-			centerX_mil: sg<number>(rawComponent, 'getState_X', 0),
-			centerY_mil: sg<number>(rawComponent, 'getState_Y', 0),
-			rotationDeg: sg<number>(rawComponent, 'getState_Rotation', 0),
-			isMirroredHorizontally: sg<boolean>(rawComponent, 'getState_Mirror', false),
-			pcbFootprintUuid: footprintUuid,
-			schematicSubPartName: sg<string>(rawComponent, 'getState_SubPartName', ''),
-			pins,
-		});
+			components.push({
+				componentInstanceId: primitiveId,
+				designator: netFlagName,
+				symbolName: netFlagName,
+				centerX_mil: centerX,
+				centerY_mil: centerY,
+				rotationDeg: sg<number>(rawComponent, 'getState_Rotation', 0),
+				isMirroredHorizontally: false,
+				pcbFootprintUuid: '',
+				schematicSubPartName: '',
+				pins: [{
+					pinInstanceId: primitiveId,
+					pinSignalName: netFlagName,
+					pinPadNumber: '1',
+					pinElectricalType: 'power',
+					wireConnectionX_mil: centerX,
+					wireConnectionY_mil: centerY,
+					orientationDeg: 0,
+					pinLength_mil: 0,
+					hasNoConnectMark: false,
+				}],
+			});
+		}
 	}
 
 	return { ok: true, data: JSON.stringify({ components }) };

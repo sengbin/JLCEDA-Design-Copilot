@@ -52,6 +52,24 @@ const VALUE_UNIT_REQUIRED_COMPONENT_KEYWORDS: readonly string[] = [
 	'inductor',
 ];
 
+/** 禁止走器件选型流程的电源/地符号关键词。 */
+const NET_FLAG_KEYWORDS: ReadonlySet<string> = new Set([
+	'vcc',
+	'gnd',
+	'ground',
+	'power',
+	'vdd',
+	'vss',
+	'电源',
+	'地',
+	'电源符号',
+	'地符号',
+	'vcc符号',
+	'gnd符号',
+	'power symbol',
+	'ground symbol',
+]);
+
 // 判断当前关键词是否属于电阻/电容/电感这类需要对阻值、容值、感值强制单位的器件。
 function keywordRequiresValueUnit(keyword: string): boolean {
 	const normalizedKeyword: string = keyword.toLowerCase();
@@ -102,6 +120,8 @@ function mapDeviceSearchItem(raw: unknown): ComponentSelectCandidate {
  * @returns 器件选型处理器。
  */
 export function createComponentSelectHandler(runtimeWindow: Window) {
+	const skippedSelectKeywords: Set<string> = new Set();
+
 	async function handleComponentSelectTask(payload?: unknown): Promise<unknown> {
 		const args = (payload !== null && typeof payload === 'object' && !Array.isArray(payload)
 			? payload
@@ -110,6 +130,24 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 		const keyword: string = String(args.keyword ?? '').trim();
 		if (!keyword) {
 			return { ok: false, error: '缺少器件搜索关键词，请提供 keyword 参数。' };
+		}
+
+		const normalizedKeyword: string = keyword.toLowerCase();
+		if (NET_FLAG_KEYWORDS.has(normalizedKeyword)) {
+			return {
+				ok: false,
+				errorCode: 'NET_FLAG_NOT_SELECTABLE',
+				message: `电源/地符号（${keyword}）不需要选型，也不能通过 component_place 放置。请直接调用 schematic_wire_plan，工具会在连线前自动检测并弹出聊天页等待面板提示用户在 EDA 中手动放置所需符号，用户确认完成后自动继续连线。`,
+			};
+		}
+
+		if (skippedSelectKeywords.has(normalizedKeyword)) {
+			return {
+				ok: true,
+				skipped: true,
+				skipReason: 'user-already-skipped',
+				message: `用户已跳过“${keyword}”的器件选型，禁止重试。请直接进行下一步。`,
+			};
 		}
 
 		const keywordTokenMissingUnit: string | null = findKeywordTokenMissingUnit(keyword);
@@ -185,6 +223,10 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 				pageSize,
 				currentPage: 1,
 			} satisfies ComponentSelectRequest,
+			_selectionKeyword: keyword,
+		};
+		resultObj._markKeywordSkipped = (): void => {
+			skippedSelectKeywords.add(normalizedKeyword);
 		};
 		// 翻页回调：由 UI 层在用户点击上一页/下一页时调用，返回指定页候选器件列表。
 		resultObj._fetchPage = async (page: number): Promise<ComponentSelectCandidate[]> => {

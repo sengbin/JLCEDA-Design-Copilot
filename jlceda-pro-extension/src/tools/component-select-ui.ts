@@ -1071,6 +1071,13 @@ export async function applyComponentSelectInteraction(options: ApplyComponentSel
 	const toolResultObj: unknown = options.toolResult;
 	const rawFetchPage: unknown = options.fetchPage
 		?? (isObjectRecord(toolResultObj) ? (toolResultObj as Record<string, unknown>)._fetchPage : undefined);
+	const rawSelectionKeyword: unknown = isObjectRecord(toolResultObj)
+		? (toolResultObj as Record<string, unknown>)._selectionKeyword
+		: undefined;
+	const selectionKeyword: string = String(rawSelectionKeyword ?? '').trim();
+	const rawMarkKeywordSkipped: unknown = isObjectRecord(toolResultObj)
+		? (toolResultObj as Record<string, unknown>)._markKeywordSkipped
+		: undefined;
 	const fetchPage: ((page: number) => Promise<ComponentSelectCandidate[]>) | undefined
 		= typeof rawFetchPage === 'function'
 			? rawFetchPage as (page: number) => Promise<ComponentSelectCandidate[]>
@@ -1090,11 +1097,16 @@ export async function applyComponentSelectInteraction(options: ApplyComponentSel
 		throw new DOMException('【诊断信息】用户已停止', 'AbortError');
 	}
 	if (selectResult.reason === 'cancelled') {
+		if (typeof rawMarkKeywordSkipped === 'function') {
+			rawMarkKeywordSkipped();
+		}
 		return {
 			ok: true,
 			skipped: true,
-			skipReason: 'user-cancelled-selection',
-			message: '用户取消当前器件选型，请不要放置该器件，继续处理后续步骤，不要重试当前器件选型。',
+			skipReason: 'user-skipped-selection',
+			message: selectionKeyword
+				? `用户跳过了“${selectionKeyword}”的器件选型，禁止重试。请直接进行下一步，不得就该器件再做任何动作。`
+				: '用户跳过了当前器件选型，禁止重试。请直接进行下一步，不得就该器件再做任何动作。',
 		};
 	}
 	if (!selectResult.confirmed || !selectResult.candidate) {
