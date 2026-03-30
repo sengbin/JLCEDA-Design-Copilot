@@ -39,7 +39,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		'这个电路有什么可以优化的地方吗？',
 		'给我设计一个点亮LED的电路。',
 	];
-	const RUNNING_INDICATOR_TEXT: any = '执行中...';
+	const RUNNING_INDICATOR_TEXT: any = '运行中';
 	const imageUploadButton: any = document.querySelector('.image-upload-button');
 	const imageUploadInput: any = document.querySelector('.image-upload-input');
 	const documentUploadButton: any = document.querySelector('.document-upload-button');
