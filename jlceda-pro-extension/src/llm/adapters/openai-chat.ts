@@ -113,7 +113,8 @@ export function buildChatMessages(ctx: LlmAdapterContext): unknown[] {
 			}
 			const normalizedMessage: any = {
 				role: msg.role,
-				content: hasToolCalls ? (normalizedContent || null) : (normalizedContent || ''),
+				// tool_calls 场景使用字符串内容，避免兼容端对 null 处理不一致。
+				content: normalizedContent || '',
 			};
 			if (msg.role === 'assistant') {
 				const reasoning: any = readReasoningContent(msg);
