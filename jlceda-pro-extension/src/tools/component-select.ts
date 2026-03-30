@@ -137,7 +137,7 @@ export function createComponentSelectHandler(runtimeWindow: Window) {
 			return {
 				ok: false,
 				errorCode: 'NET_FLAG_NOT_SELECTABLE',
-				message: `电源/地符号（${keyword}）不需要选型，也不能通过 component_place 放置。请直接调用 schematic_wire_plan，工具会在连线前自动检测并弹出聊天页等待面板提示用户在 EDA 中手动放置所需符号，用户确认完成后自动继续连线。`,
+				message: `电源/地符号（${keyword}）不需要选型，也不能通过 component_place 放置。电源/地符号需要用户在 EDA 中手动放置。`,
 			};
 		}
 

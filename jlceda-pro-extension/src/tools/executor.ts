@@ -8,8 +8,6 @@ import { createComponentSelectHandler } from './component-select';
 import { createEdaContextHandler } from './eda-context';
 import { createSchematicNetlistHandler } from './schematic-netlist';
 import { createSchematicTopologyHandler } from './schematic-topology';
-import { createSchematicWireExecuteHandler } from './schematic-wire-execute';
-import { createSchematicWirePlanHandler } from './schematic-wire-plan';
 import { createTodoListHandler } from './todo_list';
 
 // 允许暴露给模型并允许执行的工具白名单。
@@ -20,8 +18,6 @@ export const MANUAL_EXPOSED_TOOL_NAMES: string[] = [
 	// 'api_invoke',
 	'schematic_topology',
 	'schematic_netlist',
-	'schematic_wire_plan',
-	'schematic_wire_execute',
 	'todo_list',
 	'component_select',
 	'component_place',
@@ -188,12 +184,6 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 	if (toolName === 'schematic_netlist') {
 		return '{}';
 	}
-	if (toolName === 'schematic_wire_plan') {
-		return '{"connections":[{"from":{"refDes":"U1","pin":"TX"},"to":{"refDes":"R1","pin":"1"},"netName":"UART_TX"}]}';
-	}
-	if (toolName === 'schematic_wire_execute') {
-		return '{"planId":"wire_plan_xxx","connectionMethod":"net-label"}';
-	}
 	if (toolName === 'todo_list') {
 		return '{"todoList":"[{\\"id\\":1,\\"title\\":\\"任务标题\\",\\"status\\":\\"in-progress\\"}]","explanation":"可选说明"}';
 	}
@@ -341,18 +331,6 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 			}
 			return await runtimeObject.handleSchematicNetlistTask(handlerArgs);
 		},
-		async schematic_wire_plan(handlerArgs?: unknown): Promise<unknown> {
-			if (typeof runtimeObject.handleSchematicWirePlanTask !== 'function') {
-				return { ok: false, error: 'schematic_wire_plan 处理器未初始化。' };
-			}
-			return await runtimeObject.handleSchematicWirePlanTask(handlerArgs);
-		},
-		async schematic_wire_execute(handlerArgs?: unknown): Promise<unknown> {
-			if (typeof runtimeObject.handleSchematicWireExecuteTask !== 'function') {
-				return { ok: false, error: 'schematic_wire_execute 处理器未初始化。' };
-			}
-			return await runtimeObject.handleSchematicWireExecuteTask(handlerArgs);
-		},
 		async todo_list(handlerArgs?: unknown): Promise<unknown> {
 			if (typeof runtimeObject.handleTodoListTask !== 'function') {
 				return { ok: false, error: 'todo_list 处理器未初始化。' };
@@ -439,8 +417,6 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 	const { handleApiInvokeTask, resolveApiMemberInAnyRoot } = createApiInvokeHandler(runtimeWindow || window, deps);
 	const { handleSchematicTopologyTask } = createSchematicTopologyHandler(runtimeWindow || window, deps);
 	const { handleSchematicNetlistTask } = createSchematicNetlistHandler(runtimeWindow || window, deps);
-	const { handleSchematicWirePlanTask } = createSchematicWirePlanHandler(runtimeWindow || window, deps);
-	const { handleSchematicWireExecuteTask } = createSchematicWireExecuteHandler(runtimeWindow || window, deps);
 	const { handleTodoListTask } = createTodoListHandler();
 	const { handleComponentSelectTask } = createComponentSelectHandler(runtimeWindow || window);
 	const { handleComponentPlaceTask } = createComponentPlaceHandler();
@@ -490,22 +466,6 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 		handleSchematicNetlistTask: async (payload?: unknown) => {
 			try {
 				return await handleSchematicNetlistTask(payload);
-			}
-			catch (error: unknown) {
-				return { ok: false, error: toSafeErrorMessage(error) };
-			}
-		},
-		handleSchematicWirePlanTask: async (payload?: unknown) => {
-			try {
-				return await handleSchematicWirePlanTask(payload);
-			}
-			catch (error: unknown) {
-				return { ok: false, error: toSafeErrorMessage(error) };
-			}
-		},
-		handleSchematicWireExecuteTask: async (payload?: unknown) => {
-			try {
-				return await handleSchematicWireExecuteTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };
