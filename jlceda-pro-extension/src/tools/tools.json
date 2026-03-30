@@ -85,19 +85,8 @@
 	{
 		"type": "function",
 		"function": {
-			"name": "schematic_topology",
-			"description": "提取原理图器件拓扑信息，包含器件位置、引脚坐标与电气类型等详情。",
-			"parameters": {
-				"type": "object",
-				"properties": {}
-			}
-		}
-	},
-	{
-		"type": "function",
-		"function": {
-			"name": "schematic_netlist",
-			"description": "提取原理图完整网表，返回网络连接关系，供 AI 进行功能性审查与电路分析。",
+			"name": "schematic_read",
+			"description": "读取当前原理图的完整电路语义快照，返回器件列表、引脚网络连接关系、网络列表与 ERC 检查结果。",
 			"parameters": {
 				"type": "object",
 				"properties": {}

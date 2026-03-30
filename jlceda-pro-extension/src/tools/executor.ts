@@ -6,8 +6,7 @@ import { createApiSearchHandler } from './api-search';
 import { createComponentPlaceHandler } from './component-place';
 import { createComponentSelectHandler } from './component-select';
 import { createEdaContextHandler } from './eda-context';
-import { createSchematicNetlistHandler } from './schematic-netlist';
-import { createSchematicTopologyHandler } from './schematic-topology';
+import { createSchematicReadHandler } from './schematic-read';
 import { createTodoListHandler } from './todo_list';
 
 // 允许暴露给模型并允许执行的工具白名单。
@@ -17,8 +16,7 @@ export const MANUAL_EXPOSED_TOOL_NAMES: string[] = [
 	// 'api_search',
 	// 'eda_context',
 	// 'api_invoke',
-	'schematic_topology',
-	'schematic_netlist',
+	'schematic_read',
 	'todo_list',
 	'component_select',
 	'component_place',
@@ -179,10 +177,7 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 	if (toolName === 'api_invoke') {
 		return '{"apiFullName":"eda.sch_Drc.check","args":"[false,false,true]"}';
 	}
-	if (toolName === 'schematic_topology') {
-		return '{}';
-	}
-	if (toolName === 'schematic_netlist') {
+	if (toolName === 'schematic_read') {
 		return '{}';
 	}
 	if (toolName === 'todo_list') {
@@ -320,17 +315,11 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 			}
 			return await runtimeObject.handleApiInvokeTask(handlerArgs);
 		},
-		async schematic_topology(handlerArgs?: unknown): Promise<unknown> {
-			if (typeof runtimeObject.handleSchematicTopologyTask !== 'function') {
-				return { ok: false, error: 'schematic_topology 处理器未初始化。' };
+		async schematic_read(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleSchematicReadTask !== 'function') {
+				return { ok: false, error: 'schematic_read 处理器未初始化。' };
 			}
-			return await runtimeObject.handleSchematicTopologyTask(handlerArgs);
-		},
-		async schematic_netlist(handlerArgs?: unknown): Promise<unknown> {
-			if (typeof runtimeObject.handleSchematicNetlistTask !== 'function') {
-				return { ok: false, error: 'schematic_netlist 处理器未初始化。' };
-			}
-			return await runtimeObject.handleSchematicNetlistTask(handlerArgs);
+			return await runtimeObject.handleSchematicReadTask(handlerArgs);
 		},
 		async todo_list(handlerArgs?: unknown): Promise<unknown> {
 			if (typeof runtimeObject.handleTodoListTask !== 'function') {
@@ -416,8 +405,7 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 	const { handleApiSearchTask } = createApiSearchHandler(runtimeWindow || window);
 	const { handleEdaContextTask } = createEdaContextHandler(runtimeWindow || window, deps);
 	const { handleApiInvokeTask, resolveApiMemberInAnyRoot } = createApiInvokeHandler(runtimeWindow || window, deps);
-	const { handleSchematicTopologyTask } = createSchematicTopologyHandler(runtimeWindow || window, deps);
-	const { handleSchematicNetlistTask } = createSchematicNetlistHandler(runtimeWindow || window, deps);
+	const { handleSchematicReadTask } = createSchematicReadHandler(runtimeWindow || window, deps);
 	const { handleTodoListTask } = createTodoListHandler();
 	const { handleComponentSelectTask } = createComponentSelectHandler(runtimeWindow || window);
 	const { handleComponentPlaceTask } = createComponentPlaceHandler();
@@ -456,17 +444,9 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 				return { ok: false, error: toSafeErrorMessage(error) };
 			}
 		},
-		handleSchematicTopologyTask: async (payload?: unknown) => {
+		handleSchematicReadTask: async (payload?: unknown) => {
 			try {
-				return await handleSchematicTopologyTask(payload);
-			}
-			catch (error: unknown) {
-				return { ok: false, error: toSafeErrorMessage(error) };
-			}
-		},
-		handleSchematicNetlistTask: async (payload?: unknown) => {
-			try {
-				return await handleSchematicNetlistTask(payload);
+				return await handleSchematicReadTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };
