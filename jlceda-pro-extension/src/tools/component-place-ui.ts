@@ -726,7 +726,6 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 					return;
 				}
 
-				let placedCurrentComponent: boolean = false;
 				for (let attempt = 1; attempt <= placeRequest.retryCount + 1; attempt += 1) {
 					const isRetry: boolean = attempt > 1;
 					setRowState(
@@ -756,7 +755,6 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 
 					if (attemptResult.placed) {
 						placedComponents.push(component);
-						placedCurrentComponent = true;
 						setRowState(
 							rowBindings,
 							index,
@@ -830,10 +828,6 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 						failedIndex: index + 1,
 						failedComponent: component,
 					});
-					return;
-				}
-
-				if (!placedCurrentComponent) {
 					return;
 				}
 			}
