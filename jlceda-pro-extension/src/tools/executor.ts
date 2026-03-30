@@ -12,6 +12,7 @@ import { createTodoListHandler } from './todo_list';
 
 // 允许暴露给模型并允许执行的工具白名单。
 export const MANUAL_EXPOSED_TOOL_NAMES: string[] = [
+	// 下面四个透传 API 工具仅作调试使用。
 	// 'api_index',
 	// 'api_search',
 	// 'eda_context',
