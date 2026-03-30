@@ -376,7 +376,7 @@ function requestWirePlanConfirmPanel(options: {
 		const { overlayElement, panelElement } = createPanelSkeleton(options.request);
 		appendConnectionRows(panelElement, options.request.connections || []);
 
-		let selectedMethod: 'wire' | 'net-label' = options.request.connectionMethod === 'wire' ? 'wire' : 'net-label';
+		let selectedMethod: 'wire' | 'net-label' = 'wire';
 		const methodElement: HTMLDivElement = document.createElement('div');
 		methodElement.className = 'schematic-wire-plan-method';
 		methodElement.appendChild(document.createTextNode('连接方式：'));
@@ -399,7 +399,8 @@ function requestWirePlanConfirmPanel(options: {
 		netLabelRadio.type = 'radio';
 		netLabelRadio.name = 'schematicWirePlanMethod';
 		netLabelRadio.value = 'net-label';
-		netLabelRadio.checked = selectedMethod === 'net-label';
+		netLabelRadio.checked = false;
+		netLabelRadio.disabled = true;
 		netLabelRadio.addEventListener('change', () => {
 			selectedMethod = 'net-label';
 		});

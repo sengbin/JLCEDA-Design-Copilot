@@ -113,7 +113,7 @@ function buildWirePlanConfirmRequest(planId: string, connections: SchematicWireP
 		title: '连线规划确认',
 		description: `AI 规划了 ${String(connections.length)} 条连线，请选择连接方式并确认后执行。`,
 		noticeText: '',
-		connectionMethod: 'net-label',
+		connectionMethod: 'wire',
 		planId,
 		connections,
 		canConfirm: true,
