@@ -7,6 +7,7 @@ import { createComponentPlaceHandler } from './component-place';
 import { createComponentSelectHandler } from './component-select';
 import { createEdaContextHandler } from './eda-context';
 import { createSchematicReadHandler } from './schematic-read';
+import { createSchematicReviewHandler } from './schematic-review';
 import { createTodoListHandler } from './todo_list';
 
 // 允许暴露给模型并允许执行的工具白名单。
@@ -17,6 +18,7 @@ export const MANUAL_EXPOSED_TOOL_NAMES: string[] = [
 	// 'eda_context',
 	// 'api_invoke',
 	'schematic_read',
+	'schematic_review',
 	'todo_list',
 	'component_select',
 	'component_place',
@@ -180,6 +182,9 @@ function buildExpectedArgumentsFormat(toolName: string): string {
 	if (toolName === 'schematic_read') {
 		return '{}';
 	}
+	if (toolName === 'schematic_review') {
+		return '{}';
+	}
 	if (toolName === 'todo_list') {
 		return '{"todoList":"[{\\"id\\":1,\\"title\\":\\"任务标题\\",\\"status\\":\\"in-progress\\"}]","explanation":"可选说明"}';
 	}
@@ -321,6 +326,12 @@ export async function executeTool(toolRuntime?: any, toolName?: any, rawArgument
 			}
 			return await runtimeObject.handleSchematicReadTask(handlerArgs);
 		},
+		async schematic_review(handlerArgs?: unknown): Promise<unknown> {
+			if (typeof runtimeObject.handleSchematicReviewTask !== 'function') {
+				return { ok: false, error: 'schematic_review 处理器未初始化。' };
+			}
+			return await runtimeObject.handleSchematicReviewTask(handlerArgs);
+		},
 		async todo_list(handlerArgs?: unknown): Promise<unknown> {
 			if (typeof runtimeObject.handleTodoListTask !== 'function') {
 				return { ok: false, error: 'todo_list 处理器未初始化。' };
@@ -406,6 +417,7 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 	const { handleEdaContextTask } = createEdaContextHandler(runtimeWindow || window, deps);
 	const { handleApiInvokeTask, resolveApiMemberInAnyRoot } = createApiInvokeHandler(runtimeWindow || window, deps);
 	const { handleSchematicReadTask } = createSchematicReadHandler(runtimeWindow || window, deps);
+	const { handleSchematicReviewTask } = createSchematicReviewHandler(runtimeWindow || window, deps);
 	const { handleTodoListTask } = createTodoListHandler();
 	const { handleComponentSelectTask } = createComponentSelectHandler(runtimeWindow || window);
 	const { handleComponentPlaceTask } = createComponentPlaceHandler();
@@ -447,6 +459,14 @@ export function createAgentToolRuntime(runtimeWindow?: any) {
 		handleSchematicReadTask: async (payload?: unknown) => {
 			try {
 				return await handleSchematicReadTask(payload);
+			}
+			catch (error: unknown) {
+				return { ok: false, error: toSafeErrorMessage(error) };
+			}
+		},
+		handleSchematicReviewTask: async (payload?: unknown) => {
+			try {
+				return await handleSchematicReviewTask(payload);
 			}
 			catch (error: unknown) {
 				return { ok: false, error: toSafeErrorMessage(error) };

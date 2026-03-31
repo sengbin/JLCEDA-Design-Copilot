@@ -3,7 +3,7 @@
 	"uuid": "4585803ac4eb41d19e17c601bfa15528",
 	"displayName": "AI 设计助手",
 	"description": "用自然语言对话，让 AI 帮你分析电路。",
-	"version": "2.5.0",
+	"version": "2.5.1",
 	"publisher": "Lion",
 	"engines": {
 		"eda": "^3.0.0"

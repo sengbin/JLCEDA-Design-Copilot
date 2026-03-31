@@ -86,7 +86,18 @@
 		"type": "function",
 		"function": {
 			"name": "schematic_read",
-			"description": "读取当前原理图的完整电路语义快照，返回器件列表、引脚网络连接关系、网络列表与 ERC 检查结果。",
+			"description": "读取当前原理图页面的完整电路语义快照。",
+			"parameters": {
+				"type": "object",
+				"properties": {}
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "schematic_review",
+			"description": "读取全工程所有原理图页面的网表文件。",
 			"parameters": {
 				"type": "object",
 				"properties": {}
@@ -133,7 +144,7 @@
 				"properties": {
 					"keyword": {
 						"type": "string",
-						"description": "器件搜索关键词（必填）。直接使用用户给出的型号或描述，禁止擅自追加封装、尺寸、引脚数或任何其他限定词。仅对电阻、电容、电感这类需要数值参数的器件，才允许补充带单位的阻值/容值/感值，例如 1kΩ、100nF、10uH，禁止使用 1k、100n、10u 这类缺少单位的写法。"
+						"description": "器件搜索关键词（必填）。"
 					},
 					"limit": {
 						"type": "number",
@@ -154,7 +165,7 @@
 				"properties": {
 					"components": {
 						"type": "array",
-						"description": "待放置器件数组（必填），按最终放置顺序排列。每个器件必须提供 uuid 和 libraryUuid。电源/地符号（VCC/GND 等）不通过此工具放置，请用户在 EDA 中手动放置。",
+						"description": "待放置器件数组（必填），按最终放置顺序排列。每个器件必须提供 uuid 和 libraryUuid。",
 						"items": {
 							"type": "object",
 							"properties": {
@@ -191,4 +202,3 @@
 		}
 	}
 ]
-
