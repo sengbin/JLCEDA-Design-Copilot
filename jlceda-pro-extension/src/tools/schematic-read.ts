@@ -286,12 +286,12 @@ async function readSchematicCircuit(
 	}
 	networks.sort((a, b) => a.networkName.localeCompare(b.networkName));
 
-	// ── 第五步：执行 ERC 检查 ────────────────────────────────────────────────
-	const ercRawResult = await safeCall(() => root.sch_Drc.check(false, false, true));
-	const ercCheckPassed = ercRawResult === true;
+	// ── 第五步：执行 DRC 检查 ────────────────────────────────────────────────
+	const drcRawResult = await safeCall(() => root.sch_Drc.check(false, false, true));
+	const drcCheckPassed = drcRawResult === true;
 
 	const output = {
-		ercCheckPassed,
+		drcCheckPassed,
 		componentCount: components.length,
 		networkCount: networks.length,
 		components,
