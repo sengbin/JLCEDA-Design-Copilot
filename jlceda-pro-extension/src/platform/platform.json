@@ -55,7 +55,7 @@
 			"model": "",
 			"imagePayloadMode": "image_url",
 			"isCustomEndpoint": true,
-			"modelHint": "此选项卡仅适用于 OpenAI 兼容格式（REST API）的模型，例如 gpt-4o、o3、o4-mini 等。请勿将 Anthropic 原生模型（如 claude-opus-4-5、claude-sonnet-4-5 等）填写在此处，否则请求将会失败。"
+			"modelHint": "此选项卡仅适用于 OpenAI 兼容格式（REST API）的模型，例如 gpt-5.4。请勿将 Anthropic 原生模型（如 claude-opus-4-6）填写在此处，否则请求将会失败。"
 		},
 		{
 			"id": "custom-anthropic",
@@ -69,7 +69,7 @@
 			"imagePayloadMode": "image_url",
 			"isCustomEndpoint": true,
 			"apiFormat": "anthropic",
-			"modelHint": "此选项卡仅适用于 Anthropic 原生格式的模型，例如 claude-opus-4-5、claude-sonnet-4-5、claude-haiku-3-5 等。请勿将 OpenAI 兼容模型（如 gpt-* 、o*系列）填写在此处，否则请求将会失败。"
+			"modelHint": "此选项卡仅适用于 Anthropic 原生格式的模型，例如 claude-opus-4-6 等。请勿将 OpenAI 兼容模型（如 gpt-5.4）填写在此处，否则请求将会失败。"
 		}
 	]
 }
