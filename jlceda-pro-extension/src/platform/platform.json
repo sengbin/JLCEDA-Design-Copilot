@@ -34,6 +34,17 @@
 			"imagePayloadMode": "image_url"
 		},
 		{
+			"id": "minimax",
+			"label": "MiniMax",
+			"entryUrl": "https://platform.minimaxi.com/",
+			"endpoint": "https://api.minimaxi.com/v1/text/chatcompletion_v2",
+			"keyField": "minimaxKey",
+			"endpointField": "minimaxUrl",
+			"modelField": "minimaxModel",
+			"model": "MiniMax-M2.7",
+			"imagePayloadMode": "image_url"
+		},
+		{
 			"id": "custom-openai",
 			"label": "OpenAI 兼容",
 			"entryUrl": "",
