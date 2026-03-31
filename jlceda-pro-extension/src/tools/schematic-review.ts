@@ -37,6 +37,11 @@ export function createSchematicReviewHandler(runtimeWindow: Window, deps: Schema
 		}
 		const root: any = rootUnknown;
 
+		// ── 第一步：执行 DRC 检查 ────────────────────────────────────────────────
+		const drcRawResult = await safeCall(() => root.sch_Drc.check(false, false, true));
+		const drcCheckPassed = drcRawResult === true;
+
+		// ── 第二步：获取全工程网表 ───────────────────────────────────────────────
 		const netlistFile: unknown = await safeCall(() => root.sch_ManufactureData.getNetlistFile());
 		if (!netlistFile) {
 			return {
@@ -57,6 +62,7 @@ export function createSchematicReviewHandler(runtimeWindow: Window, deps: Schema
 
 		return {
 			ok: true,
+			drcCheckPassed,
 			netlistText,
 		};
 	}
