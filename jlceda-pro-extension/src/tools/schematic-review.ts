@@ -3,7 +3,6 @@
  * 名称：全工程原理图审查工具
  * 说明：调用 sch_ManufactureData.getNetlistFile 获取全工程（所有原理图页面）的网表文件，
  *       将网表文本直接输出供 AI 分析，覆盖多页原理图的所有器件与网络连接关系。
- *       数据来源于已保存的网表文件，非实时内存状态，调用前需确保工程已保存。
  *       适合全局电路审查、BOM 核查、跨页信号追踪，不适合放置器件后的实时验证。
  * 作者：Lion
  * 邮箱：chengbin@3578.cn
@@ -42,7 +41,7 @@ export function createSchematicReviewHandler(runtimeWindow: Window, deps: Schema
 		if (!netlistFile) {
 			return {
 				ok: false,
-				error: '网表文件获取失败，请确认工程已保存（Ctrl+S）后重试。sch_ManufactureData.getNetlistFile 返回空。',
+				error: '网表文件获取失败，sch_ManufactureData.getNetlistFile 返回空。',
 			};
 		}
 
@@ -53,7 +52,7 @@ export function createSchematicReviewHandler(runtimeWindow: Window, deps: Schema
 
 		const netlistText: string = await netlistFileObj.text();
 		if (!netlistText || netlistText.trim().length === 0) {
-			return { ok: false, error: '网表文件内容为空，请确认工程已保存且原理图不为空。' };
+			return { ok: false, error: '网表文件内容为空，请确认原理图不为空。' };
 		}
 
 		return {
