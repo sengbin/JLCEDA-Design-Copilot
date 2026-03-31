@@ -8,7 +8,7 @@ B站演示视频：https://www.bilibili.com/video/BV1uwwXzSEpU/
 
 ![聊天演示](images/chat.gif)
 
-![配置演示](images/config.gif)
+![配置演示](images/config.png)
 
 项目地址：https://github.com/sengbin/JLCEDA-Design-Copilot
 
