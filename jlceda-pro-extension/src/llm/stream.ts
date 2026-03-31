@@ -115,11 +115,14 @@ export function buildToolCallDeltaItem(source?: any, explicitIndex?: any) {
 	const functionArguments: any = normalizeToolCallArgumentsChunk(sourceObject.arguments !== undefined
 		? sourceObject.arguments
 		: (functionObject && functionObject.arguments));
+	// Responses API 的 function_call_output 需要回传 call_id，而不是 function_call 项自身的 id。
+	const functionCallId: any = String(sourceObject.call_id
+		|| (functionObject && functionObject.call_id)
+		|| sourceObject.id
+		|| sourceObject.item_id
+		|| '').trim();
 	const output: any = {
-		id: String(sourceObject.id
-			|| sourceObject.call_id
-			|| sourceObject.item_id
-			|| '').trim(),
+		id: functionCallId,
 		type: 'function',
 		function: {
 			name: functionName,
@@ -175,7 +178,10 @@ export function extractResponsesToolCallDeltas(chunkObject?: any, normalizedEven
 	if (chunkObject.item && typeof chunkObject.item === 'object') {
 		const itemType: any = String(chunkObject.item.type || '').trim().toLowerCase();
 		if (itemType.includes('function_call')) {
-			pushFromSource(chunkObject.item, chunkObject.output_index);
+			pushFromSource({
+				...chunkObject,
+				...chunkObject.item,
+			}, chunkObject.output_index);
 		}
 	}
 	if (Array.isArray(chunkObject.output)) {
@@ -200,12 +206,10 @@ export function extractResponsesToolCallDeltas(chunkObject?: any, normalizedEven
 export function mergeToolCallDelta(toolCalls?: any, deltaToolCalls?: any) {
 	for (let index: any = 0; index < deltaToolCalls.length; index += 1) {
 		const deltaCall: any = deltaToolCalls[index] || {};
-		// 优先使用显式 index；其次按 id 反查已有槽位（支持 Gemini 等不带 index 的并行工具调用）；最后用循环变量。
+		// 先按 id 复用已有槽位；再在不产生稀疏数组的前提下使用显式 index；否则顺序追加。
+		// Responses API 的 output_index 统计的是所有输出块，不只是工具块，直接拿来当数组下标会产生空槽位。
 		let targetIndex: any;
-		if (typeof deltaCall.index === 'number') {
-			targetIndex = deltaCall.index;
-		}
-		else if (deltaCall.id) {
+		if (deltaCall.id) {
 			let foundIndex: any = -1;
 			for (let si: any = 0; si < toolCalls.length; si += 1) {
 				if (toolCalls[si] && toolCalls[si].id === deltaCall.id) {
@@ -213,9 +217,20 @@ export function mergeToolCallDelta(toolCalls?: any, deltaToolCalls?: any) {
 					break;
 				}
 			}
-			targetIndex = foundIndex >= 0 ? foundIndex : toolCalls.length;
+			if (foundIndex >= 0) {
+				targetIndex = foundIndex;
+			}
 		}
-		else {
+		if (typeof targetIndex !== 'number') {
+			const explicitToolIndex: any = Number(deltaCall.index);
+			if (Number.isFinite(explicitToolIndex) && explicitToolIndex >= 0 && explicitToolIndex <= toolCalls.length) {
+				targetIndex = explicitToolIndex;
+			}
+			else {
+				targetIndex = toolCalls.length;
+			}
+		}
+		if (typeof targetIndex !== 'number') {
 			targetIndex = index;
 		}
 		if (!toolCalls[targetIndex]) {
