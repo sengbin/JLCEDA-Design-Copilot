@@ -38,6 +38,8 @@ export interface ChatSessionManagerOptions {
 	} | null;
 	/** 运行提示隐藏函数。 */
 	hideRunningIndicator: () => void;
+	/** 清空运行时渲染数据回调（清空虚拟列表 store 等）。 */
+	onClearRuntimeData?: () => void;
 }
 /**
  * 会话管理器对外能力。
@@ -276,6 +278,9 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 		hideRunningIndicator();
 		if (chatHistory) {
 			chatHistory.innerHTML = '';
+		}
+		if (options.onClearRuntimeData) {
+			options.onClearRuntimeData();
 		}
 		chatDisplayMessages.length = 0;
 		agentMessages.length = 0;
@@ -621,6 +626,9 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 		if (chatHistory) {
 			chatHistory.innerHTML = '';
 		}
+		if (options.onClearRuntimeData) {
+			options.onClearRuntimeData();
+		}
 		if (normalizedDisplayMessages.length === 0 && normalizedAgentMessages.length === 0) {
 			isRestoringChatHistory = false;
 			return false;
@@ -658,10 +666,13 @@ export function createChatSessionManager(options: ChatSessionManagerOptions): Ch
 			const endIndex: any = Math.min(restoredDisplayCursor + RESTORE_RENDER_BATCH_SIZE, normalizedDisplayMessages.length);
 			for (; restoredDisplayCursor < endIndex; restoredDisplayCursor += 1) {
 				const item: any = normalizedDisplayMessages[restoredDisplayCursor];
-				const restoredNode: any = appendMessage(item.role, item.text, item.variant);
-				// 恢复过程分组标题到对应消息节点的显示记录。
-				if (item.processTitle && restoredNode instanceof HTMLElement) {
-					setProcessTitleByNode(restoredNode, item.processTitle);
+				appendMessage(item.role, item.text, item.variant);
+				// 恢复过程分组标题到显示记录，displayIndex 即刚写入的最后一条。
+				if (item.processTitle) {
+					const displayIndex: number = chatDisplayMessages.length - 1;
+					if (displayIndex >= 0) {
+						(chatDisplayMessages[displayIndex] as Record<string, unknown>).processTitle = String(item.processTitle).trim();
+					}
 				}
 			}
 			scrollChatHistoryIfAllowed();

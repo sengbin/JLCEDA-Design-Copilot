@@ -1,5 +1,7 @@
-﻿import { OverlayScrollbars } from 'overlayscrollbars';
+﻿import type { ChatVListEngine, ChatVListStore } from './chat-vlist';
+import { OverlayScrollbars } from 'overlayscrollbars';
 import scrollIntoView from 'scroll-into-view-if-needed';
+import { createChatVListEngine, createChatVListStore } from './chat-vlist';
 import { DEBUG_TOOL_EXEC_DETAILS_EXPANDABLE, DEBUG_TOOL_EXEC_SHOW_CALLED_API, DEBUG_TOOL_EXEC_SHOW_TOOL_NAME } from './debug';
 import { createLlmAdapter } from './llm/adapters/factory';
 import { normalizeMessageContentForChat } from './llm/adapters/openai-chat';
@@ -110,6 +112,8 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	const chatEmptyStateNode: any = createChatEmptyStateNode(chatHistory);
 	const overlayScrollControllerMap: any = new WeakMap();
 	let chatHistoryScrollController: any = null;
+	const chatVListStore: ChatVListStore = createChatVListStore();
+	let chatVListEngine: ChatVListEngine | null = null;
 	let chatSessionDropdownScrollController: any = null;
 	let chatInputOverlayScrollbar: any = null;
 	let imageAttachmentHoverPreviewLayer: any = null;
@@ -149,6 +153,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		},
 		resolveApiMemberInAnyRoot: apiPath => toolRuntime.resolveApiMemberInAnyRoot(apiPath),
 		hideRunningIndicator: () => hideRunningIndicator(),
+		onClearRuntimeData: () => { chatVListStore.clearAll(); },
 	});
 	// 规范化聊天输入文本，统一换行格式。
 	function normalizeChatInputText(value?: any) {
@@ -474,50 +479,49 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		return sanitizedResult;
 	}
-	// 读取消息节点对应的展示文本。
-	function readDisplayTextByMessageNode(messageNode?: any) {
-		if (!messageNode || !(messageNode instanceof HTMLElement)) {
-			return '';
-		}
-		const indexText: any = String(messageNode.getAttribute('data-display-index') || '').trim();
-		if (!indexText) {
-			return '';
-		}
-		const indexValue: any = Number(indexText);
-		if (!Number.isFinite(indexValue) || indexValue < 0) {
-			return '';
-		}
-		const record: any = chatDisplayMessages[indexValue];
-		if (!record || typeof record !== 'object') {
-			return '';
-		}
-		return String(record.text || '');
-	}
 	// 会话恢复后统一折叠规则：仅工具失败项保持展开。
 	function applyFoldStateAfterSessionRestore() {
-		if (!chatHistoryMessageContainer) {
-			return;
-		}
-		const messageNodes: any = chatHistoryMessageContainer.querySelectorAll('.chat-message.reasoning, .chat-message.tool-exec');
-		for (let index: any = 0; index < messageNodes.length; index += 1) {
-			const messageNode: any = messageNodes[index];
-			if (!messageNode || !(messageNode instanceof HTMLElement)) {
+		// 从 store 遍历所有 reasoning/tool-exec 项，设置 foldOpen 覆盖字段。
+		// renderer 首次渲染（或 notifyItemUpdated）时会读取该字段覆盖 details.open。
+		const items: any = chatVListStore.getItems();
+		for (let index: any = 0; index < items.length; index += 1) {
+			const item: any = items[index];
+			if (item.variant !== 'reasoning' && item.variant !== 'tool-exec') {
 				continue;
 			}
-			const detailsElement: any = messageNode.querySelector('details.fold-block');
-			if (!detailsElement) {
-				continue;
+			let foldOpen: boolean;
+			if (item.variant === 'tool-exec') {
+				const text: any = item.displayIndex >= 0
+					? String((chatDisplayMessages[item.displayIndex] as Record<string, unknown>)?.text || '')
+					: String(item.text || '');
+				foldOpen = isFailedToolExecDisplayText(text);
 			}
-			if (messageNode.classList.contains('tool-exec')) {
-				detailsElement.open = isFailedToolExecDisplayText(readDisplayTextByMessageNode(messageNode));
-				continue;
+			else {
+				// reasoning 恢复后默认折叠。
+				foldOpen = false;
 			}
-			detailsElement.open = false;
+			chatVListStore.patchItemFoldOpen(item.id, foldOpen);
+			// 若节点已挂载到 DOM，立即更新。
+			const domNode: HTMLElement | null = getItemDomNode(item.id);
+			if (domNode) {
+				const detailsEl: any = domNode.querySelector('details.fold-block');
+				if (detailsEl) {
+					detailsEl.open = foldOpen;
+				}
+			}
 		}
 	}
-	// 判断节点是否为思考或工具调用消息。
+	// 判断节点或 store 渲染项是否为思考或工具调用消息。
 	function isProcessMessageNode(node?: any) {
-		if (!node || !(node instanceof HTMLElement)) {
+		if (!node) {
+			return false;
+		}
+		// 兼容 ChatRenderItem（store 数据层对象）。
+		if (typeof node.variant === 'string') {
+			return node.variant === 'reasoning' || node.variant === 'tool-exec';
+		}
+		// 兼容 HTMLElement（DOM 节点）。
+		if (!(node instanceof HTMLElement)) {
 			return false;
 		}
 		if (!node.classList.contains('chat-message')) {
@@ -525,88 +529,31 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		return node.classList.contains('reasoning') || node.classList.contains('tool-exec');
 	}
-	// 创建“执行过程”外层折叠节点。
-	function createProcessGroupElements(defaultOpen?: any, groupTitle?: string) {
-		const wrapperNode: any = document.createElement('div');
-		wrapperNode.className = 'chat-process-group';
-		const detailsNode: any = document.createElement('details');
-		detailsNode.className = 'process-group-fold';
-		detailsNode.open = Boolean(defaultOpen);
-		const summaryNode: any = document.createElement('summary');
-		summaryNode.className = 'process-group-summary';
-		const iconWrapNode: any = document.createElement('span');
-		iconWrapNode.className = 'process-group-icon-wrap';
-		iconWrapNode.setAttribute('aria-hidden', 'true');
-		const chevronIconNode: any = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-		chevronIconNode.setAttribute('class', 'process-group-icon-chevron');
-		chevronIconNode.setAttribute('viewBox', '0 0 14 7');
-		chevronIconNode.setAttribute('focusable', 'false');
-		const chevronUseNode: any = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-		chevronUseNode.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#icon-chevron-down');
-		chevronIconNode.appendChild(chevronUseNode);
-		iconWrapNode.appendChild(chevronIconNode);
-		const titleNode: any = document.createElement('span');
-		titleNode.className = 'process-group-title';
-		titleNode.textContent = groupTitle || todoPanelCurrentTaskTitle || '执行过程';
-		const loadingNode: any = document.createElement('span');
-		loadingNode.className = 'process-group-loading-indicator';
-		loadingNode.setAttribute('aria-hidden', 'true');
-		loadingNode.innerHTML = '<svg class="process-group-loading-icon" viewBox="0 0 12 12" focusable="false"><use xlink:href="#icon-spinner-half"></use></svg>';
-		summaryNode.appendChild(iconWrapNode);
-		summaryNode.appendChild(titleNode);
-		summaryNode.appendChild(loadingNode);
-		const contentNode: any = document.createElement('div');
-		contentNode.className = 'process-group-content';
-		detailsNode.appendChild(summaryNode);
-		detailsNode.appendChild(contentNode);
-		wrapperNode.appendChild(detailsNode);
-		return {
-			wrapperNode,
-			detailsNode,
-			contentNode,
-		};
-	}
 	// 会话恢复后重建连续思考/工具调用的外层折叠分组。
 	function rebuildProcessFoldGroupsAfterSessionRestore() {
-		if (!chatHistoryMessageContainer) {
-			return;
-		}
-		const existedGroups: any = chatHistoryMessageContainer.querySelectorAll('.chat-process-group');
-		for (let index: any = 0; index < existedGroups.length; index += 1) {
-			const groupNode: any = existedGroups[index];
-			if (!groupNode || !(groupNode instanceof HTMLElement)) {
-				continue;
-			}
-			const contentNode: any = groupNode.querySelector('.process-group-content');
-			const parentNode: any = groupNode.parentNode;
-			if (contentNode && parentNode) {
-				while (contentNode.firstChild) {
-					parentNode.insertBefore(contentNode.firstChild, groupNode);
-				}
-			}
-			groupNode.remove();
-		}
-		const children: any = Array.from(chatHistoryMessageContainer.children);
-		let cursor: any = 0;
-		while (cursor < children.length) {
-			const currentNode: any = children[cursor];
-			if (!isProcessMessageNode(currentNode)) {
+		const items: any = chatVListStore.getItems();
+		let cursor: number = 0;
+		while (cursor < items.length) {
+			const currentItem: any = items[cursor];
+			if (!isProcessMessageNode(currentItem)) {
 				cursor += 1;
 				continue;
 			}
-			let endCursor: any = cursor + 1;
-			while (endCursor < children.length && isProcessMessageNode(children[endCursor])) {
+			let endCursor: number = cursor + 1;
+			while (endCursor < items.length && isProcessMessageNode(items[endCursor])) {
 				endCursor += 1;
 			}
-			if ((endCursor - cursor) <= 1) {
-				cursor = endCursor;
-				continue;
-			}
-			const restoredTitle: string = sessionManager.getProcessTitleByNode(children[cursor]);
-			const processGroupElements: any = createProcessGroupElements(false, restoredTitle);
-			chatHistoryMessageContainer.insertBefore(processGroupElements.wrapperNode, children[cursor]);
-			for (let moveIndex: any = cursor; moveIndex < endCursor; moveIndex += 1) {
-				processGroupElements.contentNode.appendChild(children[moveIndex]);
+			// 只有连续 2 条以上才建组。
+			if ((endCursor - cursor) > 1) {
+				const firstItem: any = items[cursor];
+				const restoredTitle: string = firstItem.displayIndex >= 0
+					? String((chatDisplayMessages[firstItem.displayIndex] as Record<string, unknown>)?.processTitle || '').trim()
+					: '';
+				const groupId: string = chatVListStore.createGroup(restoredTitle || todoPanelCurrentTaskTitle || '执行过程');
+				chatVListStore.patchGroup(groupId, { open: false });
+				for (let moveIndex: number = cursor; moveIndex < endCursor; moveIndex += 1) {
+					chatVListStore.assignItemToGroup(items[moveIndex].id, groupId);
+				}
 			}
 			cursor = endCursor;
 		}
@@ -658,10 +605,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	}
 	// 判断当前是否存在可展示的聊天消息。
 	function hasVisibleChatMessages() {
-		if (!chatHistoryMessageContainer) {
-			return false;
-		}
-		return Boolean(chatHistoryMessageContainer.querySelector('.chat-message, .chat-process-group'));
+		return chatVListStore.getItems().length > 0;
 	}
 	// 刷新对话工具栏按钮可用状态。
 	function updateChatSessionActionButtonState() {
@@ -955,17 +899,25 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	}
 	// 在允许自动滚动时同步到底部。
 	function scrollChatHistoryIfAllowed() {
-		if (!chatHistoryScrollController) {
-			return;
+		if (chatVListEngine) {
+			chatVListEngine.scrollToBottom(false);
 		}
-		chatHistoryScrollController.followToBottomIfAllowed();
+		else if (chatHistoryScrollController) {
+			chatHistoryScrollController.followToBottomIfAllowed();
+		}
 	}
 	// 强制滚动聊天区到底部。
 	function forceScrollChatHistoryToBottom() {
-		if (!chatHistoryScrollController) {
-			return;
+		if (chatVListEngine) {
+			chatVListEngine.scrollToBottom(true);
 		}
-		chatHistoryScrollController.forceFollowToBottom();
+		else if (chatHistoryScrollController) {
+			chatHistoryScrollController.forceFollowToBottom();
+		}
+	}
+	// 根据 itemId 获取已挂载的 DOM 节点（供需要直接操作 DOM 的函数使用）。
+	function getItemDomNode(itemId: string): HTMLElement | null {
+		return chatVListEngine ? chatVListEngine.getItemNode(itemId) : null;
 	}
 	// 关闭对话下拉列表。
 	function closeChatSessionDropdown() {
@@ -1083,6 +1035,21 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			autoHideMode: 'leave',
 			autoFollowEnabled: true,
 		});
+		// 创建真虚拟列表引擎，接管消息 DOM 渲染。
+		const virtViewport: any = chatHistoryScrollController
+			? chatHistoryScrollController.getViewportElement()
+			: null;
+		if (virtViewport && chatHistoryMessageContainer) {
+			chatVListEngine = createChatVListEngine(
+				virtViewport,
+				chatHistoryMessageContainer,
+				chatVListStore,
+				{
+					renderMessageContent: (node, item) => setMessageContent(node, item.role, item.text, item.variant),
+					bindScrollbars: node => bindOverlayScrollControllersInMessage(node),
+				},
+			);
+		}
 	}
 	if (chatSessionDropdownMenu) {
 		chatSessionDropdownScrollController = ensureOverlayScrollController(chatSessionDropdownMenu, {
@@ -1145,17 +1112,21 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	}
 	// 隐藏运行中提示节点。
 	function hideRunningIndicator() {
-		if (runningIndicatorNode && runningIndicatorNode.parentNode) {
-			runningIndicatorNode.remove();
+		if (runningIndicatorNode) {
+			chatVListStore.removeItem(runningIndicatorNode);
+			runningIndicatorNode = null;
 		}
-		runningIndicatorNode = null;
 		syncChatEmptyStateVisibility();
 	}
 	// 显示运行中提示节点，收到流式数据后自动移除。
 	function showRunningIndicator() {
 		hideRunningIndicator();
+		// createMessageNode 现在返回 store 项 id。
 		runningIndicatorNode = createMessageNode('ai', 'running');
-		setMessageContent(runningIndicatorNode, 'ai', RUNNING_INDICATOR_TEXT, 'running');
+		chatVListStore.updateItemText(runningIndicatorNode, RUNNING_INDICATOR_TEXT);
+		if (chatVListEngine) {
+			chatVListEngine.notifyItemUpdated(runningIndicatorNode);
+		}
 		syncChatEmptyStateVisibility();
 	}
 	// 停止流式空闲监控。
@@ -1655,22 +1626,18 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		renderImageAttachmentList();
 	}
-	// 创建单条消息节点并追加到历史区。
-	function createMessageNode(role?: any, variant?: any, displayIndex?: any) {
-		const messageNode: any = document.createElement('div');
-		const className: any = ['chat-message', role === 'user' ? 'user' : 'ai'];
-		if (variant) {
-			className.push(String(variant));
-		}
-		messageNode.className = className.join(' ');
-		if (Number.isFinite(displayIndex) && displayIndex >= 0) {
-			messageNode.setAttribute('data-display-index', String(displayIndex));
-		}
-		if (chatHistoryMessageContainer) {
-			chatHistoryMessageContainer.appendChild(messageNode);
-		}
+	// 创建单条消息节点并向 store 注册，返回 store 项 id。
+	function createMessageNode(role?: any, variant?: any, displayIndex?: any, roundStartIdx?: any): string {
+		const itemId = chatVListStore.appendItem(
+			role === 'user' ? 'user' : 'ai',
+			variant || undefined,
+			'',
+			Number.isFinite(displayIndex) && displayIndex >= 0 ? displayIndex : -1,
+			Number.isFinite(roundStartIdx) && roundStartIdx >= 0 ? roundStartIdx : -1,
+		);
+		syncChatEmptyStateVisibility();
 		scrollChatHistoryIfAllowed();
-		return messageNode;
+		return itemId;
 	}
 	// 构建折叠块标题。
 	function buildFoldTitle(variant?: any, text?: any) {
@@ -1714,6 +1681,9 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	}
 	// 设置消息节点内容。
 	function setMessageContent(messageNode?: any, role?: any, text?: any, variant?: any) {
+		if (!messageNode || !(messageNode instanceof HTMLElement)) {
+			return;
+		}
 		if (role === 'user') {
 			const isRichMessage: any = text && typeof text === 'object' && !Array.isArray(text);
 			messageNode.innerHTML = '';
@@ -1869,76 +1839,70 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			loadingToolTitles[index].classList.remove('is-loading');
 		}
 	}
-	// 追加一条完整消息。
-	function appendMessage(role?: any, text?: any, variant?: any) {
+	// 追加一条完整消息，返回消息对应的 store 项 id。
+	function appendMessage(role?: any, text?: any, variant?: any, roundStartIdx?: any): string {
 		const displayIndex: any = sessionManager.pushDisplayMessageRecord(role, text, variant);
-		const messageNode: any = createMessageNode(role, variant, displayIndex);
-		setMessageContent(messageNode, role, text, variant);
+		const itemId: string = createMessageNode(role, variant, displayIndex, roundStartIdx ?? -1);
+		chatVListStore.updateItemText(itemId, text);
+		if (chatVListEngine) {
+			chatVListEngine.notifyItemUpdated(itemId);
+		}
 		syncChatEmptyStateVisibility();
-		return messageNode;
+		return itemId;
 	}
 	// 创建思考与工具调用的外层折叠分组控制器（仅在连续消息超过 1 条时启用）。
 	function createProcessFoldGroupController() {
-		let firstProcessNode: any = null;
-		let groupWrapperNode: any = null;
-		let groupDetailsNode: any = null;
-		let groupContentNode: any = null;
+		let firstItemId: string | null = null;
+		let groupId: string | null = null;
 		let groupLoading: any = false;
 		let hasCollapsedOnContent: any = false;
 		// 重置当前过程分组状态，供下一段过程消息重新起组。
 		function resetProcessGroupState() {
-			firstProcessNode = null;
-			groupWrapperNode = null;
-			groupDetailsNode = null;
-			groupContentNode = null;
+			firstItemId = null;
+			groupId = null;
 			hasCollapsedOnContent = false;
 		}
 		// 应用外层分组加载态样式。
 		function applyGroupLoadingState() {
-			if (!groupDetailsNode) {
+			if (!groupId) {
 				return;
 			}
-			groupDetailsNode.classList.toggle('is-loading', Boolean(groupLoading));
+			chatVListStore.patchGroup(groupId, { loading: Boolean(groupLoading) });
+			if (chatVListEngine) {
+				chatVListEngine.notifyGroupUpdated(groupId);
+			}
 		}
 		// 确保外层分组节点已创建。
 		function ensureGroupNode() {
-			if (groupDetailsNode) {
+			if (groupId) {
 				return;
 			}
-			if (!chatHistoryMessageContainer || !firstProcessNode) {
+			if (!firstItemId) {
 				return;
 			}
-			const processGroupElements: any = createProcessGroupElements(true);
-			groupWrapperNode = processGroupElements.wrapperNode;
-			groupDetailsNode = processGroupElements.detailsNode;
-			groupContentNode = processGroupElements.contentNode;
-			const firstNodeParent: any = firstProcessNode.parentNode;
-			if (firstNodeParent) {
-				firstNodeParent.insertBefore(groupWrapperNode, firstProcessNode);
-			}
-			else {
-				chatHistoryMessageContainer.appendChild(groupWrapperNode);
-			}
-			groupContentNode.appendChild(firstProcessNode);
+			const firstItem = chatVListStore.getItemById(firstItemId);
+			const title = firstItem
+				? (String((firstItem as any)._processTitle || todoPanelCurrentTaskTitle || '') || '执行过程')
+				: '执行过程';
+			groupId = chatVListStore.createGroup(title);
+			chatVListStore.assignItemToGroup(firstItemId, groupId);
 			applyGroupLoadingState();
 			scrollChatHistoryIfAllowed();
 		}
-		// 追加一条过程消息到外层分组。
-		function appendProcessNode(messageNode?: any) {
-			if (!messageNode || !(messageNode instanceof HTMLElement)) {
+		// 追加一条过程消息到外层分组（参数改为 itemId）。
+		function appendProcessNode(itemId?: any) {
+			if (!itemId || typeof itemId !== 'string') {
 				return;
 			}
-			if (!firstProcessNode) {
-				firstProcessNode = messageNode;
+			if (!firstItemId) {
+				firstItemId = itemId;
 				return;
 			}
 			ensureGroupNode();
-			if (!groupContentNode) {
+			if (!groupId) {
 				return;
 			}
-			if (messageNode.parentNode !== groupContentNode) {
-				groupContentNode.appendChild(messageNode);
-			}
+			chatVListStore.assignItemToGroup(itemId, groupId);
 			applyGroupLoadingState();
 			scrollChatHistoryIfAllowed();
 		}
@@ -1954,9 +1918,11 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				}
 				hasCollapsedOnContent = true;
 				groupLoading = false;
-				applyGroupLoadingState();
-				if (groupDetailsNode) {
-					groupDetailsNode.open = false;
+				if (groupId) {
+					chatVListStore.patchGroup(groupId, { loading: false, open: false });
+					if (chatVListEngine) {
+						chatVListEngine.notifyGroupUpdated(groupId);
+					}
 				}
 				resetProcessGroupState();
 			},
@@ -1970,7 +1936,18 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	// 创建 AI 流式输出消息控制器。
 	function createAiStreamingMessage(variant?: any) {
 		const displayIndex: any = sessionManager.pushDisplayMessageRecord('ai', '', variant);
-		const messageNode: any = createMessageNode('ai', variant, displayIndex);
+		// 向 store 注册一条流式消息项，拿到 itemId。
+		const streamItemId: string = createMessageNode('ai', variant, displayIndex);
+		// 强制引擎立即将该节点挂载到 DOM，供后续直接操作。
+		if (chatVListEngine) {
+			chatVListEngine.flush();
+		}
+		// 取到真实 DOM 节点，流式期间持有并直接操作（不再操作 store）。
+		// 若节点未进入可视区（如滚动距离过远），getItemNode 返回 null，
+		// 此时流式内容先积累在 displayText，等节点进入可视区时 renderMessageContent 会刷新。
+		const messageNode: HTMLElement | null = chatVListEngine
+			? chatVListEngine.getItemNode(streamItemId)
+			: null;
 		let displayText: any = '';
 		let isFoldLoading: any = false;
 		let hasAutoOpenedFold: any = false;
@@ -1992,6 +1969,9 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		// 确保折叠节点已创建并返回引用。
 		function ensureFoldElements(sourceText?: any) {
 			if (!isFoldVariant()) {
+				return null;
+			}
+			if (!messageNode) {
 				return null;
 			}
 			// 首次渲染时懒创建折叠结构，后续仅更新内容。
@@ -2036,7 +2016,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		// 控制折叠块展开状态。
 		function setFoldOpen(value?: any) {
-			const detailsElement: any = foldDetailsElement || messageNode.querySelector('details.fold-block');
+			const detailsElement: any = foldDetailsElement || (messageNode ? messageNode.querySelector('details.fold-block') : null);
 			if (detailsElement) {
 				detailsElement.open = Boolean(value);
 			}
@@ -2055,10 +2035,18 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				foldDetailsElement.classList.toggle('is-loading', Boolean(isFoldLoading));
 				return;
 			}
-			setFoldLoadingState(messageNode, isFoldLoading);
+			if (messageNode) {
+				setFoldLoadingState(messageNode, isFoldLoading);
+			}
 		}
 		// 统一渲染流式消息。
 		function renderStreamingMessage() {
+			// 同步 store 中的文本，供引擎在节点进出可视区时重渲染。
+			chatVListStore.updateItemText(streamItemId, displayText);
+			if (!messageNode) {
+				// 节点不在可视区，内容已写入 store，等待 renderMessageContent 刷新。
+				return;
+			}
 			if (isFoldVariant()) {
 				const foldElements: any = ensureFoldElements(displayText);
 				if (foldElements && foldElements.content) {
@@ -2108,6 +2096,9 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			},
 			getNode() {
 				return messageNode;
+			},
+			getId() {
+				return streamItemId;
 			},
 		};
 	}
@@ -2430,7 +2421,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 							if (!reasoningStreamMessage) {
 								reasoningStreamMessage = createAiStreamingMessage('reasoning');
 								reasoningStreamMessage.setLoading(true);
-								processFoldGroupController.appendProcessNode(reasoningStreamMessage.getNode());
+								processFoldGroupController.appendProcessNode(reasoningStreamMessage.getId());
 								// 将当前任务标题写入该节点的显示记录，供会话恢复时使用。
 								sessionManager.setProcessTitleByNode(reasoningStreamMessage.getNode(), todoPanelCurrentTaskTitle);
 							}
@@ -2537,26 +2528,31 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						const toolCallId: any = toolCall && toolCall.id ? toolCall.id : (`tool-call-${Date.now()}-${index}`);
 						const toolMessageNode: any = appendMessage('ai', formatToolExecRawText(toolCall, undefined, true), 'tool-exec');
 						processFoldGroupController.appendProcessNode(toolMessageNode);
+						// flush 引擎确保节点已挂载到 DOM，供后续直接操作。
+						if (chatVListEngine) {
+							chatVListEngine.flush();
+						}
+						const toolMessageDomNode: HTMLElement | null = getItemDomNode(toolMessageNode);
 						// 将当前任务标题写入该节点的显示记录，供会话恢复时使用。
-						sessionManager.setProcessTitleByNode(toolMessageNode, todoPanelCurrentTaskTitle);
+						sessionManager.setProcessTitleByNode(toolMessageDomNode, todoPanelCurrentTaskTitle);
 						let result: any = null;
 						const displayToolCall: any = toolCall;
-						setFoldLoadingState(toolMessageNode, true);
+						setFoldLoadingState(toolMessageDomNode, true);
 						try {
 							result = await executeToolWithTimeout(toolRuntime, toolName, toolArgs, TOOL_CALL_TIMEOUT_SECONDS);
 						}
 						finally {
-							setFoldLoadingState(toolMessageNode, false);
+							setFoldLoadingState(toolMessageDomNode, false);
 						}
 						// 检测器件选型交互协议，若命中则委托选型模块处理并拿回最终结果。
 						const componentSelectFinalResult: any = await applyComponentSelectInteraction({
 							toolResult: result,
-							messageNode: toolMessageNode,
+							messageNode: toolMessageDomNode as HTMLElement,
 							abortSignal,
 							onBeforeShow: () => {
 								const displaySelectResult: any = buildToolExecDisplayResult(toolName, result);
-								setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displaySelectResult, false), 'tool-exec');
-								setMessageFoldOpen(toolMessageNode, true);
+								setMessageContent(toolMessageDomNode, 'ai', formatToolExecRawText(displayToolCall, displaySelectResult, false), 'tool-exec');
+								setMessageFoldOpen(toolMessageDomNode, true);
 							},
 							onMounted: () => forceScrollChatHistoryToBottom(),
 						});
@@ -2565,12 +2561,12 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						}
 						const componentPlaceFinalResult: any = await applyComponentPlaceInteraction({
 							toolResult: result,
-							messageNode: toolMessageNode,
+							messageNode: toolMessageDomNode as HTMLElement,
 							abortSignal,
 							onBeforeShow: () => {
 								const displayPlaceResult: any = buildToolExecDisplayResult(toolName, result);
-								setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displayPlaceResult, false), 'tool-exec');
-								setMessageFoldOpen(toolMessageNode, true);
+								setMessageContent(toolMessageDomNode, 'ai', formatToolExecRawText(displayToolCall, displayPlaceResult, false), 'tool-exec');
+								setMessageFoldOpen(toolMessageDomNode, true);
 							},
 							onMounted: () => forceScrollChatHistoryToBottom(),
 						});
@@ -2578,7 +2574,13 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 							result = componentPlaceFinalResult;
 						}
 						const displayToolResult: any = buildToolExecDisplayResult(toolName, result);
-						setMessageContent(toolMessageNode, 'ai', formatToolExecRawText(displayToolCall, displayToolResult, false), 'tool-exec');
+						const displayToolResultText: any = formatToolExecRawText(displayToolCall, displayToolResult, false);
+						// 先更新 store，确保归入分组的节点触发 notifyItemUpdated 时也能拿到正确文本。
+						chatVListStore.updateItemText(toolMessageNode, displayToolResultText);
+						if (chatVListEngine) {
+							chatVListEngine.notifyItemUpdated(toolMessageNode);
+						}
+						setMessageContent(toolMessageDomNode, 'ai', displayToolResultText, 'tool-exec');
 						applyTodoPanelByToolResult(toolName, result);
 						const hasOkFlag: any = result && typeof result === 'object' && Object.prototype.hasOwnProperty.call(result, 'ok');
 						const errorText: any = String(result && result.error ? result.error : '无');
@@ -2587,7 +2589,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						const isSuccess: any = hasOkFlag
 							? (Boolean(result && result.ok) && isBusinessResultPassed)
 							: !(errorText && errorText !== '无');
-						setMessageFoldOpen(toolMessageNode, !isSuccess);
+						setMessageFoldOpen(toolMessageDomNode, !isSuccess);
 						agentMessages.push({
 							role: 'tool',
 							tool_call_id: toolCallId,
@@ -2731,10 +2733,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		}
 		finally {
 			if (roundCompleted) {
-				const roundModelNode: any = appendMessage('ai', roundModelText, 'round-model');
-				if (roundModelNode instanceof HTMLElement) {
-					roundModelNode.setAttribute('data-round-start', String(roundUserIdx));
-				}
+				appendMessage('ai', roundModelText, 'round-model', roundUserIdx);
 				hasCompletedRound = true;
 			}
 			sessionManager.persistChatSessionNow();
@@ -2777,12 +2776,18 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		if (selfNode) {
 			return Number.parseInt(String(selfNode.getAttribute('data-round-start') || '-1'), 10);
 		}
-		// 找到 DOM 中排在点击位置之后的第一个 round-model 节点。
-		const roundNodes: any = chatHistory.querySelectorAll('[data-round-start]');
-		for (let i: number = 0; i < roundNodes.length; i += 1) {
-			const rm: any = roundNodes[i];
-			if (target.compareDocumentPosition(rm) & 4) {
-				return Number.parseInt(String(rm.getAttribute('data-round-start') || '-1'), 10);
+		// 从 store 中获取所有 round-model 项，按 displayIndex 排序后查找目标位置之后的第一个。
+		const targetDisplayIndexText: any = target.closest ? target.closest('[data-display-index]') : null;
+		const targetDisplayIndex: number = targetDisplayIndexText
+			? Number.parseInt(String(targetDisplayIndexText.getAttribute('data-display-index') || '-1'), 10)
+			: -1;
+		const roundModelItems: any = chatVListStore.getItems().filter((item) => {
+			return item.variant === 'round-model' && item.roundStartIdx >= 0;
+		});
+		// 找到 displayIndex 比点击节点更大的第一个 round-model（即排在其后）。
+		for (let i: number = 0; i < roundModelItems.length; i += 1) {
+			if (roundModelItems[i].displayIndex > targetDisplayIndex) {
+				return roundModelItems[i].roundStartIdx;
 			}
 		}
 		// 点击位置在所有 round-model 之后，返回 -1。
