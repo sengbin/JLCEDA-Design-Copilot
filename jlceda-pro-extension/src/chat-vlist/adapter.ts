@@ -283,22 +283,29 @@ export function createChatVListEngine(
 			return;
 		}
 
-		// 预先挂载以测量高度（临时挂载）。
+		// 预先挂载以测量高度。
+		// 若节点已在可视区（mountedKeys 中），直接原地测量，不执行 remove/append，
+		// 避免从 DOM 移除再插入导致 CSS 动画（旋转图标等）被重置而产生抖动。
 		for (let i = 0; i < entries.length; i += 1) {
 			const key = entryKey(entries[i]);
 			if (!heightMap.has(key)) {
 				const node = getEntryNode(entries[i]);
 				if (node) {
-					node.style.position = 'absolute';
-					node.style.visibility = 'hidden';
-					node.setAttribute(ENGINE_ATTR, key);
-					contentHost.appendChild(node);
+					const alreadyMounted = mountedKeys.has(key);
+					if (!alreadyMounted) {
+						node.style.position = 'absolute';
+						node.style.visibility = 'hidden';
+						node.setAttribute(ENGINE_ATTR, key);
+						contentHost.appendChild(node);
+					}
 					const h = node.offsetHeight;
 					if (h > 0) {
 						heightMap.set(key, h);
 					}
-					contentHost.removeChild(node);
-					mountedKeys.delete(key);
+					if (!alreadyMounted) {
+						contentHost.removeChild(node);
+						mountedKeys.delete(key);
+					}
 				}
 			}
 		}
