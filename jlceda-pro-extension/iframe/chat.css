@@ -1197,6 +1197,11 @@ body {
 	padding: 2px 0;
 	border: 1px solid var(--tool-border);
 	border-radius: 6px;
+	overflow: hidden;
+}
+.chat-process-group .process-group-scroll-host {
+	max-height: 270px;
+	overflow: hidden;
 }
 .chat-message.ai p {
 	margin: 0 0 8px;

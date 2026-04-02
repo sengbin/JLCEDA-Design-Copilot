@@ -79,11 +79,12 @@ export interface ChatItemRenderer {
 export function createChatItemRenderer(deps: ChatVListDeps): ChatItemRenderer {
 	// item id → 消息根节点。
 	const itemNodeMap = new Map<string, HTMLElement>();
-	// group id → { wrapperNode, detailsNode, contentNode, summaryTitleNode, loadingNode }
+	// group id → { wrapperNode, detailsNode, contentNode, itemsNode, summaryTitleNode, loadingNode }
 	const groupNodeMap = new Map<string, {
 		wrapperNode: HTMLElement;
 		detailsNode: HTMLDetailsElement;
 		contentNode: HTMLElement;
+		itemsNode: HTMLElement;
 		summaryTitleNode: HTMLElement;
 		loadingNode: HTMLElement;
 	}>();
@@ -110,6 +111,7 @@ export function createChatItemRenderer(deps: ChatVListDeps): ChatItemRenderer {
 		wrapperNode: HTMLElement;
 		detailsNode: HTMLDetailsElement;
 		contentNode: HTMLElement;
+		itemsNode: HTMLElement;
 		summaryTitleNode: HTMLElement;
 		loadingNode: HTMLElement;
 	} {
@@ -152,11 +154,19 @@ export function createChatItemRenderer(deps: ChatVListDeps): ChatItemRenderer {
 		const contentNode = document.createElement('div');
 		contentNode.className = 'process-group-content';
 
+		// 创建可滚动宿主（OverlayScrollbars 挂载目标）。
+		const scrollHostNode = document.createElement('div');
+		scrollHostNode.className = 'process-group-scroll-host';
+		contentNode.appendChild(scrollHostNode);
+
+		// 初始化滚动条，获取实际追加目标（OS 的内容体节点）；初始化失败则直接使用滚动宿主。
+		const itemsNode = deps.createGroupScrollbar(scrollHostNode) ?? scrollHostNode;
+
 		detailsNode.appendChild(summaryNode);
 		detailsNode.appendChild(contentNode);
 		wrapperNode.appendChild(detailsNode);
 
-		return { wrapperNode, detailsNode, contentNode, summaryTitleNode, loadingNode };
+		return { wrapperNode, detailsNode, contentNode, itemsNode, summaryTitleNode, loadingNode };
 	}
 
 	// 当 item.foldOpen 字段有值时，覆盖 details.open（用于会话恢复后的初始折叠状态）。
@@ -216,7 +226,7 @@ export function createChatItemRenderer(deps: ChatVListDeps): ChatItemRenderer {
 
 		getGroupContentNode(groupId) {
 			const cached = groupNodeMap.get(groupId);
-			return cached ? cached.contentNode : null;
+			return cached ? cached.itemsNode : null;
 		},
 
 		recycleItem(itemId) {

@@ -1041,6 +1041,14 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				{
 					renderMessageContent: (node, item) => setMessageContent(node, item.role, item.text, item.variant),
 					bindScrollbars: node => bindOverlayScrollControllersInMessage(node),
+					createGroupScrollbar: (scrollHostElement) => {
+						ensureOverlayScrollController(scrollHostElement, {
+							bottomSnapThreshold: SCROLL_BOTTOM_SNAP_THRESHOLD,
+							allowHorizontalScroll: false,
+							autoHideMode: 'leave',
+						});
+						return scrollHostElement.querySelector<HTMLElement>('.chat-scroll-content-body');
+					},
 				},
 			);
 		}
