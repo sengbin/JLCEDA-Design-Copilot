@@ -47,6 +47,14 @@ export interface ChatVListEngine {
 	/** 立即重算可见范围并刷新 DOM（store 批量操作后手动调用）。 */
 	flush: () => void;
 
+	/**
+	 * 对已缓存的节点补充应用 foldOpen 覆盖（不重建内容）。
+	 * 用于 applyFoldStateAfterSessionRestore 场景：节点可能在 patchItemFoldOpen 调用前
+	 * 已因 mid-batch RAF 被创建并缓存，foldOpen 未能在 getOrCreateItemNode 时生效。
+	 * @param itemId - 项 id。
+	 */
+	applyItemFoldOverride: (itemId: string) => void;
+
 	/** 销毁引擎，移除所有监听器，清空 DOM。 */
 	destroy: () => void;
 
@@ -426,6 +434,14 @@ export function createChatVListEngine(
 			itemRenderer.refreshGroupNode(group);
 			heightMap.delete(`group:${groupId}`);
 			scheduleRender();
+		},
+
+		applyItemFoldOverride(itemId) {
+			const item = store.getItemById(itemId);
+			if (!item) {
+				return;
+			}
+			itemRenderer.applyFoldOverride(item);
 		},
 
 		flush() {

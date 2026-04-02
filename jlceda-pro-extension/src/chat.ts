@@ -501,13 +501,10 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				foldOpen = false;
 			}
 			chatVListStore.patchItemFoldOpen(item.id, foldOpen);
-			// 若节点已挂载到 DOM，立即更新。
-			const domNode: HTMLElement | null = getItemDomNode(item.id);
-			if (domNode) {
-				const detailsEl: any = domNode.querySelector('details.fold-block');
-				if (detailsEl) {
-					detailsEl.open = foldOpen;
-				}
+			// 若节点已在 renderer 缓存（节点在分批恢复期间 RAF 提前触发时可能已创建但未挂载），
+			// 直接补充应用折叠状态，避免 getItemDomNode 仅检查可见节点而遗漏。
+			if (chatVListEngine) {
+				chatVListEngine.applyItemFoldOverride(item.id);
 			}
 		}
 	}

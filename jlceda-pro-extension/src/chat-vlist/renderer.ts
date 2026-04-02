@@ -61,6 +61,13 @@ export interface ChatItemRenderer {
 	 */
 	recycleGroup: (groupId: string) => void;
 
+	/**
+	 * 对已缓存节点补充应用 foldOpen 覆盖（不重建内容）。
+	 * 用于节点在 patchItemFoldOpen 调用前已被创建并缓存的情况。
+	 * @param item - 渲染项。
+	 */
+	applyFoldOverride: (item: ChatRenderItem) => void;
+
 	/** 释放所有缓存节点。 */
 	clear: () => void;
 }
@@ -214,6 +221,14 @@ export function createChatItemRenderer(deps: ChatVListDeps): ChatItemRenderer {
 
 		recycleItem(itemId) {
 			itemNodeMap.delete(itemId);
+		},
+
+		applyFoldOverride(item) {
+			const node = itemNodeMap.get(item.id);
+			if (!node) {
+				return;
+			}
+			applyFoldOpenOverride(node, item);
 		},
 
 		recycleGroup(groupId) {
