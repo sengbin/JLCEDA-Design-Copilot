@@ -957,6 +957,8 @@ body {
 .chat-message.ai.reasoning .fold-content {
 	font-size: 12px;
 	line-height: 1.45;
+	max-height: 144px;
+	overflow: hidden;
 	padding: 0px 8px 4px 24px;
 	background: transparent;
 	border-radius: 6px;

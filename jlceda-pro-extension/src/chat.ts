@@ -874,13 +874,10 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		const foldContentElements: any = messageNode.querySelectorAll('.fold-content');
 		for (let index: any = 0; index < foldContentElements.length; index += 1) {
 			const foldContentElement: any = foldContentElements[index];
-			const parentMessage: any = foldContentElement.closest('.chat-message');
-			if (parentMessage && parentMessage.classList.contains('reasoning')) {
-				continue;
-			}
 			ensureOverlayScrollController(foldContentElement, {
 				bottomSnapThreshold: SCROLL_BOTTOM_SNAP_THRESHOLD,
 				allowHorizontalScroll: false,
+				autoHideMode: 'leave',
 			});
 		}
 		// 接收数据 JSON 的 pre 作为 OverlayScrollbars 宿主，鼠标悬停显示滚动条。
@@ -1993,6 +1990,15 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						allowHorizontalScroll: false,
 						autoHideMode: 'leave',
 						autoFollowEnabled: false,
+					});
+				}
+				else if (variant === 'reasoning') {
+					// reasoning 内容限定 8 行高度，超出时显示悬停滚动条，流式期间自动跟随底部。
+					foldContentScrollController = ensureOverlayScrollController(foldContentElement, {
+						bottomSnapThreshold: SCROLL_BOTTOM_SNAP_THRESHOLD,
+						allowHorizontalScroll: false,
+						autoHideMode: 'leave',
+						autoFollowEnabled: true,
 					});
 				}
 				else {
