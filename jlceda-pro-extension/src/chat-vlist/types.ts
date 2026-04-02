@@ -88,6 +88,6 @@ export interface ChatVListDeps {
 	renderMessageContent: (node: HTMLElement, item: ChatRenderItem) => void;
 	/** 为消息节点内的折叠内容区绑定 OverlayScrollbars（等同于原 bindOverlayScrollControllersInMessage）。 */
 	bindScrollbars: (node: HTMLElement) => void;
-	/** 为过程分组滚动宿主节点初始化 OverlayScrollbars，返回实际追加子节点的内容体节点。 */
-	createGroupScrollbar: (scrollHostElement: HTMLElement) => HTMLElement | null;
+	/** 为过程分组滚动宿主节点初始化 OverlayScrollbars，返回内容体节点和跟随底部函数。 */
+	createGroupScrollbar: (scrollHostElement: HTMLElement) => { contentBody: HTMLElement | null; followToBottom: () => void } | null;
 }

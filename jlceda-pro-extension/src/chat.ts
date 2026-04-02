@@ -1042,12 +1042,17 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 					renderMessageContent: (node, item) => setMessageContent(node, item.role, item.text, item.variant),
 					bindScrollbars: node => bindOverlayScrollControllersInMessage(node),
 					createGroupScrollbar: (scrollHostElement) => {
-						ensureOverlayScrollController(scrollHostElement, {
+						const ctrl = ensureOverlayScrollController(scrollHostElement, {
 							bottomSnapThreshold: SCROLL_BOTTOM_SNAP_THRESHOLD,
 							allowHorizontalScroll: false,
 							autoHideMode: 'leave',
+							autoFollowEnabled: true,
 						});
-						return scrollHostElement.querySelector<HTMLElement>('.chat-scroll-content-body');
+						const contentBody = scrollHostElement.querySelector<HTMLElement>('.chat-scroll-content-body');
+						return {
+							contentBody,
+							followToBottom: () => ctrl?.followToBottomIfAllowed(),
+						};
 					},
 				},
 			);
@@ -2067,6 +2072,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 						: renderMarkdown(displayText);
 					if (foldContentScrollController && typeof foldContentScrollController.setBodyHtml === 'function') {
 						foldContentScrollController.setBodyHtml(nextContentHtml);
+						foldContentScrollController.followToBottomIfAllowed();
 					}
 					else {
 						foldElements.content.innerHTML = nextContentHtml;
@@ -2075,6 +2081,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 				sessionManager.syncDisplayRecordByMessageNode(messageNode, 'ai', displayText, variant);
 				syncFoldLoadingState();
 				scrollChatHistoryIfAllowed();
+				chatVListEngine?.followGroupScroll(chatVListStore.getItemById(streamItemId)?.groupId ?? '');
 				return;
 			}
 			setMessageContent(messageNode, 'ai', displayText, variant);
@@ -2972,7 +2979,7 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 			syncChatEmptyStateVisibility();
 			updateSendButtonState();
 			if (chatEditor) {
-				chatEditor.focus();
+				window.setTimeout(() => { chatEditor.focus(); }, 0);
 			}
 		});
 	}

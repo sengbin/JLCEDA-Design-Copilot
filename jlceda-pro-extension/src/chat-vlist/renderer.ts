@@ -50,6 +50,13 @@ export interface ChatItemRenderer {
 	getGroupContentNode: (groupId: string) => HTMLElement | null;
 
 	/**
+	 * 获取分组滚动跟随函数，新增子节点后调用以触发滚动到底部。
+	 * @param groupId - 分组 id。
+	 * @returns 跟随底部函数，分组不存在时返回 null。
+	 */
+	getGroupScrollFollower: (groupId: string) => (() => void) | null;
+
+	/**
 	 * 释放指定 item 对应的缓存（item 从列表中永久删除时调用）。
 	 * @param itemId - 项 id。
 	 */
@@ -79,12 +86,13 @@ export interface ChatItemRenderer {
 export function createChatItemRenderer(deps: ChatVListDeps): ChatItemRenderer {
 	// item id → 消息根节点。
 	const itemNodeMap = new Map<string, HTMLElement>();
-	// group id → { wrapperNode, detailsNode, contentNode, itemsNode, summaryTitleNode, loadingNode }
+	// group id → { wrapperNode, detailsNode, contentNode, itemsNode, followToBottom, summaryTitleNode, loadingNode }
 	const groupNodeMap = new Map<string, {
 		wrapperNode: HTMLElement;
 		detailsNode: HTMLDetailsElement;
 		contentNode: HTMLElement;
 		itemsNode: HTMLElement;
+		followToBottom: () => void;
 		summaryTitleNode: HTMLElement;
 		loadingNode: HTMLElement;
 	}>();
@@ -112,6 +120,7 @@ export function createChatItemRenderer(deps: ChatVListDeps): ChatItemRenderer {
 		detailsNode: HTMLDetailsElement;
 		contentNode: HTMLElement;
 		itemsNode: HTMLElement;
+		followToBottom: () => void;
 		summaryTitleNode: HTMLElement;
 		loadingNode: HTMLElement;
 	} {
@@ -159,14 +168,16 @@ export function createChatItemRenderer(deps: ChatVListDeps): ChatItemRenderer {
 		scrollHostNode.className = 'process-group-scroll-host';
 		contentNode.appendChild(scrollHostNode);
 
-		// 初始化滚动条，获取实际追加目标（OS 的内容体节点）；初始化失败则直接使用滚动宿主。
-		const itemsNode = deps.createGroupScrollbar(scrollHostNode) ?? scrollHostNode;
+		// 初始化滚动条，获取实际追加目标和跟随底部函数；初始化失败则直接使用滚动宿主。
+		const scrollResult = deps.createGroupScrollbar(scrollHostNode);
+		const itemsNode = scrollResult?.contentBody ?? scrollHostNode;
+		const followToBottom = scrollResult ? scrollResult.followToBottom : () => {};
 
 		detailsNode.appendChild(summaryNode);
 		detailsNode.appendChild(contentNode);
 		wrapperNode.appendChild(detailsNode);
 
-		return { wrapperNode, detailsNode, contentNode, itemsNode, summaryTitleNode, loadingNode };
+		return { wrapperNode, detailsNode, contentNode, itemsNode, followToBottom, summaryTitleNode, loadingNode };
 	}
 
 	// 当 item.foldOpen 字段有值时，覆盖 details.open（用于会话恢复后的初始折叠状态）。
@@ -227,6 +238,11 @@ export function createChatItemRenderer(deps: ChatVListDeps): ChatItemRenderer {
 		getGroupContentNode(groupId) {
 			const cached = groupNodeMap.get(groupId);
 			return cached ? cached.itemsNode : null;
+		},
+
+		getGroupScrollFollower(groupId) {
+			const cached = groupNodeMap.get(groupId);
+			return cached ? cached.followToBottom : null;
 		},
 
 		recycleItem(itemId) {

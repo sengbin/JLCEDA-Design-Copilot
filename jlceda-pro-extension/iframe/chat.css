@@ -70,6 +70,7 @@
 	--todo-panel-bg: #f4f4f4;
 	--todo-panel-border: #d2d2d2;
 	--todo-panel-title: #2f2f2f;
+	--todo-panel-header-bg: #cfcfcf;
 	--todo-item-text: #2f2f2f;
 	--todo-item-muted: #666666;
 	--todo-item-completed: #0a8f3e;
@@ -145,6 +146,7 @@
 	--todo-panel-bg: #3b3b3b;
 	--todo-panel-border: #555555;
 	--todo-panel-title: #e6e6e6;
+	--todo-panel-header-bg: #1e1e1e;
 	--todo-item-text: #e6e6e6;
 	--todo-item-muted: #b8b8b8;
 	--todo-item-completed: #5cc08a;
@@ -594,6 +596,7 @@ body {
 	border-radius: 6px 6px 0 0;
 	border-bottom: none;
 	background: var(--todo-panel-bg);
+	overflow: hidden;
 }
 .chat-todo-panel.is-visible {
 	display: flex;
@@ -607,6 +610,10 @@ body {
 	display: flex;
 	align-items: center;
 	gap: 4px;
+	background: var(--todo-panel-header-bg);
+	border-radius: 6px 6px 0 0;
+	margin: -7px -8px 0;
+	padding: 7px 8px;
 }
 .chat-todo-panel-header {
 	width: 100%;

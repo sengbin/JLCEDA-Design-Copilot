@@ -55,6 +55,12 @@ export interface ChatVListEngine {
 	 */
 	applyItemFoldOverride: (itemId: string) => void;
 
+	/**
+	 * 触发指定过程分组滚动区跟随到底部（分组子节点内容更新时调用）。
+	 * @param groupId - 分组 id。
+	 */
+	followGroupScroll: (groupId: string) => void;
+
 	/** 销毁引擎，移除所有监听器，清空 DOM。 */
 	destroy: () => void;
 
@@ -191,6 +197,7 @@ export function createChatVListEngine(
 		if (contentNode) {
 			// 构建当前有效子节点集合。
 			const validChildNodes = new Set<HTMLElement>();
+			let anyChildAdded = false;
 			for (let i = 0; i < group.itemIds.length; i += 1) {
 				const childItem = store.getItemById(group.itemIds[i]);
 				if (!childItem) {
@@ -206,6 +213,7 @@ export function createChatVListEngine(
 					childNode.style.right = '';
 					childNode.style.visibility = '';
 					contentNode.appendChild(childNode);
+					anyChildAdded = true;
 				}
 			}
 			// 移除已不再属于本组的旧子节点（如 running 指示器被删除后遗留的节点）。
@@ -218,6 +226,10 @@ export function createChatVListEngine(
 			}
 			for (let i = 0; i < childrenToRemove.length; i += 1) {
 				contentNode.removeChild(childrenToRemove[i]);
+			}
+			// 有新子节点加入时，触发分组滚动跟随底部。
+			if (anyChildAdded) {
+				itemRenderer.getGroupScrollFollower(group.id)?.();
 			}
 		}
 		return groupNode;
@@ -434,6 +446,12 @@ export function createChatVListEngine(
 			itemRenderer.refreshGroupNode(group);
 			heightMap.delete(`group:${groupId}`);
 			scheduleRender();
+		},
+
+		followGroupScroll(groupId) {
+			if (groupId) {
+				itemRenderer.getGroupScrollFollower(groupId)?.();
+			}
 		},
 
 		applyItemFoldOverride(itemId) {
