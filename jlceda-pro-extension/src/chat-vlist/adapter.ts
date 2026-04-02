@@ -164,16 +164,13 @@ export function createChatVListEngine(
 		}
 		const groupNode = itemRenderer.getOrCreateGroupNode(group);
 		// 首次获取分组节点时绑定 ResizeObserver：展开/折叠分组或组内折叠块时自动失效高度缓存。
+		// ResizeObserver 仅在真正发生尺寸变化时回调，不需要在回调内比较数值；
+		// 只要 heightMap 里有缓存就清除并触发重渲，避免 contentRect（内容盒）与
+		// offsetHeight（边框盒）数值不同造成每次回调都判为"高度变化"的无限循环。
 		if (!groupResizeObservers.has(group.id)) {
 			const capturedGroupId = group.id;
-			const ro = new ResizeObserver((entries) => {
-				if (!entries[0]) {
-					return;
-				}
-				const h = Math.round(entries[0].contentRect.height);
-				const cached = heightMap.get(`group:${capturedGroupId}`);
-				// 仅在高度真正变化时失效缓存，避免拖动/重排引发无效循环。
-				if (h > 0 && h !== cached) {
+			const ro = new ResizeObserver(() => {
+				if (heightMap.has(`group:${capturedGroupId}`)) {
 					heightMap.delete(`group:${capturedGroupId}`);
 					scheduleRender();
 				}
@@ -274,6 +271,7 @@ export function createChatVListEngine(
 		if (entries.length === 0) {
 			topSpacer.style.height = '0px';
 			bottomSpacer.style.height = '0px';
+			contentHost.style.height = '0px';
 			// 移除所有已挂载节点。
 			mountedKeys.forEach((key) => {
 				const node = contentHost.querySelector(`[${ENGINE_ATTR}="${CSS.escape(key)}"]`);
