@@ -609,10 +609,18 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 		const hasAnySession: any = sessionManager.hasAnyChatSession();
 		const activeSessionId: any = sessionManager.getActiveChatSessionId();
 		if (chatSessionAddButton) {
-			chatSessionAddButton.disabled = isSending || isRestoringSession || !hasAnySession;
+			const addDisabled: any = isSending || isRestoringSession;
+			chatSessionAddButton.disabled = addDisabled;
+			const addTitle: any = addDisabled ? '对话进行中，无法新建对话' : '新建对话';
+			chatSessionAddButton.title = addTitle;
+			chatSessionAddButton.setAttribute('aria-label', addTitle);
 		}
 		if (chatSessionDeleteButton) {
-			chatSessionDeleteButton.disabled = isSending || isRestoringSession || !hasAnySession || !activeSessionId;
+			const deleteDisabled: any = isSending || isRestoringSession || !hasAnySession || !activeSessionId;
+			chatSessionDeleteButton.disabled = deleteDisabled;
+			const deleteTitle: any = (isSending || isRestoringSession) ? '对话进行中，无法删除对话' : '删除对话';
+			chatSessionDeleteButton.title = deleteTitle;
+			chatSessionDeleteButton.setAttribute('aria-label', deleteTitle);
 		}
 	}
 	// 同步聊天空状态的显示与隐藏。
@@ -2963,9 +2971,6 @@ import { hidePageLoadingMask, messageType, safeJsonStringify, showEdaToastMessag
 	if (chatSessionAddButton) {
 		chatSessionAddButton.addEventListener('click', () => {
 			if (isSending || isRestoringSession) {
-				return;
-			}
-			if (!sessionManager.hasAnyChatSession()) {
 				return;
 			}
 			sessionManager.createAndActivateChatSession(CHAT_SESSION_DEFAULT_TITLE);

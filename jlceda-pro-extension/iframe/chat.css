@@ -1665,7 +1665,7 @@ body {
 	align-items: center;
 	justify-content: space-between;
 	gap: 6px;
-	padding: 0 6px 0 0;
+	padding: 0;
 }
 .model-select-panel {
 	display: flex;
