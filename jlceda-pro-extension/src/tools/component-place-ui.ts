@@ -543,7 +543,16 @@ async function executePlaceAttempt(runtimeWindow: Window, placeApi: PlaceCompone
 		}
 
 		// 以 400ms 间隔轮询，等待用户点击放置后出现超出基线的新图元。
+		// 同时通过 mousedown 捕获阶段监听右键，作为立即取消的第一信号。
 		const remainMs: number = Math.max(1, timeoutMs - 500);
+		let rightClickCancelled: boolean = false;
+		const onRightMouseDown = (event: Event): void => {
+			if ((event as MouseEvent).button === 2) {
+				rightClickCancelled = true;
+			}
+		};
+		runtimeWindow.document.addEventListener('mousedown', onRightMouseDown as EventListener, { capture: true });
+		try {
 		return await new Promise<InteractivePlaceAttemptResult>((resolve) => {
 			let active: boolean = true;
 			const timerId: number = window.setTimeout(() => {
@@ -559,6 +568,18 @@ async function executePlaceAttempt(runtimeWindow: Window, placeApi: PlaceCompone
 
 			async function checkForPlacement(): Promise<void> {
 				if (!active) {
+					return;
+				}
+				// 右键取消信号优先于图元 ID 检测。
+				if (rightClickCancelled) {
+					active = false;
+					window.clearTimeout(timerId);
+					resolve({
+						placed: false,
+						timedOut: false,
+						userCancelled: true,
+						error: '',
+					});
 					return;
 				}
 				try {
@@ -581,7 +602,7 @@ async function executePlaceAttempt(runtimeWindow: Window, placeApi: PlaceCompone
 							return;
 						}
 					}
-					// 检查基线图元是否消失（用户右键取消放置，浮动图元被移除）。
+					// 检查基线图元是否消失（备用信号：浮动图元被移除）。
 					if (referenceIdSet.size > 0) {
 						const currentIdSet: Set<string> = new Set<string>(currentIds.map((id: string) => String(id || '').trim()).filter(Boolean));
 						for (const refId of referenceIdSet) {
@@ -611,6 +632,10 @@ async function executePlaceAttempt(runtimeWindow: Window, placeApi: PlaceCompone
 
 			void checkForPlacement();
 		});
+		}
+		finally {
+			runtimeWindow.document.removeEventListener('mousedown', onRightMouseDown as EventListener, { capture: true });
+		}
 	}
 	finally {
 		if (followMouseTipApi) {
