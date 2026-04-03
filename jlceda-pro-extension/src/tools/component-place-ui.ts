@@ -31,6 +31,7 @@ interface ApplyComponentPlaceOptions {
 interface InteractivePlaceAttemptResult {
 	placed: boolean;
 	timedOut: boolean;
+	userCancelled: boolean;
 	error: string;
 }
 
@@ -507,6 +508,7 @@ async function executePlaceAttempt(runtimeWindow: Window, placeApi: PlaceCompone
 			return {
 				placed: false,
 				timedOut: false,
+				userCancelled: false,
 				error: toSafeErrorMessage(error),
 			};
 		}
@@ -515,6 +517,7 @@ async function executePlaceAttempt(runtimeWindow: Window, placeApi: PlaceCompone
 			return {
 				placed: false,
 				timedOut: false,
+				userCancelled: false,
 				error: 'placeComponentWithMouse 返回 false，交互放置会话未能启动。',
 			};
 		}
@@ -549,6 +552,7 @@ async function executePlaceAttempt(runtimeWindow: Window, placeApi: PlaceCompone
 				resolve({
 					placed: false,
 					timedOut: true,
+					userCancelled: false,
 					error: '',
 				});
 			}, remainMs);
@@ -562,6 +566,7 @@ async function executePlaceAttempt(runtimeWindow: Window, placeApi: PlaceCompone
 					if (!active) {
 						return;
 					}
+					// 检查是否有新图元出现（用户左键放置）。
 					for (let i: number = 0; i < currentIds.length; i++) {
 						const id: string = String(currentIds[i] || '').trim();
 						if (id && !referenceIdSet.has(id)) {
@@ -570,9 +575,27 @@ async function executePlaceAttempt(runtimeWindow: Window, placeApi: PlaceCompone
 							resolve({
 								placed: true,
 								timedOut: false,
+								userCancelled: false,
 								error: '',
 							});
 							return;
+						}
+					}
+					// 检查基线图元是否消失（用户右键取消放置，浮动图元被移除）。
+					if (referenceIdSet.size > 0) {
+						const currentIdSet: Set<string> = new Set<string>(currentIds.map((id: string) => String(id || '').trim()).filter(Boolean));
+						for (const refId of referenceIdSet) {
+							if (!currentIdSet.has(refId)) {
+								active = false;
+								window.clearTimeout(timerId);
+								resolve({
+									placed: false,
+									timedOut: false,
+									userCancelled: true,
+									error: '',
+								});
+								return;
+							}
 						}
 					}
 				}
@@ -779,6 +802,17 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 							failedComponent: component,
 						});
 						return;
+					}
+
+					// 用户在原理图中右键取消放置（浮动图元消失），跳过当前器件，继续放置下一个。
+					if (attemptResult.userCancelled) {
+						setRowState(rowBindings, index, 'is-timeout', '已跳过', `${formatComponentMeta(component)}  用户已取消，跳过此器件。`);
+						updateProgress(placedComponents.length, `第 ${String(index + 1)} 个器件已跳过。`);
+						try {
+							showEdaToastMessage(runtimeWindow, `器件"${formatComponentTitle(component)}"已跳过，继续放置下一个。`, messageType.warning);
+						}
+						catch { }
+						break;
 					}
 
 					if (attemptResult.timedOut && attempt <= placeRequest.retryCount) {
