@@ -40,8 +40,10 @@ interface InteractivePlacePanelResult {
 	error?: string;
 	errorCode?: string;
 	placedCount?: number;
+	skippedCount?: number;
 	totalCount: number;
 	placedComponents?: ComponentPlaceItem[];
+	skippedComponents?: ComponentPlaceItem[];
 	failedIndex?: number;
 	failedComponent?: ComponentPlaceItem;
 	message?: string;
@@ -760,6 +762,7 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 			running = true;
 			startButton.disabled = true;
 			cancelButton.disabled = false;
+			const skippedComponents: ComponentPlaceItem[] = [];
 			for (let index = 0; index < placeRequest.components.length; index += 1) {
 				const component: ComponentPlaceItem = placeRequest.components[index];
 				if (cancelRequested) {
@@ -831,6 +834,7 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 
 					// 用户在原理图中右键取消放置（浮动图元消失），跳过当前器件，继续放置下一个。
 					if (attemptResult.userCancelled) {
+						skippedComponents.push(component);
 						setRowState(rowBindings, index, 'is-timeout', '已跳过', `${formatComponentMeta(component)}  用户已取消，跳过此器件。`);
 						updateProgress(placedComponents.length, `第 ${String(index + 1)} 个器件已跳过。`);
 						try {
@@ -893,12 +897,19 @@ export async function requestComponentPlacePanel(options: RequestPlacePanelOptio
 
 			running = false;
 			cancelButton.disabled = true;
+			const finalPlacedCount: number = placedComponents.length;
+			const finalSkippedCount: number = skippedComponents.length;
+			const finalMessage: string = finalSkippedCount > 0
+				? `共 ${String(placeRequest.components.length)} 个器件：已放置 ${String(finalPlacedCount)} 个，用户跳过 ${String(finalSkippedCount)} 个。`
+				: `已完成全部 ${String(placeRequest.components.length)} 个器件的交互放置。`;
 			finalize({
 				ok: true,
-				placedCount: placedComponents.length,
+				placedCount: finalPlacedCount,
+				skippedCount: finalSkippedCount,
 				totalCount: placeRequest.components.length,
 				placedComponents,
-				message: `已完成全部 ${String(placeRequest.components.length)} 个器件的交互放置。`,
+				skippedComponents,
+				message: finalMessage,
 			});
 		}
 
